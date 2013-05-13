@@ -1,4 +1,4 @@
-HTML
+HMTL
 ====
 
-Electronic control code
+Code for the electronics of HMTL
