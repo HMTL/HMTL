@@ -20,20 +20,24 @@ void setup()
   digitalWrite(PIN_DEBUG_LED, LOW);
 }
 
-
-boolean led_on = true;
+#define NUM_SLAVES 3
+boolean led_on[NUM_SLAVES] = {false, true, false};
+int slave_id[NUM_SLAVES] = {0, 9, 1};
 
 void loop()
-{  
-  led_on = !led_on;
-
-  Wire.beginTransmission(0xF);
-  Wire.write(PIN_STATUS_LED);
-  if (led_on) Wire.write(PACKET_ON);
-  else Wire.write(PACKET_OFF);
-  Wire.endTransmission();
-
-  if (led_on) digitalWrite(PIN_DEBUG_LED, HIGH);
+{
+  int slave;
+  for (slave = 0; slave < NUM_SLAVES; slave++) {
+    led_on[slave] = !led_on[slave];
+  
+    Wire.beginTransmission(slave_id[slave]);
+    Wire.write(PIN_STATUS_LED);
+    if (led_on[slave]) Wire.write(PACKET_ON);
+    else Wire.write(PACKET_OFF);
+    Wire.endTransmission();
+  }
+  
+  if (led_on[0]) digitalWrite(PIN_DEBUG_LED, HIGH);
   else digitalWrite(PIN_DEBUG_LED, LOW);
   
   delay(1000);

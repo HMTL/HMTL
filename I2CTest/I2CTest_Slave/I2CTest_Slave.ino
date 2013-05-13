@@ -4,11 +4,23 @@
 #define PIN_STATUS_LED 12
 #define PIN_DEBUG_LED  13
 
+#define PIN_ADDRESS_BIT0 2
+#define PIN_ADDRESS_BIT1 3
+
 #define PACKET_OFF 'F'
 #define PACKET_ON  'N'
 
+int my_address = 0;
+
 void setup() {
-  Wire.begin(0xF);
+  pinMode(PIN_ADDRESS_BIT0, INPUT);
+  pinMode(PIN_ADDRESS_BIT1, INPUT);
+  if (my_address == 0) {
+    if (digitalRead(PIN_ADDRESS_BIT0) == HIGH) my_address |= 0x1;
+    if (digitalRead(PIN_ADDRESS_BIT1) == HIGH) my_address |= 0x2;
+  }
+  
+  Wire.begin(my_address);
   Wire.onReceive(receiveEvent); // register event
   
   pinMode(PIN_STATUS_LED, OUTPUT);
@@ -19,10 +31,11 @@ void setup() {
 }
 
 boolean led_on = false;
-
+int lastUpdate = 0;
 void loop() {
   if (led_on) digitalWrite(PIN_STATUS_LED, HIGH);
   else digitalWrite(PIN_STATUS_LED, LOW);
+  
 }
 
 void receiveEvent(int howMany) {
