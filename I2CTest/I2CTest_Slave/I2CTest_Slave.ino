@@ -13,8 +13,10 @@
 int my_address = 0;
 
 void setup() {
-  pinMode(PIN_ADDRESS_BIT0, INPUT);
-  pinMode(PIN_ADDRESS_BIT1, INPUT);
+  Serial.begin(9600);
+
+  pinMode(PIN_ADDRESS_BIT0, INPUT_PULLUP);
+  pinMode(PIN_ADDRESS_BIT1, INPUT_PULLUP);
   if (my_address == 0) {
     if (digitalRead(PIN_ADDRESS_BIT0) == HIGH) my_address |= 0x1;
     if (digitalRead(PIN_ADDRESS_BIT1) == HIGH) my_address |= 0x2;
@@ -35,7 +37,14 @@ int lastUpdate = 0;
 void loop() {
   if (led_on) digitalWrite(PIN_STATUS_LED, HIGH);
   else digitalWrite(PIN_STATUS_LED, LOW);
+
+  Serial.print(my_address);
+  Serial.print(" ");
+  Serial.print(digitalRead(PIN_ADDRESS_BIT0));
+  Serial.print(" ");
+  Serial.println(digitalRead(PIN_ADDRESS_BIT1));
   
+  delay(10);
 }
 
 void receiveEvent(int howMany) {
