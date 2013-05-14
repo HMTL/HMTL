@@ -20,25 +20,53 @@ void setup()
   digitalWrite(PIN_DEBUG_LED, LOW);
 }
 
-#define NUM_SLAVES 3
-boolean led_on[NUM_SLAVES] = {false, true, false};
-int slave_id[NUM_SLAVES] = {0, 9, 1};
+#define NUM_SLAVES 4
+boolean led_on[NUM_SLAVES] = {false, true, false, true};
+int slave_id[NUM_SLAVES] = {0, 1, 2, 3};
+
+boolean debug_led = false;
+
+int cycle = 0;
+
+#define MODE   1
+#define PERIOD 500
 
 void loop()
 {
+  long start = millis();
   int slave;
-  for (slave = 0; slave < NUM_SLAVES; slave++) {
-    led_on[slave] = !led_on[slave];
+
+  update();
   
+  for (slave = 0; slave < NUM_SLAVES; slave++) {
     Wire.beginTransmission(slave_id[slave]);
     Wire.write(PIN_STATUS_LED);
     if (led_on[slave]) Wire.write(PACKET_ON);
     else Wire.write(PACKET_OFF);
     Wire.endTransmission();
   }
-  
-  if (led_on[0]) digitalWrite(PIN_DEBUG_LED, HIGH);
+
+  debug_led = !debug_led;
+  if (debug_led) digitalWrite(PIN_DEBUG_LED, HIGH);
   else digitalWrite(PIN_DEBUG_LED, LOW);
-  
-  delay(1000);
+
+  int elapsed = millis() - start;
+  delay(PERIOD - (elapsed > 0 ? elapsed : 0));
+  cycle++;
+}
+
+void update() 
+{
+  int slave;
+  for (slave = 0; slave < NUM_SLAVES; slave++) {
+
+    switch (MODE) {
+        case 0:
+          led_on[slave] = !led_on[slave];
+          break;
+        case 1:
+          led_on[slave] = (slave == (cycle % NUM_SLAVES));
+          break;
+    }
+  }
 }
