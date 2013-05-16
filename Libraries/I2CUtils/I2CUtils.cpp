@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <EEPROM.h>
+#include "EEPROM.h"
 
 #include "I2CUtils.h"
 

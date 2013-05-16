@@ -2,6 +2,7 @@
 #define I2CUTILS_H
 
 #include <Arduino.h>
+#include "EEPROM.h"
 
 #define I2C_ADDRESS_MAGIC 0x53
 #define I2C_ADDRESS_START 0x101
