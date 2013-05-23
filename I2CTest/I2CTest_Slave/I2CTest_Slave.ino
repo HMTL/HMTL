@@ -7,10 +7,7 @@
 #define PIN_STATUS_LED 12
 #define PIN_DEBUG_LED  13
 
-#define PACKET_OFF 'F'
-#define PACKET_ON  'N'
-
-int my_address = 5;
+int my_address = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -36,40 +33,40 @@ void setup() {
   }
 }
 
-boolean pin_on[14] = {
-  false, false, false, false,
-  false, false, false, false,
-  false, false, false, false,
-  false, false
+#define NUM_PINS 14
+byte pin_value[NUM_PINS] = {
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0
 };
 
 
 int lastUpdate = 0;
 void loop() {
   for (int pin = 0; pin <= 13; pin++) {
-    if (pin_on[pin]) digitalWrite(pin, HIGH);
-    else digitalWrite(pin, LOW);
+    if (pin_is_PWM(pin)) {
+      if (pin_value[pin] == 0) digitalWrite(pin, LOW);
+      else if (pin_value[pin] == 255) digitalWrite(pin, HIGH);
+      else analogWrite(pin, pin_value[pin]);
+    } else {
+      if (pin_value[pin] > 0) digitalWrite(pin, HIGH);
+      else digitalWrite(pin, LOW);
+    }
   }
   
   //Serial.print(my_address);
 
   blink_value(PIN_DEBUG_LED, my_address, 500, 4);
 
-  delay(10);
+  delay(100);
 }
 
-void receiveEvent(int howMany) {
-  int val;
-  int pin;
+void receiveEvent(int msg_len) {
+  message_t msg;
+  int read = 0;
 
-  for (int i = 0; i < howMany; i++) {
-    val = Wire.read();    // receive byte as an integer
-    if (i % 2 == 0) {
-      pin = val;
-    }
-    if (i % 2 == 1) {
-      if (val == PACKET_OFF) pin_on[pin] = false;
-      if (val == PACKET_ON) pin_on[pin] = true;
-    }
+  while (read < msg_len) {
+    I2C_read_struct((byte *)&msg, sizeof (msg));
+    pin_value[msg.pin] = msg.value;
+    read += sizeof (msg);
   }
 }

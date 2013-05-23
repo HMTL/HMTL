@@ -1,8 +1,6 @@
 /*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
- 
-  This example code is in the public domain.
+ * This code is intended to verify that the I2C pins (A4 and A5) are working
+ * correctly, for instance after stupid wiring mistakes.
  */
  
 // Pin 13 has an LED connected on most Arduino boards.

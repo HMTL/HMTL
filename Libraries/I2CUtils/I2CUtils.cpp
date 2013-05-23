@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "EEPROM.h"
+#include "Wire.h"
 
 #include "I2CUtils.h"
 
@@ -58,3 +59,39 @@ int I2C_read_or_write_address(int set_address)
   return -1;
 }
 
+
+
+/*
+ * Transmit a data buffer over I2C
+ */
+void I2C_write_struct(byte *data, int data_len) 
+{
+  for (int i = 0; i < data_len; i++) {
+    Wire.write(data[i]);
+  }
+}
+
+void I2C_read_struct(byte *data, int len) 
+{
+  for (int i = 0; i < len; i++) {
+    byte val = Wire.read();
+    data[i] = val;
+  }
+}
+
+
+/* Check if a pin is PWM */
+boolean pin_is_PWM(int pin)
+{
+  switch (pin) {
+      case 3:
+      case 5:
+      case 6:
+      case 9:
+      case 10:
+      case 11:
+        return true;
+      default:
+        return false;
+  }
+}
