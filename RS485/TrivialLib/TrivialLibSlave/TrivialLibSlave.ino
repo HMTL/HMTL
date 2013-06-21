@@ -35,7 +35,7 @@ void loop() {
     b = !b;
     digitalWrite(LED_PIN, b);
   }
-}œ
+}
 
 void fWrite (const byte what)
   {

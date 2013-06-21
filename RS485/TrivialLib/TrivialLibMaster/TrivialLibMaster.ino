@@ -43,6 +43,8 @@ void loop() {
 
 size_t fWrite (const byte what)
   {
+      Serial.print("write:");
+  Serial.println(what);
   return rs485.write (what);  
   }
   
