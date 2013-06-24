@@ -4,7 +4,7 @@
 
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4);
+RS485Socket rs485(2, 3, 4, false);
 
 #define LED_PIN 13
 
@@ -18,15 +18,12 @@ void setup()
 
 byte i = 0;
 boolean b = false;
+byte address = 0;
 
 void loop() {
-  const byte *data = rs485.getMsg(0);
+  const byte *data = rs485.getMsg(address);
   if (data != NULL) {
     i = *(data);
-    Serial.print("recvd:");
-    Serial.print(rs485.getLength ());
-    Serial.print(" = ");
-    Serial.println(i);
     b = !b;
     digitalWrite(LED_PIN, b);
   }

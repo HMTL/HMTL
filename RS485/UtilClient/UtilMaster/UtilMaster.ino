@@ -23,19 +23,20 @@ void setup()
 
 byte i = 0;
 boolean b = false;
+byte address = 0;
+
+#define NUM_DEVICES 2
 
 void loop() {
   i++;
 
   *(int *)data = i;
 
-  rs485.sendMsgTo(0, data, sizeof i);
-
-  Serial.print("Sent ");
-  Serial.println(i);
+  rs485.sendMsgTo(address, data, sizeof i);
 
   b = !b;
   digitalWrite(LED_PIN, b);
 
+  address = (address + 1) % NUM_DEVICES;
   delay(500);
 }
