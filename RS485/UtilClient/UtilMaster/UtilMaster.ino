@@ -76,7 +76,7 @@ void loop()
   else digitalWrite(PIN_DEBUG_LED, LOW);
 
   int elapsed = millis() - start;
-  delay(PERIOD - (elapsed > 0 ? elapsed : 0));
+  delay(PERIOD <= elapsed ? 0 : PERIOD - elapsed);
   cycle++;
 }
 
