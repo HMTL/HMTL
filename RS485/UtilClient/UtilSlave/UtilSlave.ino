@@ -4,7 +4,7 @@
 
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, false);
+RS485Socket rs485(2, 3, 4, true);
 
 #define LED_PIN 13
 
