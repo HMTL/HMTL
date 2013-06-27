@@ -7,29 +7,36 @@
 #include "I2CUtils.h" // XXX
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, true);
+RS485Socket rs485(2, 3, 4, false);
 
 #define PIN_STATUS_LED 12
 #define PIN_DEBUG_LED  13
 
-#define NUM_SLAVES 6
+#define NUM_SLAVES 2
 #define NUM_PINS 3
 boolean led_value[NUM_SLAVES][NUM_PINS] = {
   {0, 0, 0},
   {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0}
+//  {0, 0, 0},
+//  {0, 0, 0},
+//  {0, 0, 0},
+//  {0, 0, 0}
 };
-int slave_id[NUM_SLAVES] = {0, 1, 2, 3, 4, 5};
+int slave_id[NUM_SLAVES] = {
+  0,
+  1,
+//  2,
+//  3,
+//  4,
+//  5
+};
 int slave_pin[NUM_SLAVES][NUM_PINS] = {
-  {9, 10, 11},
-  {9, 10, 11},
-  {9, 10, 11},
-  {9, 10, 11},
-  {9, 10, 11},
-  {9, 10, 11},
+  {0, 1, 2},
+  {0, 1, 2},
+//  {0, 1, 2},
+//  {0, 1, 2},
+//  {0, 1, 2},
+//  {0, 1, 2},
 };
 
 #define MAX_MSG_DATA     (NUM_PINS * sizeof(message_t))
@@ -58,7 +65,7 @@ boolean debug_led = false;
 int cycle = 0;
 
 #define MODE   3
-#define PERIOD 100
+#define PERIOD 1000
 
 void loop()
 {
