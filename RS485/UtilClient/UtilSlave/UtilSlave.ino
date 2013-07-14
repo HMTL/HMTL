@@ -1,9 +1,9 @@
 
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
-#include <EEPROM.h> // XXX
-#include <Wire.h> // XXX
 
+#define DEBUG_LEVEL DEBUG_HIGH
+#include "Debug.h"
 
 #include "GeneralUtils.h"
 #include "HMTLMessages.h"
@@ -78,29 +78,27 @@ void read_state()
 
   if (data != NULL) {
     if (msglen < sizeof (msg_output_value_t)) {
-      Serial.println("ERROR: msglen less than message size");
+      DEBUG_ERR("ERROR: msglen less than message size");
       return;
     }
 
     msg_output_value_t *msg = (msg_output_value_t *)data;
     unsigned int processed = 0;
 
-    Serial.print("read_state:");
-    Serial.print(msglen);
+    DEBUG_VALUE(DEBUG_HIGH, "read_state:", msglen);
     do {
       if (processed > (msglen - sizeof (msg_output_value_t))) {
-        Serial.print("ERROR: read_state: msg_len wasn't multiple of "
-                     "msg_output_value_t");
+        DEBUG_ERR("ERROR: read_state: msg_len wasn't multiple of "
+                  "msg_output_value_t");
         break;
       }
 
-      Serial.print(" ");
-      Serial.print(msg->output, HEX);
-      Serial.print(":");
-      Serial.print(msg->value, HEX);
+      DEBUG_HEXVAL(DEBUG_HIGH, " ", msg->output);
+      DEBUG_HEXVAL(DEBUG_HIGH, ":", msg->value);
 
       if (msg->output > NUM_OUTPUTS) {
-        Serial.print("*");
+        /* XXX: Just print something if the output is invalid? */
+        DEBUG_PRINT(DEBUG_HIGH, "*");
       } else {
         output_value[output_to_pin[msg->output]] = msg->value;
       }

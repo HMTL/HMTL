@@ -1,9 +1,6 @@
 TODO LIST
 ---------
 
-* Incorporate DEBUG code
-* Eliminate dependence on I2CUtils
-
 - UtilSlave
   * Read/write address
 

@@ -1,8 +1,9 @@
 
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
-#include <EEPROM.h> // XXX
-#include <Wire.h> // XXX
+
+#define DEBUG_LEVEL DEBUG_HIGH
+#include "Debug.h"
 
 #include "GeneralUtils.h"
 #include "HMTLMessages.h"
@@ -146,7 +147,7 @@ void send_state(int slave)
   for (int output = 0; output < NUM_OUTPUTS; output++) {
     if (msg_len > (MAX_MSG_DATA - sizeof (msg_output_value_t))) {
       /* Prevent buffer overflow */
-      Serial.println("ERROR: send_state: msg exceeded length");
+      DEBUG_ERR("ERROR: send_state: msg exceeded length");
       break;
     }
 
