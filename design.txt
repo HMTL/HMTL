@@ -1,0 +1,6 @@
+
+
+Auto-sensing
+============
+
+Have devices respond to requests with a identity packet - device type, addressable outputs, etc.
