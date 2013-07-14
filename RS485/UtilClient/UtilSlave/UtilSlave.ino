@@ -5,7 +5,8 @@
 #include <Wire.h> // XXX
 
 
-#include "I2CUtils.h" // XXX
+#include "GeneralUtils.h"
+#include "HMTLMessages.h"
 #include "RS485Utils.h"
 
 RS485Socket rs485(2, 3, 4, false);
@@ -14,11 +15,11 @@ RS485Socket rs485(2, 3, 4, false);
 
 int my_address = 1;
 
-#define NUM_PINS 3
-byte pin_num[NUM_PINS] = {
+#define NUM_OUTPUTS 3
+byte output_to_pin[NUM_OUTPUTS] = {
   10, 11, 12
 };
-byte pin_value[NUM_PINS] = {
+byte output_value[NUM_OUTPUTS] = {
   0, 0, 0,
 };
 
@@ -27,8 +28,8 @@ void setup()
 {
   Serial.begin(9600);
 
-  for (int pin_index = 0; pin_index < NUM_PINS; pin_index++) {
-    int pin = pin_num[pin_index];
+  for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
+    int pin = output_to_pin[output_index];
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
   }
@@ -49,16 +50,16 @@ void loop() {
   /* Check for messages to this address */
   read_state();
 
-  /* If state changed then updated all pins */
+  /* If state changed then updated all outputs */
   if (update) {
-    for (int pin_index = 0; pin_index < NUM_PINS; pin_index++) {
-      int pin = pin_num[pin_index];
+    for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
+      int pin = output_to_pin[output_index];
       if (pin_is_PWM(pin)) {
-        if (pin_value[pin] == 0) digitalWrite(pin, LOW);
-        else if (pin_value[pin] == 255) digitalWrite(pin, HIGH);
-        else analogWrite(pin, pin_value[pin]);
+        if (output_value[pin] == 0) digitalWrite(pin, LOW);
+        else if (output_value[pin] == 255) digitalWrite(pin, HIGH);
+        else analogWrite(pin, output_value[pin]);
       } else {
-        if (pin_value[pin] > 0) digitalWrite(pin, HIGH);
+        if (output_value[pin] > 0) digitalWrite(pin, HIGH);
         else digitalWrite(pin, LOW);
       }
     }
@@ -76,34 +77,35 @@ void read_state()
   const byte *data = rs485.getMsg(my_address, &msglen);
 
   if (data != NULL) {
-    if (msglen < sizeof (message_t)) {
+    if (msglen < sizeof (msg_output_value_t)) {
       Serial.println("ERROR: msglen less than message size");
       return;
     }
 
-    message_t *msg = (message_t *)data;
+    msg_output_value_t *msg = (msg_output_value_t *)data;
     unsigned int processed = 0;
 
     Serial.print("read_state:");
     Serial.print(msglen);
     do {
-      if (processed > (msglen - sizeof (message_t))) {
-        Serial.print("ERROR: read_state: msg_len wasn't multiple of message_t");
+      if (processed > (msglen - sizeof (msg_output_value_t))) {
+        Serial.print("ERROR: read_state: msg_len wasn't multiple of "
+                     "msg_output_value_t");
         break;
       }
 
       Serial.print(" ");
-      Serial.print(msg->pin, HEX);
+      Serial.print(msg->output, HEX);
       Serial.print(":");
       Serial.print(msg->value, HEX);
 
-      if (msg->pin > NUM_PINS) {
+      if (msg->output > NUM_OUTPUTS) {
         Serial.print("*");
       } else {
-        pin_value[pin_num[msg->pin]] = msg->value;
+        output_value[output_to_pin[msg->output]] = msg->value;
       }
 
-      processed += sizeof (message_t);
+      processed += sizeof (msg_output_value_t);
       msg = msg + 1;
     } while (processed < msglen);
     Serial.println();

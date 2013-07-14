@@ -1,0 +1,13 @@
+TODO LIST
+---------
+
+* Incorporate DEBUG code
+* Eliminate dependence on I2CUtils
+
+- UtilSlave
+  * Read/write address
+
+
+- EEProm code:
+  * Allow writing arbitrary data
+  * Add CRC check

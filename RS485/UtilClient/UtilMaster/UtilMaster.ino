@@ -4,7 +4,8 @@
 #include <EEPROM.h> // XXX
 #include <Wire.h> // XXX
 
-#include "I2CUtils.h" // XXX
+#include "GeneralUtils.h"
+#include "HMTLMessages.h"
 #include "RS485Utils.h"
 
 RS485Socket rs485(2, 3, 4, false);
@@ -13,8 +14,8 @@ RS485Socket rs485(2, 3, 4, false);
 #define PIN_DEBUG_LED  13
 
 #define NUM_SLAVES 2
-#define NUM_PINS 3
-boolean led_value[NUM_SLAVES][NUM_PINS] = {
+#define NUM_OUTPUTS 3
+boolean output_value[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 0, 0},
   {0, 0, 0},
 //  {0, 0, 0},
@@ -30,7 +31,7 @@ int slave_id[NUM_SLAVES] = {
 //  4,
 //  5
 };
-int slave_pin[NUM_SLAVES][NUM_PINS] = {
+int slave_output[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 1, 2},
   {0, 1, 2},
 //  {0, 1, 2},
@@ -39,7 +40,7 @@ int slave_pin[NUM_SLAVES][NUM_PINS] = {
 //  {0, 1, 2},
 };
 
-#define MAX_MSG_DATA     (NUM_PINS * sizeof(message_t))
+#define MAX_MSG_DATA     (NUM_OUTPUTS * sizeof(msg_output_value_t))
 #define SEND_BUFFER_SIZE (MAX_MSG_DATA + sizeof (rs485_socket_hdr_t) + 64)
 
 byte databuffer[SEND_BUFFER_SIZE];
@@ -91,42 +92,44 @@ void loop()
 void update_state() 
 {
   int slave;
-  int pin;
+  int output;
 
   switch (MODE) {
       case 0:
         for (slave = 0; slave < NUM_SLAVES; slave++) {
-          led_value[slave][0] = (led_value[slave][0] == 0 ? 255 : 0);
+          output_value[slave][0] = (output_value[slave][0] == 0 ? 255 : 0);
         }
         break;
       case 1:
         for (slave = 0; slave < NUM_SLAVES; slave++) {
-          led_value[slave][0] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
+          output_value[slave][0] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
         }
         break;
       case 2:
         for (slave = 0; slave < NUM_SLAVES; slave++) {
-          led_value[slave][0] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
-          led_value[slave][1] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
+          output_value[slave][0] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
+          output_value[slave][1] = ((slave == (cycle % NUM_SLAVES)) ? 255 : 0);
         }
         break;
       case 3:
-        static int current_pin = 0;
+        static int current_output = 0;
         static int current_slave = 0;
         static boolean current_on = true;
 
-        led_value[current_slave][current_pin] = (current_on ? 255 : 0);
+        output_value[current_slave][current_output] = (current_on ? 255 : 0);
 
         if (!current_on) {
-          current_pin = (current_pin + 1) % NUM_PINS;
-          if (current_pin == 0) current_slave = (current_slave + 1) % NUM_SLAVES;
+          current_output = (current_output + 1) % NUM_OUTPUTS;
+          if (current_output == 0)
+            current_slave = (current_slave + 1) % NUM_SLAVES;
         }
         current_on = !current_on;
         break;
       case 4:
         for (slave = 0; slave < NUM_SLAVES; slave++) {
-          for (pin = 0; pin < NUM_PINS; pin++) {
-            led_value[slave][pin] = (led_value[slave][pin] + 10) % 256;
+          for (output = 0; output < NUM_OUTPUTS; output++) {
+            output_value[slave][output] =
+              (output_value[slave][output] + 10) % 256;
           }
         }
 
@@ -137,21 +140,22 @@ void update_state()
 /* Send a state update to the indicated device */
 void send_state(int slave) 
 {
-  /* Fill in the send buffer with this address's pin state */
-  message_t *msg;
+  /* Fill in the send buffer with this address's output state */
+  msg_output_value_t *msg;
   unsigned int msg_len = 0;
-  for (int pin = 0; pin < NUM_PINS; pin++) {
-    if (msg_len > (MAX_MSG_DATA - sizeof (message_t))) {
+  for (int output = 0; output < NUM_OUTPUTS; output++) {
+    if (msg_len > (MAX_MSG_DATA - sizeof (msg_output_value_t))) {
       /* Prevent buffer overflow */
       Serial.println("ERROR: send_state: msg exceeded length");
       break;
     }
 
-    msg = (message_t *)(&send_buffer[0] + pin * sizeof (message_t));
-    msg_len += sizeof (message_t);
+    msg = (msg_output_value_t *)(&send_buffer[0] +
+                                 output * sizeof (msg_output_value_t));
+    msg_len += sizeof (msg_output_value_t);
 
-    msg->pin = slave_pin[slave][pin];
-    msg->value = led_value[slave][pin];
+    msg->output = slave_output[slave][output];
+    msg->value = output_value[slave][output];
   }
 
   rs485.sendMsgTo(slave_id[slave], send_buffer, msg_len);
