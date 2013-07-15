@@ -1,11 +1,14 @@
 
+#include "EEPROM.h"
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
+
 
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
 #include "GeneralUtils.h"
+#include "EEPromUtils.h"
 #include "HMTLMessages.h"
 #include "RS485Utils.h"
 
