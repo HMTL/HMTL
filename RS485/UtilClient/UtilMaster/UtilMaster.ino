@@ -6,7 +6,7 @@
 #include "Debug.h"
 
 #include "GeneralUtils.h"
-#include "HMTLMessages.h"
+#include "HMTLTypes.h"
 #include "RS485Utils.h"
 
 RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
