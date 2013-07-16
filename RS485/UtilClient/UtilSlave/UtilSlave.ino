@@ -12,11 +12,11 @@
 #include "HMTLMessages.h"
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, false);
+RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
 
 #define PIN_DEBUG_LED 13
 
-int my_address = 1;
+int my_address = 0;
 
 #define NUM_OUTPUTS 3
 byte output_to_pin[NUM_OUTPUTS] = {
@@ -40,6 +40,8 @@ void setup()
   pinMode(PIN_DEBUG_LED, OUTPUT);  // driver output enable
 
   rs485.setup();
+
+  DEBUG_VALUELN(DEBUG_HIGH, "address=", my_address);
 }
 
 

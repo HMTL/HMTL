@@ -9,36 +9,66 @@
 #include "HMTLMessages.h"
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, false);
+RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
 
 #define PIN_STATUS_LED 12
 #define PIN_DEBUG_LED  13
 
-#define NUM_SLAVES 2
+#define NUM_SLAVES 1
 #define NUM_OUTPUTS 3
 boolean output_value[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 0, 0},
+#if NUM_SLAVES > 1
   {0, 0, 0},
-//  {0, 0, 0},
-//  {0, 0, 0},
-//  {0, 0, 0},
-//  {0, 0, 0}
+#endif
+#if NUM_SLAVES > 2
+  {0, 0, 0},
+#endif
+#if NUM_SLAVES > 3
+  {0, 0, 0},
+#endif
+#if NUM_SLAVES > 4
+  {0, 0, 0},
+#endif
+#if NUM_SLAVES > 5
+  {0, 0, 0},
+#endif
 };
 int slave_id[NUM_SLAVES] = {
   0,
+#if NUM_SLAVES > 1
   1,
-//  2,
-//  3,
-//  4,
-//  5
+#endif
+#if NUM_SLAVES > 1
+  2,
+#endif
+#if NUM_SLAVES > 1
+  3,
+#endif
+#if NUM_SLAVES > 1
+  4,
+#endif
+#if NUM_SLAVES > 1
+  5
+#endif
 };
 int slave_output[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 1, 2},
+#if NUM_SLAVES > 1
   {0, 1, 2},
-//  {0, 1, 2},
-//  {0, 1, 2},
-//  {0, 1, 2},
-//  {0, 1, 2},
+#endif
+#if NUM_SLAVES > 2
+  {0, 1, 2},
+#endif
+#if NUM_SLAVES > 3
+  {0, 1, 2},
+#endif
+#if NUM_SLAVES > 4
+  {0, 1, 2},
+#endif
+#if NUM_SLAVES > 5
+  {0, 1, 2},
+#endif
 };
 
 #define MAX_MSG_DATA     (NUM_OUTPUTS * sizeof(msg_output_value_t))
@@ -144,6 +174,7 @@ void send_state(int slave)
   /* Fill in the send buffer with this address's output state */
   msg_output_value_t *msg;
   unsigned int msg_len = 0;
+  DEBUG_VALUE(DEBUG_HIGH, "send_state:", slave);
   for (int output = 0; output < NUM_OUTPUTS; output++) {
     if (msg_len > (MAX_MSG_DATA - sizeof (msg_output_value_t))) {
       /* Prevent buffer overflow */
@@ -157,7 +188,9 @@ void send_state(int slave)
 
     msg->output = slave_output[slave][output];
     msg->value = output_value[slave][output];
+    DEBUG_VALUE(DEBUG_HIGH, " ", msg->value);
   }
+  DEBUG_PRINT_END();
 
   rs485.sendMsgTo(slave_id[slave], send_buffer, msg_len);
 }
