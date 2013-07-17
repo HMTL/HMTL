@@ -24,16 +24,16 @@ typedef struct {
 
 #define HMTL_CONFIG_MAGIC 0x5C
 typedef struct {
-  byte     magic;
-  byte     address;
+  uint8_t     magic;
+  uint8_t     address;
   uint16_t output_address;
-  byte     num_outputs;
+  uint8_t     num_outputs;
 } config_hdr_t;
 
 #define HMTL_OUTPUT_ONOFF 0x1
 #define HMTL_OUTPUT_PWM   0x2
 #define HMTL_OUTPUT_RGB   0x3
-
+#define HMTL_OUTPUT_SENSE 0x4
 typedef struct {
   byte type;
   byte pin[3];
@@ -41,5 +41,6 @@ typedef struct {
 
 int hmtl_read_config(config_hdr_t *hdr);
 int hmtl_write_config(config_hdr_t *hdr);
+void hmtl_default_config(config_hdr_t *hdr);
 
 #endif

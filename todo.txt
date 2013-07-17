@@ -1,6 +1,8 @@
 TODO LIST
 ---------
+Immediate
+
+General
 
 - UtilSlave
-  * Read/write address
   * Read/write data about connections

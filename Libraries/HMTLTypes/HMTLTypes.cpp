@@ -4,7 +4,9 @@
 
 #include <Arduino.h>
 
+#define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
+
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
 
@@ -22,6 +24,8 @@ int hmtl_read_config(config_hdr_t *hdr)
     return -2;
   }
 
+  DEBUG_VALUELN(DEBUG_LOW, F("hmtl_read_config: read address="), hdr->address);
+
   return hdr->address;
 }
 
@@ -37,4 +41,12 @@ int hmtl_write_config(config_hdr_t *hdr)
   return 1;
 }
 
-
+/* Fill in a config with default values */
+void hmtl_default_config(config_hdr_t *hdr)
+{
+  hdr->magic = HMTL_CONFIG_MAGIC;
+  hdr->address = 0;
+  hdr->output_address = 0;
+  hdr->num_outputs = 0;
+  DEBUG_VALUELN(DEBUG_LOW, F("hmtl_default_config: address="), hdr->address);
+}

@@ -12,10 +12,11 @@
 #include "HMTLTypes.h"
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
+RS485Socket rs485(2, 3, 4, false); //(DEBUG_LEVEL != 0));
 
 #define PIN_DEBUG_LED 13
 
+config_hdr_t config;
 int my_address = 0;
 
 #define NUM_OUTPUTS 3
@@ -30,6 +31,12 @@ byte output_value[NUM_OUTPUTS] = {
 void setup()
 {
   Serial.begin(9600);
+
+  /* Attempt to read the configuration */
+  if (hmtl_read_config(&config) < 0) {
+    hmtl_default_config(&config);
+    DEBUG_PRINTLN(DEBUG_LOW, "Using default config");
+  }
 
   for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
     int pin = output_to_pin[output_index];
