@@ -17,7 +17,6 @@ RS485Socket rs485(2, 3, 4, false); //(DEBUG_LEVEL != 0));
 #define PIN_DEBUG_LED 13
 
 config_hdr_t config;
-int my_address = 0;
 
 #define NUM_OUTPUTS 3
 byte output_to_pin[NUM_OUTPUTS] = {
@@ -48,7 +47,7 @@ void setup()
 
   rs485.setup();
 
-  DEBUG_VALUELN(DEBUG_HIGH, "address=", my_address);
+  DEBUG_VALUELN(DEBUG_HIGH, "address=", config.address);
 }
 
 
@@ -77,7 +76,7 @@ void loop() {
     }
   }
 
-  blink_value(PIN_DEBUG_LED, my_address, 500, 4);
+  blink_value(PIN_DEBUG_LED, config.address, 500, 4);
 
   //delay(100);
 }
@@ -86,7 +85,7 @@ void read_state()
 {
   unsigned int msglen;
 
-  const byte *data = rs485.getMsg(my_address, &msglen);
+  const byte *data = rs485.getMsg(config.address, &msglen);
 
   if (data != NULL) {
     if (msglen < sizeof (msg_output_value_t)) {
