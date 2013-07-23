@@ -9,12 +9,28 @@
  */
 
 /*
- * Generic message to set a given pin to the indicated value
+ * Generic message to set a given output to the indicated value
  */
 typedef struct {
   byte output;
   byte value;
-} msg_output_value_t;
+} msg_output_value_t; // XXX Ditch me
+
+
+typedef struct {
+  byte type;
+  byte output;
+} output_hdr_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  int value;
+} msg_value_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  byte rgb[3];
+} msg_rgb_t;  
 
 /******************************************************************************
  * Module configuration
@@ -26,21 +42,36 @@ typedef struct {
 typedef struct {
   uint8_t     magic;
   uint8_t     address;
-  uint16_t output_address;
   uint8_t     num_outputs;
 } config_hdr_t;
 
-#define HMTL_OUTPUT_ONOFF 0x1
-#define HMTL_OUTPUT_PWM   0x2
-#define HMTL_OUTPUT_RGB   0x3
-#define HMTL_OUTPUT_SENSE 0x4
-typedef struct {
-  byte type;
-  byte pin[3];
-} config_output_t;
+#define HMTL_OUTPUT_VALUE   0x1
+#define HMTL_OUTPUT_RGB     0x2
+#define HMTL_OUTPUT_PROGRAM 0x3
 
-int hmtl_read_config(config_hdr_t *hdr);
-int hmtl_write_config(config_hdr_t *hdr);
+typedef struct {
+  output_hdr_t hdr;
+  byte pin;
+  int value;
+} config_value_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  byte pins[3];
+  byte value[3];
+} config_rgb_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  int value;
+} config_program_t;
+
+typedef config_rgb_t config_max_t; // Set to the largest output structure
+  
+
+int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
+                     int max_outputs);
+int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
 
 #endif

@@ -1,4 +1,5 @@
 
+#include "EEPROM.h"
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
 
@@ -6,18 +7,25 @@
 #include "Debug.h"
 
 #include "GeneralUtils.h"
+#include "EEPromUtils.h"
 #include "HMTLTypes.h"
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
 
+/* Pin definitions */
 #define PIN_LIGHT_SENSE A0
+
+#define PIN_RS485_1     2
+#define PIN_RS485_2     3
+#define PIN_RS485_3     4
 
 #define PIN_OUTPUT1     9
 #define PIN_RCVD_LED   10
 #define PIN_XMIT_LED   11
 #define PIN_POWER_LED  12
 #define PIN_DEBUG_LED  13
+
+RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 
 #define NUM_SLAVES 1
 #define NUM_OUTPUTS 3
@@ -134,7 +142,7 @@ void loop()
       if (trigger) digitalWrite(PIN_OUTPUT1, HIGH);
       else digitalWrite(PIN_OUTPUT1, LOW);
     }
-    DEBUG_VALUELN(DEBUG_HIGH, "Light trigger:", trigger);
+    DEBUG_VALUELN(DEBUG_HIGH, F("Light trigger:"), trigger);
   } else if (light_value < 40) {
     output1 = false;
     digitalWrite(PIN_OUTPUT1, LOW);
@@ -210,11 +218,11 @@ void send_state(int slave)
   /* Fill in the send buffer with this address's output state */
   msg_output_value_t *msg;
   unsigned int msg_len = 0;
-  DEBUG_VALUE(DEBUG_HIGH, "send_state:", slave);
+  DEBUG_VALUE(DEBUG_HIGH, F("send_state:"), slave);
   for (int output = 0; output < NUM_OUTPUTS; output++) {
     if (msg_len > (MAX_MSG_DATA - sizeof (msg_output_value_t))) {
       /* Prevent buffer overflow */
-      DEBUG_ERR("ERROR: send_state: msg exceeded length");
+      DEBUG_ERR(F("ERROR: send_state: msg exceeded length"));
       break;
     }
 

@@ -16,8 +16,6 @@ RS485Socket rs485(2, 3, 4, false); //(DEBUG_LEVEL != 0));
 
 #define PIN_DEBUG_LED 13
 
-config_hdr_t config;
-
 #define NUM_OUTPUTS 3
 byte output_to_pin[NUM_OUTPUTS] = {
   10, 11, 12
@@ -26,16 +24,21 @@ byte output_value[NUM_OUTPUTS] = {
   0, 0, 0,
 };
 
+#define MAX_OUTPUTS 3
+config_hdr_t config;
+config_max_t outputs[MAX_OUTPUTS];
 
 void setup()
 {
   Serial.begin(9600);
 
   /* Attempt to read the configuration */
-  if (hmtl_read_config(&config) < 0) {
+  if (hmtl_read_config(&config, outputs, MAX_OUTPUTS) < 0) { // XXX - Need to switch
     hmtl_default_config(&config);
     DEBUG_PRINTLN(DEBUG_LOW, "Using default config");
   }
+
+  // XXX - Continue to convert to reading outputs
 
   for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
     int pin = output_to_pin[output_index];
