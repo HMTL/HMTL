@@ -11,7 +11,12 @@
 
 RS485Socket rs485(2, 3, 4, (DEBUG_LEVEL != 0));
 
-#define PIN_STATUS_LED 12
+#define PIN_LIGHT_SENSE A0
+
+#define PIN_OUTPUT1     9
+#define PIN_RCVD_LED   10
+#define PIN_XMIT_LED   11
+#define PIN_POWER_LED  12
 #define PIN_DEBUG_LED  13
 
 #define NUM_SLAVES 1
@@ -39,16 +44,16 @@ int slave_id[NUM_SLAVES] = {
 #if NUM_SLAVES > 1
   1,
 #endif
-#if NUM_SLAVES > 1
+#if NUM_SLAVES > 2
   2,
 #endif
-#if NUM_SLAVES > 1
+#if NUM_SLAVES > 3
   3,
 #endif
-#if NUM_SLAVES > 1
+#if NUM_SLAVES > 4
   4,
 #endif
-#if NUM_SLAVES > 1
+#if NUM_SLAVES > 5
   5
 #endif
 };
@@ -81,11 +86,22 @@ void setup()
 {
   Serial.begin(9600);
 
-  pinMode(PIN_STATUS_LED, OUTPUT);
-  digitalWrite(PIN_STATUS_LED, HIGH);
+  pinMode(PIN_OUTPUT1, OUTPUT);
+  digitalWrite(PIN_OUTPUT1, LOW);
+
+  pinMode(PIN_RCVD_LED, OUTPUT);
+  digitalWrite(PIN_RCVD_LED, LOW);
+
+  pinMode(PIN_XMIT_LED, OUTPUT);
+  digitalWrite(PIN_XMIT_LED, LOW);
+
+  pinMode(PIN_POWER_LED, OUTPUT);
+  digitalWrite(PIN_POWER_LED, HIGH);
 
   pinMode(PIN_DEBUG_LED, OUTPUT);
   digitalWrite(PIN_DEBUG_LED, HIGH);
+
+  pinMode(PIN_LIGHT_SENSE, INPUT_PULLUP);
 
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
@@ -93,16 +109,36 @@ void setup()
 
 
 boolean debug_led = false;
+boolean output1 = false;
+boolean trigger = false;
 
 int cycle = 0;
 
 #define MODE   3
-#define PERIOD 1000
+#define PERIOD 100
 
 void loop()
 {
   long start = millis();
   int slave;
+
+  int light_value = analogRead(PIN_LIGHT_SENSE);
+  DEBUG_VALUELN(DEBUG_HIGH, F("light_value:"), light_value);
+  if (light_value > 120) {
+    output1 = true;
+    digitalWrite(PIN_OUTPUT1, HIGH); 
+  } else if (light_value > 40 && light_value < 80) {
+    if (output1) {
+      //analogWrite(PIN_OUTPUT1, 64);
+      trigger = !trigger;
+      if (trigger) digitalWrite(PIN_OUTPUT1, HIGH);
+      else digitalWrite(PIN_OUTPUT1, LOW);
+    }
+    DEBUG_VALUELN(DEBUG_HIGH, "Light trigger:", trigger);
+  } else if (light_value < 40) {
+    output1 = false;
+    digitalWrite(PIN_OUTPUT1, LOW);
+  }
 
   update_state();
 
