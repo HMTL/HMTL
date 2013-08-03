@@ -36,11 +36,12 @@ typedef struct {
  * Module configuration
  */
 
-#define HMTL_CONFIG_ADDR  0x0F
-
+#define HMTL_CONFIG_ADDR  0x0E
 #define HMTL_CONFIG_MAGIC 0x5C
+#define HMTL_CONFIG_VERSION 1
 typedef struct {
   uint8_t     magic;
+  uint8_t     version;
   uint8_t     address;
   uint8_t     num_outputs;
 } config_hdr_t;
@@ -58,7 +59,7 @@ typedef struct {
 typedef struct {
   output_hdr_t hdr;
   byte pins[3];
-  byte value[3];
+  byte values[3];
 } config_rgb_t;
 
 typedef struct {
@@ -73,5 +74,6 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
+void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 
 #endif

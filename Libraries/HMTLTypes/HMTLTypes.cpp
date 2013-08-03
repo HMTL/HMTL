@@ -63,10 +63,11 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
   return hdr->address;
 }
 
-int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]) 
+int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
   int addr;
   hdr->magic = HMTL_CONFIG_MAGIC;
+  hdr->version = HMTL_CONFIG_VERSION;
   addr = EEPROM_safe_write(HMTL_CONFIG_ADDR,
                            (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
@@ -91,7 +92,51 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 void hmtl_default_config(config_hdr_t *hdr)
 {
   hdr->magic = HMTL_CONFIG_MAGIC;
+  hdr->version = HMTL_CONFIG_VERSION;
   hdr->address = 0;
   hdr->num_outputs = 0;
   DEBUG_VALUELN(DEBUG_LOW, F("hmtl_default_config: address="), hdr->address);
 }
+
+/* Print out details of a config */
+void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
+{
+  DEBUG_VALUE(0, "hmtl_print_config: mag: ", hdr->magic);
+  DEBUG_VALUE(0, " ver: ", hdr->version);
+  DEBUG_VALUE(0, " add: ", hdr->address);
+  DEBUG_VALUELN(0, " out: ", hdr->num_outputs);
+
+  for (int i = 0; i < hdr->num_outputs; i++) {
+    output_hdr_t *out1 = (output_hdr_t *)&outputs[i];
+    DEBUG_VALUE(0, "type=", out1->type);
+    DEBUG_VALUE(0, " out=", out1->output);
+    DEBUG_PRINT(0, " - ");
+    switch (out1->type) {
+        case HMTL_OUTPUT_VALUE: 
+        {
+          config_value_t *out2 = (config_value_t *)out1;
+          DEBUG_VALUE(0, "pin=", out2->pin);
+          DEBUG_VALUELN(0, " val=", out2->value);
+          break;
+        }
+        case HMTL_OUTPUT_RGB:
+        {
+          config_rgb_t *out2 = (config_rgb_t *)out1;
+          DEBUG_VALUE(0, "pin0=", out2->pins[0]);
+          DEBUG_VALUE(0, " pin1=", out2->pins[1]);
+          DEBUG_VALUE(0, " pin2=", out2->pins[2]);
+          DEBUG_VALUE(0, " val0=", out2->values[0]);
+          DEBUG_VALUE(0, " val1=", out2->values[1]);
+          DEBUG_VALUE(0, " val2=", out2->values[2]);
+          break;
+        }
+        case HMTL_OUTPUT_PROGRAM:
+        {
+          config_program_t *out2 = (config_program_t *)out1;
+          DEBUG_VALUE(0, "val=", out2->value);
+          break;
+        }
+    }
+  }
+}
+
