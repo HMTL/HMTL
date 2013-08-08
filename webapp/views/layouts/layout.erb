@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title><%= render_partial :title %></title>
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="/css/style.css">
+	</head>
+	
+	<body>
+		<div class="container">
+			<div class="row">
+				<h1><%= render_partial :title %> <small>Bootstrap your Sinatra Web Development</small></h1>
+				
+				<%= yield %>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,85 @@
+<blockquote
+	<p>
+		The purpose of this boilerplate project is to enable Sinatra developers to get a project
+		up and running as fast as possible whilst providing some commonly used libraries to
+		make their app render correctly on the most popular browsers, work on mobile devices and 
+		be dynamic with AJAX
+		<small>Robert Ziehl</small>
+	</p>
+</blockquote>
+
+<div class="span4">
+	<h3>Included Libraries</h3>
+	
+	<p>Bundled with this project is:</p>
+
+	<pre>Twitter Bootstrap 1.4
+JQuery 1.7.1
+JQuery Mobile 1.0.1</pre>
+
+</div>
+
+<div class="span6">
+	<h3>Project Organization</h3>
+	<p>The project is structured like so:</p>
+	
+<pre>
+- app
+	- controllers
+	- helpers
+	- models
+- public
+	- css
+	- images
+	- js
+- sass
+- tests
+- views
+	- layouts
+	- pages
+	- partials
+config.ru
+Gemfile
+Rakefile
+main.rb
+</pre>
+</div>
+
+<div class="span6">
+	<h3>Explained</h3>
+	<p>What every directory is for:</p>
+	<dl>
+		<dt>app/controllers</dt>
+		<dd>Any code that looks like <code>get "/post/new" do ... end</code> goes in here</dd>
+		<br/>
+		<dt>app/helpers</dt>
+		<dd>Helper functions get placed here</dd>
+		<br/>
+		<dt>app/models</dt>
+		<dd>Class definitions that have <code>include DataMapper::Resource</code> go here</dd>
+		<br/>
+		<dt>public/css</dt>
+		<dd>All stylesheets go here</dd>
+		<br/>
+		<dt>public/images</dt>
+		<dd>Picture files go here</dd>
+		<br/>
+		<dt>public/js</dt>
+		<dd>Javascript files go here</dd>
+		<br/>
+		<dt>sass</dt>
+		<dd>Put all <code>.scss</code> files here. Compile with <code>rake sass</code></dd>
+		<br/>
+		<dt>tests</dt>
+		<dd>Put unit tests/specs here. Run them with <code>rake</code></dd>
+		<br/>
+		<dt>views/layouts</dt>
+		<dd>Put page templates here</dd>
+		<br/>
+		<dt>views/pages</dt>
+		<dd>Put actual page content in here</dd>
+		<br/>
+		<dt>views/partials</dt>
+		<dd>DRY! Put reusable view snippets in here</dd>
+	</dl>
+</div>

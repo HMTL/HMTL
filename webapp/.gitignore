@@ -1,0 +1,10 @@
+.bundle
+.debug
+.irb-history
+*.dump
+db/*.sqlite3
+log/*.log
+log/*.pid
+tmp/**/*
+db/*
+.DS_Store

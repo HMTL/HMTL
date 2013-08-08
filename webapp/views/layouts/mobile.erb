@@ -1,0 +1,26 @@
+<!DOCTYPE html> 
+<html> 
+	<head> 
+		<title><%= render_partial :title %></title>
+		<meta charset="utf-8"> 
+		<meta name="viewport" content="width=device-width">
+		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.css" />
+        <%= javascript_script_tag "js/jquery.js" %>
+		<script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
+	</head> 
+	
+	<body> 
+	
+		<div data-role="page"> 
+			<div data-role="header">
+				<h1>Sinatra Boilerplate</h1>
+			</div> 
+			
+			<div data-role="content">
+				<h2>Bootstrap your Sinatra Web Development</h2>
+				<%= yield %>
+			</div> 
+		</div>
+	
+	</body>
+</html>
