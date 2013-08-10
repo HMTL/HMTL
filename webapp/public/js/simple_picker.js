@@ -4,6 +4,7 @@
 */
 
 function SimplePicker(hueElementId,satvalElementId,wellElementId){
+	var self = this;
 	this.hueElement = document.getElementById(hueElementId);
 	if(this.hueElement.offsetHeight > this.hueElement.offsetWidth){
 		this.verticalHue = true;
@@ -303,7 +304,11 @@ function SimplePicker(hueElementId,satvalElementId,wellElementId){
 		this.chosenY = (this.lightness * this.satvalElement.offsetHeight);
 	}
 
-	this.updateDisplay = function(){
+	this.updateDisplay = function(force){
+		if(!force) {
+			console.log('Did not happen');
+			return;
+		}
 		this.drawSpectrum();
 		this.drawSV();
 		this.calculateSVBullsEyeLocation();

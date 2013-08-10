@@ -9,11 +9,26 @@ ko.bindingHandlers.simplePicker = {
         	return el.attr('id');
         };
 
+        /*
+        	comment this out to update continuously upon slider move
+			(slow on tablet/mobile)
+        */
+        //////////////////////////////////////////////////////////////////////
+        var actually_update_display = function() {
+        	mypicker.updateDisplay(true);
+        }
+        mypicker.only_update_when_done_moving = true;
+        $(element).on('touchend', actually_update_display);
+        $(element).on('touchcancel', actually_update_display);
+        $(element).on('mouseup', actually_update_display);
+        //////////////////////////////////////////////////////////////////////
+
         var mypicker = new SimplePicker(id_of('huewell'),id_of('slwell'),id_of('resultwell'));
 	    mypicker.setRGBRangeControls(id_of("red"),id_of("green"),id_of("blue"));
 	    mypicker.setHSLRangeControls(id_of("hue"),id_of("saturation"),id_of("lightness"));
 	    mypicker.setHSLInput(id_of("hslval"));
 	    mypicker.setRGBInput(id_of("rgbval"));
+	    
     },
     update: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
         // This will be called once when the binding is first applied to an element,
