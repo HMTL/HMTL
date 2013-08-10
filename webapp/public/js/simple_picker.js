@@ -305,7 +305,7 @@ function SimplePicker(hueElementId,satvalElementId,wellElementId){
 	}
 
 	this.updateDisplay = function(force){
-		if(!force) {
+		if(self.only_update_when_done_moving && !force) {
 			console.log('Did not happen');
 			return;
 		}
