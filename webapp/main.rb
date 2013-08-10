@@ -13,8 +13,5 @@ Dir["./app/models/*.rb"].each { |file| require file }
 Dir["./app/helpers/*.rb"].each { |file| require file }
 Dir["./app/controllers/*.rb"].each { |file| require file }
 
-before "/*" do 
-  set :erb, :layout => :layout
-end
 
 #DataMapper.auto_upgrade!
