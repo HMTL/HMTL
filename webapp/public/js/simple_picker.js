@@ -305,6 +305,21 @@ function SimplePicker(hueElementId,satvalElementId,wellElementId){
 	}
 
 	this.updateDisplay = function(force){
+		// console.log('Update display');
+
+		if(self.update_delay_time && !force) {
+			
+			if(!self.update_locked) {
+				self.update_locked = true;
+				window.setTimeout(function(){
+					self.update_locked = false;
+				}, self.update_delay_time);
+			} else {
+				// console.log("Update stopped");
+				return;
+			}
+		}
+
 		if(self.only_update_when_done_moving && !force) {
 			console.log('Did not happen');
 			return;
