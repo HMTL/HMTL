@@ -6,3 +6,10 @@ General
 
 - UtilSlave
   * Read/write data about connections
+
+- Finish configuration reading and writing
+
+- Convert pixel code to a class
+  - Convert routines to timed/async rather than blocking
+
+- Make a fade from x to y in ms function

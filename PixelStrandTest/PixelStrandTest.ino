@@ -27,8 +27,8 @@ Example sketch for driving Adafruit WS2801 pixels!
 // Can be any valid output pins.
 // The colors of the wires may be totally different so
 // BE SURE TO CHECK YOUR PIXELS TO SEE WHICH WIRES TO USE!
-uint8_t dataPin  = 6;    // Yellow wire on Adafruit Pixels
-uint8_t clockPin = 5;    // Green wire on Adafruit Pixels
+uint8_t dataPin  = 8;    // Yellow wire on Adafruit Pixels // Blue
+uint8_t clockPin = 12;    // Green wire on Adafruit Pixels // Green
 
 // Don't forget to connect the ground wire to Arduino ground,
 // and the +5V wire to a +5V supply
@@ -54,6 +54,9 @@ void setup() {
   strip.begin();
 
   // Update LED contents, to start they are all 'off'
+  for (int i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, 0);
+  }
   strip.show();
 }
 
@@ -61,10 +64,10 @@ void setup() {
 void loop() {
   // Some example procedures showing how to display to the pixels
   
-//  colorWipe(Color(255, 0, 0), 50);
-//  colorWipe(Color(0, 255, 0), 50);
-//  colorWipe(Color(0, 0, 255), 50);
-  rainbow(20);
+//  colorWipe(Color(255, 0, 0), 500);
+//  colorWipe(Color(0, 255, 0), 500);
+//  colorWipe(Color(0, 0, 255), 500);
+//  rainbow(20);
   rainbowCycle(20);
 }
 

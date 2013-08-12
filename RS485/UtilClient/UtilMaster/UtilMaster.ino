@@ -16,7 +16,7 @@
 #define PIN_LIGHT_SENSE A0
 
 #define PIN_RS485_1     2
-#define PIN_RS485_2     3
+#define PIN_RS485_2     7 // XXX: This changed from 3 on the old ones
 #define PIN_RS485_3     4
 
 #define PIN_OUTPUT1     9
@@ -27,7 +27,7 @@
 
 RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 
-#define NUM_SLAVES 1
+#define NUM_SLAVES 3
 #define NUM_OUTPUTS 3
 boolean output_value[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 0, 0},

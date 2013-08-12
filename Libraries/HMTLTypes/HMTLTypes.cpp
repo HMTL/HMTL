@@ -19,6 +19,8 @@ int hmtl_output_size(output_hdr_t *output)
         return sizeof (config_rgb_t);
       case HMTL_OUTPUT_PROGRAM:
         return sizeof (config_program_t);
+      case HMTL_OUTPUT_PIXELS:
+        return sizeof (config_pixels_t);
       default:
         DEBUG_ERR(F("hmtl_output_size: bad output type"));
         return -1;    
@@ -102,40 +104,54 @@ void hmtl_default_config(config_hdr_t *hdr)
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
   DEBUG_VALUE(0, "hmtl_print_config: mag: ", hdr->magic);
-  DEBUG_VALUE(0, " ver: ", hdr->version);
-  DEBUG_VALUE(0, " add: ", hdr->address);
-  DEBUG_VALUELN(0, " out: ", hdr->num_outputs);
+  DEBUG_VALUE(0, " version: ", hdr->version);
+  DEBUG_VALUE(0, " address: ", hdr->address);
+  DEBUG_VALUELN(0, " outputs: ", hdr->num_outputs);
 
   for (int i = 0; i < hdr->num_outputs; i++) {
-    output_hdr_t *out1 = (output_hdr_t *)&outputs[i];
-    DEBUG_VALUE(0, "type=", out1->type);
+    output_hdr_t *out1 = (output_hdr_t *)outputs[i];
+    DEBUG_VALUE(0, "addr=", (int)out1);
+    DEBUG_VALUE(0, " type=", out1->type);
     DEBUG_VALUE(0, " out=", out1->output);
     DEBUG_PRINT(0, " - ");
     switch (out1->type) {
         case HMTL_OUTPUT_VALUE: 
         {
           config_value_t *out2 = (config_value_t *)out1;
-          DEBUG_VALUE(0, "pin=", out2->pin);
+          DEBUG_VALUE(0, "value pin=", out2->pin);
           DEBUG_VALUELN(0, " val=", out2->value);
           break;
         }
         case HMTL_OUTPUT_RGB:
         {
           config_rgb_t *out2 = (config_rgb_t *)out1;
-          DEBUG_VALUE(0, "pin0=", out2->pins[0]);
+          DEBUG_VALUE(0, "rgb pin0=", out2->pins[0]);
           DEBUG_VALUE(0, " pin1=", out2->pins[1]);
           DEBUG_VALUE(0, " pin2=", out2->pins[2]);
           DEBUG_VALUE(0, " val0=", out2->values[0]);
           DEBUG_VALUE(0, " val1=", out2->values[1]);
-          DEBUG_VALUE(0, " val2=", out2->values[2]);
+          DEBUG_VALUELN(0, " val2=", out2->values[2]);
           break;
         }
         case HMTL_OUTPUT_PROGRAM:
         {
           config_program_t *out2 = (config_program_t *)out1;
-          DEBUG_VALUE(0, "val=", out2->value);
+          DEBUG_VALUELN(0, "program val=", out2->value);
           break;
         }
+        case HMTL_OUTPUT_PIXELS:
+        {
+          config_pixels_t *out2 = (config_pixels_t *)out1;
+          DEBUG_VALUE(0, "pixels clock=", out2->clockPin);
+          DEBUG_VALUE(0, " data=", out2->dataPin);
+          DEBUG_VALUELN(0, " num=", out2->numPixels);
+          break;
+        }
+        default:
+        {
+          DEBUG_PRINTLN(0, "Unknown type");
+          break;
+        }        
     }
   }
 }

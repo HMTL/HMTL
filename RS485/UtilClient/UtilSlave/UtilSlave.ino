@@ -33,10 +33,11 @@ void setup()
   Serial.begin(9600);
 
   /* Attempt to read the configuration */
-  if (hmtl_read_config(&config, outputs, MAX_OUTPUTS) < 0) { // XXX - Need to switch
+  if (hmtl_read_config(&config, outputs, MAX_OUTPUTS) < 0) {
     hmtl_default_config(&config);
     DEBUG_PRINTLN(DEBUG_LOW, "Using default config");
   }
+  DEBUG_COMMAND(DEBUG_HIGH, hmtl_print_config(&config, outputs));
 
   // XXX - Continue to convert to reading outputs
 
