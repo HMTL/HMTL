@@ -46,42 +46,25 @@ void setup() {
 
   for (int i = 0; i < config.num_outputs; i++) {
     output_hdr_t *out1 = (output_hdr_t *)outputs[i];
-    DEBUG_VALUE(DEBUG_HIGH, "out type=", out1->type);
+    hmtl_setup_output((output_hdr_t *)outputs[i]);
+
     switch (out1->type) {
-        case HMTL_OUTPUT_VALUE: 
-        {
-          config_value_t *out2 = (config_value_t *)out1;
-          pinMode(out2->pin, OUTPUT);
-          break;
-        }
-        case HMTL_OUTPUT_RGB:
-        {
-          config_rgb_t *out2 = (config_rgb_t *)out1;
-          DEBUG_PRINT(DEBUG_HIGH, " rgb");
-          for (int j = 0; j < 3; j++) {
-            pinMode(out2->pins[j], OUTPUT);
-          }
-          break;
-        }
-        case HMTL_OUTPUT_PROGRAM:
-        {
-          config_program_t *out2 = (config_program_t *)out1;
-          break;
-        }
-        case HMTL_OUTPUT_PIXELS:
-        {
-          config_pixels_t *out2 = (config_pixels_t *)out1;
-          pixels = Adafruit_WS2801(out2->numPixels,
-                                   out2->dataPin,
-                                   out2->clockPin);
-          pixels.begin();
-          pixels.show();
-          break;
-        }
-        default:
-        {
-        }
-    }
+      case HMTL_OUTPUT_PIXELS:
+      {
+        config_pixels_t *out2 = (config_pixels_t *)out1;
+        pixels = Adafruit_WS2801(out2->numPixels,
+                                 out2->dataPin,
+                                 out2->clockPin);
+        pixels.begin();
+        pixels.show();
+        break;
+      }
+      default:
+      {
+        
+      }
+  }
+
   }
 }
 
@@ -89,6 +72,7 @@ void setup() {
 void loop() {
 
   for (int i = 0; i < config.num_outputs; i++) {
+
     output_hdr_t *out1 = (output_hdr_t *)outputs[i];
     switch (out1->type) {
         case HMTL_OUTPUT_VALUE: 

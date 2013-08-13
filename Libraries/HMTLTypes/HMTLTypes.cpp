@@ -90,6 +90,54 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
   return 1;
 }
 
+/* Initialized the pins of an output */
+int hmtl_setup_output(output_hdr_t *hdr)
+{
+  DEBUG_VALUE(DEBUG_HIGH, "out type=", hdr->type);
+  switch (hdr->type) {
+      case HMTL_OUTPUT_VALUE: 
+      {
+        config_value_t *out = (config_value_t *)hdr;
+        pinMode(out->pin, OUTPUT);
+        break;
+      }
+      case HMTL_OUTPUT_RGB:
+      {
+        config_rgb_t *out = (config_rgb_t *)hdr;
+        DEBUG_PRINT(DEBUG_HIGH, " rgb");
+        for (int j = 0; j < 3; j++) {
+          pinMode(out->pins[j], OUTPUT);
+        }
+        break;
+      }
+      case HMTL_OUTPUT_PROGRAM:
+      {
+//        config_program_t *out = (config_program_t *)hdr;
+        break;
+      }
+      case HMTL_OUTPUT_PIXELS:
+      {
+//        config_pixels_t *out = (config_pixels_t *)hdr;
+        /* XXX - How to do remotely?
+           pixels = Adafruit_WS2801(out->numPixels,
+           out->dataPin,
+           out->clockPin);
+           pixels.begin();
+           pixels.show();
+        */
+        break;
+      }
+      default:
+      {
+        DEBUG_VALUELN(DEBUG_ERROR, F("Invalid type"), hdr->type);
+        return -1;
+      }
+  }
+
+  return 0;
+}
+
+
 /* Fill in a config with default values */
 void hmtl_default_config(config_hdr_t *hdr)
 {
