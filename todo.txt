@@ -5,7 +5,7 @@ Immediate
 General
 
 - UtilSlave
-  * Read/write data about connections
+  * Read data about connections
 
 - Finish configuration reading and writing
 
@@ -13,3 +13,7 @@ General
   - Convert routines to timed/async rather than blocking
 
 - Make a fade from x to y in ms function
+
+- Add class around outputs, to allow for more state
+
+- Add transport mechanism (ie RS485) to the config

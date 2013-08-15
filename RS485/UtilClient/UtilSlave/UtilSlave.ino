@@ -12,9 +12,24 @@
 #include "HMTLTypes.h"
 #include "RS485Utils.h"
 
-RS485Socket rs485(2, 3, 4, false); //(DEBUG_LEVEL != 0));
 
-#define PIN_DEBUG_LED 13
+#define PIN_RS485_1     2
+#define PIN_RS485_2     7 // XXX: This changed from 3 on the old ones
+#define PIN_RS485_3     4
+
+#define PIN_DEBUG_LED  13
+
+RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
+
+// Pixel strand outputs
+Adafruit_WS2801 pixels;
+
+#define MAX_OUTPUTS 3
+config_hdr_t config;
+output_hdr_t *outputs[MAX_OUTPUTS];
+config_max_t readoutputs[MAX_OUTPUTS];
+
+
 
 #define NUM_OUTPUTS 3
 byte output_to_pin[NUM_OUTPUTS] = {

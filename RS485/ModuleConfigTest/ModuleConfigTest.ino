@@ -19,7 +19,7 @@
 #define PWM_STEP 2
 
 // Pixel strand outputs
-Adafruit_WS2801 pixels;
+PixelUtil pixels;
 
 #define MAX_OUTPUTS 3
 config_hdr_t config;
@@ -46,25 +46,7 @@ void setup() {
 
   for (int i = 0; i < config.num_outputs; i++) {
     output_hdr_t *out1 = (output_hdr_t *)outputs[i];
-    hmtl_setup_output((output_hdr_t *)outputs[i]);
-
-    switch (out1->type) {
-      case HMTL_OUTPUT_PIXELS:
-      {
-        config_pixels_t *out2 = (config_pixels_t *)out1;
-        pixels = Adafruit_WS2801(out2->numPixels,
-                                 out2->dataPin,
-                                 out2->clockPin);
-        pixels.begin();
-        pixels.show();
-        break;
-      }
-      default:
-      {
-        
-      }
-  }
-
+    hmtl_setup_output((output_hdr_t *)outputs[i], &pixels);
   }
 }
 
@@ -93,18 +75,17 @@ void loop() {
         }
         case HMTL_OUTPUT_PROGRAM:
         {
-          config_program_t *out2 = (config_program_t *)out1;
+//          config_program_t *out2 = (config_program_t *)out1;
           break;
         }
         case HMTL_OUTPUT_PIXELS:
         {
-          
-          config_pixels_t *out2 = (config_pixels_t *)out1;
+//          config_pixels_t *out2 = (config_pixels_t *)out1;
           static int currentPixel = 0;
-          pixels.setPixelColor(currentPixel, 0);
+          pixels.setPixelRGB(currentPixel, 0, 0, 0);
           currentPixel = (currentPixel + 1) % pixels.numPixels();
-          pixels.setPixelColor(currentPixel, pixel_color(255, 0, 0));
-          pixels.show();
+          pixels.setPixelRGB(currentPixel, 255, 0, 0);
+          pixels.update();
           break;
         }
     }

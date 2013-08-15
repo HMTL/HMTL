@@ -9,6 +9,7 @@
 
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
+#include "PixelUtil.h"
 
 int hmtl_output_size(output_hdr_t *output) 
 {
@@ -91,13 +92,14 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 }
 
 /* Initialized the pins of an output */
-int hmtl_setup_output(output_hdr_t *hdr)
+int hmtl_setup_output(output_hdr_t *hdr, void *data)
 {
-  DEBUG_VALUE(DEBUG_HIGH, "out type=", hdr->type);
+  DEBUG_VALUE(DEBUG_HIGH, "setup_output: type=", hdr->type);
   switch (hdr->type) {
       case HMTL_OUTPUT_VALUE: 
       {
         config_value_t *out = (config_value_t *)hdr;
+        DEBUG_PRINT(DEBUG_HIGH, " value");
         pinMode(out->pin, OUTPUT);
         break;
       }
@@ -117,14 +119,15 @@ int hmtl_setup_output(output_hdr_t *hdr)
       }
       case HMTL_OUTPUT_PIXELS:
       {
-//        config_pixels_t *out = (config_pixels_t *)hdr;
-        /* XXX - How to do remotely?
-           pixels = Adafruit_WS2801(out->numPixels,
-           out->dataPin,
-           out->clockPin);
-           pixels.begin();
-           pixels.show();
-        */
+        if (data != NULL) {
+          config_pixels_t *out = (config_pixels_t *)hdr;
+          PixelUtil *pixels = (PixelUtil *)data;
+          *pixels = PixelUtil(out->numPixels,
+                              out->dataPin,
+                              out->clockPin);
+        } else {
+          DEBUG_ERR(F("Expect PixelUtil data struct for pixel configs"));
+        }
         break;
       }
       default:

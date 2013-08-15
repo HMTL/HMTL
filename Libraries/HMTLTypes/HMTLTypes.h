@@ -4,6 +4,11 @@
 #ifndef HMTLTYPES_H
 #define HMTLTYPES_H
 
+#include "SPI.h"
+#include "Adafruit_WS2801.h"
+
+#include "PixelUtil.h"
+
 /******************************************************************************
  * Transport-agnostic message types
  */
@@ -83,6 +88,6 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
-int hmtl_setup_output(output_hdr_t *hdr);
+int hmtl_setup_output(output_hdr_t *hdr, void *data);
 
 #endif
