@@ -4,11 +4,6 @@
 #ifndef HMTLTYPES_H
 #define HMTLTYPES_H
 
-#include "SPI.h"
-#include "Adafruit_WS2801.h"
-
-#include "PixelUtil.h"
-
 /******************************************************************************
  * Transport-agnostic message types
  */
@@ -34,8 +29,17 @@ typedef struct {
 
 typedef struct {
   output_hdr_t hdr;
-  byte rgb[3];
-} msg_rgb_t;  
+  byte values[3];
+} msg_rgb_t;
+
+#define MAX_PROGRAM_VAL 12
+typedef struct {
+  output_hdr_t hdr;
+  byte val[3];
+  byte values[MAX_PROGRAM_VAL];
+} msg_program_t;
+
+typedef msg_rgb_t msg_max_t;
 
 /******************************************************************************
  * Module configuration
@@ -70,7 +74,7 @@ typedef struct {
 
 typedef struct {
   output_hdr_t hdr;
-  int value;
+  int values[MAX_PROGRAM_VAL];
 } config_program_t;
 
 typedef struct {
@@ -81,7 +85,8 @@ typedef struct {
 } config_pixels_t;
 
 typedef config_rgb_t config_max_t; // Set to the largest output structure
-  
+
+uint16_t hmtl_msg_size(output_hdr_t *output);
 
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
@@ -89,5 +94,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 int hmtl_setup_output(output_hdr_t *hdr, void *data);
+int hmtl_update_output(output_hdr_t *hdr, void *data);
+int hmtl_test_output(output_hdr_t *hdr, void *data);
 
 #endif

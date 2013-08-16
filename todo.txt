@@ -2,10 +2,16 @@ TODO LIST
 ---------
 Immediate
 
+- Verify initialization of pixel strands still works correctly in ModuleConfigTest
+
 General
 
 - UtilSlave
-  * Read data about connections
+  * Test?  Fake change generator?
+
+- UtilMaster
+  * In-memory config
+  * Write data to connections
 
 - Finish configuration reading and writing
 

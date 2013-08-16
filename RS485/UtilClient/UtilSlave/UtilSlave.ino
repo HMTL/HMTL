@@ -2,6 +2,8 @@
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
+#include "SPI.h"
+#include "Adafruit_WS2801.h"
 
 
 #define DEBUG_LEVEL DEBUG_HIGH
@@ -10,6 +12,7 @@
 #include "GeneralUtils.h"
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
+#include "PixelUtil.h"
 #include "RS485Utils.h"
 
 
@@ -29,75 +32,58 @@ config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 config_max_t readoutputs[MAX_OUTPUTS];
 
-
-
-#define NUM_OUTPUTS 3
-byte output_to_pin[NUM_OUTPUTS] = {
-  10, 11, 12
-};
-byte output_value[NUM_OUTPUTS] = {
-  0, 0, 0,
-};
-
-#define MAX_OUTPUTS 3
-config_hdr_t config;
-config_max_t outputs[MAX_OUTPUTS];
-
-void setup()
-{
+void setup() {
   Serial.begin(9600);
-
+  
   /* Attempt to read the configuration */
-  if (hmtl_read_config(&config, outputs, MAX_OUTPUTS) < 0) {
+  if (hmtl_read_config(&config, readoutputs, MAX_OUTPUTS) < 0) {
     hmtl_default_config(&config);
     DEBUG_PRINTLN(DEBUG_LOW, "Using default config");
   }
+  if (config.num_outputs > MAX_OUTPUTS) {
+    DEBUG_VALUELN(0, "Too many outputs:", config.num_outputs);
+    config.num_outputs = MAX_OUTPUTS;
+  }
+  for (int i = 0; i < config.num_outputs; i++) {
+    outputs[i] = (output_hdr_t *)&readoutputs[i];
+  }
   DEBUG_COMMAND(DEBUG_HIGH, hmtl_print_config(&config, outputs));
 
-  // XXX - Continue to convert to reading outputs
-
-  for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
-    int pin = output_to_pin[output_index];
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, LOW);
+  /* Initialize the outputs */
+  for (int i = 0; i < config.num_outputs; i++) {
+    hmtl_setup_output((output_hdr_t *)outputs[i], &pixels);
   }
 
-  pinMode(PIN_DEBUG_LED, OUTPUT);  // driver output enable
-
+  /* Setup the RS485 connection */  
   rs485.setup();
-
-  DEBUG_VALUELN(DEBUG_HIGH, "address=", config.address);
 }
-
 
 boolean b = false;
 
-boolean update;
+boolean updated[MAX_OUTPUTS] = { false, false, false };
 
 void loop() {
-  update = false;
-
   /* Check for messages to this address */
   read_state();
 
+#if 1
+  /* Populate the outputs with test data */
+  for (int i = 0; i < config.num_outputs; i++) {
+    hmtl_test_output(outputs[i], &pixels);
+    updated[i] = true;
+  }
+#endif
+
   /* If state changed then updated all outputs */
-  if (update) {
-    for (int output_index = 0; output_index < NUM_OUTPUTS; output_index++) {
-      int pin = output_to_pin[output_index];
-      if (pin_is_PWM(pin)) {
-        if (output_value[pin] == 0) digitalWrite(pin, LOW);
-        else if (output_value[pin] == 255) digitalWrite(pin, HIGH);
-        else analogWrite(pin, output_value[pin]);
-      } else {
-        if (output_value[pin] > 0) digitalWrite(pin, HIGH);
-        else digitalWrite(pin, LOW);
-      }
+  for (int i = 0; i < config.num_outputs; i++) {
+    if (updated[i]) {
+      output_hdr_t *out = outputs[i];
+      hmtl_update_output(out, &pixels);
+      updated[i] = false;
     }
   }
 
   blink_value(PIN_DEBUG_LED, config.address, 500, 4);
-
-  //delay(100);
 }
 
 void read_state() 
@@ -107,37 +93,69 @@ void read_state()
   const byte *data = rs485.getMsg(config.address, &msglen);
 
   if (data != NULL) {
-    if (msglen < sizeof (msg_output_value_t)) {
-      DEBUG_ERR("ERROR: msglen less than message size");
+    if (msglen < sizeof (output_hdr_t)) {
+      DEBUG_ERR(F("ERROR: read_state: msglen less than minimum size"));
       return;
     }
 
-    msg_output_value_t *msg = (msg_output_value_t *)data;
-    unsigned int processed = 0;
+    output_hdr_t *hdr = (output_hdr_t *)data;
+    if (hdr->output >= config.num_outputs) {
+      DEBUG_ERR(F("ERROR: read_state: too many outputs"));
+      return;
+    }
 
-    DEBUG_VALUE(DEBUG_HIGH, "read_state:", msglen);
-    do {
-      if (processed > (msglen - sizeof (msg_output_value_t))) {
-        DEBUG_ERR("ERROR: read_state: msg_len wasn't multiple of "
-                  "msg_output_value_t");
-        break;
-      }
+    output_hdr_t *out = outputs[hdr->output];
+    if (hdr->type != out->type) {
+      DEBUG_ERR(F("ERROR: read_state: wrong type for output"));
+      return;
+    }
+    if (msglen < hmtl_msg_size(hdr)) {
+      DEBUG_ERR(F("ERROR: read_state: msglen less than type's size"));
+      return;
+    }
 
-      DEBUG_HEXVAL(DEBUG_HIGH, " ", msg->output);
-      DEBUG_HEXVAL(DEBUG_HIGH, ":", msg->value);
-
-      if (msg->output > NUM_OUTPUTS) {
-        /* XXX: Just print something if the output is invalid? */
-        DEBUG_PRINT(DEBUG_HIGH, "*");
-      } else {
-        output_value[output_to_pin[msg->output]] = msg->value;
-      }
-
-      processed += sizeof (msg_output_value_t);
-      msg = msg + 1;
-    } while (processed < msglen);
+    switch (hdr->type) {
+        case HMTL_OUTPUT_VALUE: 
+        {
+          msg_value_t *val = (msg_value_t *)hdr;
+          config_value_t *out2 = (config_value_t *)out;
+          out2->value = val->value;
+          break;
+        }
+        case HMTL_OUTPUT_RGB:
+        {
+          msg_rgb_t *rgb = (msg_rgb_t *)hdr;
+          config_rgb_t *out2 = (config_rgb_t *)out;
+          out2->values[0] = rgb->values[0];
+          out2->values[1] = rgb->values[1];
+          out2->values[2] = rgb->values[2];
+          break;
+        }
+        case HMTL_OUTPUT_PROGRAM:
+        {
+          msg_program_t *prog = (msg_program_t *)hdr;
+          config_program_t *out2 = (config_program_t *)out;
+          for (int i = 0; i < MAX_PROGRAM_VAL; i++) {
+            out2->values[i] = prog->values[i];
+          }
+          break;
+        }
+        case HMTL_OUTPUT_PIXELS:
+        {
+/*
+  XXX - This should do something, probably a program of some sort
+          config_pixels_t *out2 = (config_pixels_t *)out;
+          static int currentPixel = 0;
+          pixels.setPixelRGB(currentPixel, 0, 0, 0);
+          currentPixel = (currentPixel + 1) % pixels.numPixels();
+          pixels.setPixelRGB(currentPixel, 255, 0, 0);
+          pixels.update();
+          break;
+*/
+        }
+    }
     Serial.println();
 
-    update = true;
+    updated[hdr->output] = true;
   }
 }

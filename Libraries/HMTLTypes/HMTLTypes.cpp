@@ -28,6 +28,22 @@ int hmtl_output_size(output_hdr_t *output)
   }
 }
 
+uint16_t hmtl_msg_size(output_hdr_t *output) 
+{
+  switch (output->type) {
+      case HMTL_OUTPUT_VALUE:
+        return sizeof (msg_value_t);
+      case HMTL_OUTPUT_RGB:
+        return sizeof (msg_rgb_t);
+      case HMTL_OUTPUT_PROGRAM:
+        return sizeof (msg_program_t);
+      case HMTL_OUTPUT_PIXELS:
+        return sizeof (msg_program_t);
+      default:
+        DEBUG_ERR(F("hmtl_output_size: bad output type"));
+        return 0;    
+  }
+}
 
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs) 
@@ -140,6 +156,90 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
   return 0;
 }
 
+/* Perform an update of an output */
+int hmtl_update_output(output_hdr_t *hdr, void *data) 
+{
+  switch (hdr->type) {
+      case HMTL_OUTPUT_VALUE: 
+      {
+        config_value_t *out = (config_value_t *)hdr;
+        analogWrite(out->pin, out->value);
+        break;
+      }
+      case HMTL_OUTPUT_RGB:
+      {
+        config_rgb_t *out = (config_rgb_t *)hdr;
+        for (int j = 0; j < 3; j++) {
+          analogWrite(out->pins[j], out->values[j]);
+        }
+        break;
+      }
+      case HMTL_OUTPUT_PROGRAM:
+      {
+//          config_program_t *out = (config_program_t *)hdr;
+        break;
+      }
+      case HMTL_OUTPUT_PIXELS:
+      {
+        PixelUtil *pixels = (PixelUtil *)data;
+        pixels->update();
+        break;
+      }
+      default: 
+      {
+        DEBUG_ERR(F("hmtl_update_output: unknown type"));
+        return -1;
+      }
+  }
+
+  return 0;
+}
+
+/* Update the output with test data */
+#define TEST_MAX_VAL 128
+#define TEST_PWM_STEP  1
+int hmtl_test_output(output_hdr_t *hdr, void *data) 
+{
+  switch (hdr->type) {
+      case HMTL_OUTPUT_VALUE: 
+      {
+        config_value_t *out = (config_value_t *)hdr;
+        out->value = (out->value + TEST_PWM_STEP) % TEST_MAX_VAL;
+        break;
+      }
+      case HMTL_OUTPUT_RGB:
+      {
+        config_rgb_t *out = (config_rgb_t *)hdr;
+        for (int j = 0; j < 3; j++) {
+          out->values[j] = (out->values[j] + TEST_PWM_STEP + j) % TEST_MAX_VAL;
+        }
+        break;
+      }
+      case HMTL_OUTPUT_PROGRAM:
+      {
+//          config_program_t *out = (config_program_t *)hdr;
+        break;
+      }
+      case HMTL_OUTPUT_PIXELS:
+      {
+//          config_pixels_t *out = (config_pixels_t *)hdr;
+        PixelUtil *pixels = (PixelUtil *)data;
+        static int currentPixel = 0;
+        pixels->setPixelRGB(currentPixel, 0, 0, 0);
+        currentPixel = (currentPixel + 1) % pixels->numPixels();
+        pixels->setPixelRGB(currentPixel, 255, 0, 0);
+        break;
+      }
+      default: 
+      {
+        DEBUG_ERR(F("hmtl_test_output: unknown type"));
+        return -1;
+      }
+
+  }
+
+  return 0;
+}
 
 /* Fill in a config with default values */
 void hmtl_default_config(config_hdr_t *hdr)
@@ -187,7 +287,10 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
         case HMTL_OUTPUT_PROGRAM:
         {
           config_program_t *out2 = (config_program_t *)out1;
-          DEBUG_VALUELN(0, "program val=", out2->value);
+          DEBUG_PRINTLN(0, "program");
+          for (int i = 0; i < MAX_PROGRAM_VAL; i++) {
+            DEBUG_VALUELN(0, " val=", out2->values[i]);
+          }
           break;
         }
         case HMTL_OUTPUT_PIXELS:

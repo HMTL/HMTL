@@ -111,6 +111,8 @@ void setup()
     }
   }
 
+  // XXX: Perform output validation, check that pins are used only once, etc
+
   pinMode(PIN_DEBUG_LED, OUTPUT);
 }
 
