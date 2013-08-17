@@ -5,6 +5,9 @@ gem 'sinatra-static-assets', '1.0.3'
 gem 'thin'
 gem 'websocket-rack', path: './local_gems/websocket-rack-master/'
 gem 'wirble'
+gem "yajl-ruby", "~> 1.1.0"
+gem "serialport"
+
 #gem 'data_mapper', '1.2.0'
 #gem 'json', '1.6.5'
 

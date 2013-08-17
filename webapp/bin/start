@@ -1,0 +1,2 @@
+#!/usr/bin/env ruby
+puts "bundle exec thin start -R config.ru"

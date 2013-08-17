@@ -33,6 +33,43 @@ ko.bindingHandlers.simplePicker = {
     }
 };
 
+var benchmark_post = function() {
+	var start_time = new Date().getTime();
+	$.post('/blah', {}, function(){
+		var receipt_time = new Date().getTime();
+		console.log("Took "+(receipt_time - start_time)+ "ms");
+	});
+};
+
+var CommandSocket = (function() {
+
+	var socket = new ReconnectingWebSocket('ws://'+window.location.host+'/command');
+
+	var bench_tmp = [];
+	var benchmark_count = 0;
+
+	socket.onmessage = function(ev) {
+		var data = JSON.parse(ev.data);
+		var handler;
+		if(data.handler && (handler = handlers[data.handler])) {
+			handler.process(data);
+		}
+	};
+
+	var handlers = {};
+
+	var register_handler = function(name, handler) {
+		handlers[name] = handler;
+	};
+
+	return {
+		register_handler = register_handler,
+		send: function(device, method, args) {
+			socket.send('lol');
+		}
+	}
+})();
+
 function AppViewModel() {
 	var template_picker = function(control) {
 		var template_name = control['type']();
@@ -40,10 +77,12 @@ function AppViewModel() {
 	};
 
 	var devices = ko.observableArray(window.devices.map(function(device){return new Device(device)}));
+	window.command_socket = CommandSocket;
 
 	return {
 		template_picker: template_picker,
-		devices: devices()
+		devices: devices(),
+		command_socket: CommandSocket
 	}
 };
 

@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "bundler/setup"
+
+require './main'
+
+require 'irb'
+require 'irb/completion'
+
+Bundler.setup(:no_irbtools)
+require 'wirble'
+Wirble.init
+Wirble.colorize
+
+ARGV.clear
+IRB.start
