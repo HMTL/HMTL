@@ -20,15 +20,15 @@ boolean wrote_config = false;
 
 #define PIN_DEBUG_LED 13
 
-#define MAX_OUTPUTS 3
+#define MAX_OUTPUTS 5
 
 config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 
-config_value_t val_output;
+config_value_t val_output, val_output2, val_output3, val_output4;
 config_rgb_t rgb_output, rgb_output2;
 config_pixels_t pixel_output;
-boolean force_write = false; // XXX - Should not be enabled except for debugging
+boolean force_write = true; // XXX - Should not be enabled except for debugging
 
 // Initialize from a 2D array [type][pin pin pin val val val], etc
 
@@ -40,13 +40,14 @@ void config_init()
   val_output.hdr.output = 0;
   val_output.pin = 11;
   val_output.value = 0;
-  outputs[out] = &val_output.hdr;   out++;
+//  outputs[out] = &val_output.hdr;   out++;
 
+#if 0
   rgb_output.hdr.type = HMTL_OUTPUT_RGB;
   rgb_output.hdr.output = 0;
-  rgb_output.pins[0] = 6;
-  rgb_output.pins[1] = 9;
-  rgb_output.pins[2] = 10;
+  rgb_output.pins[0] = 3;
+  rgb_output.pins[1] = 5;
+  rgb_output.pins[2] = 6;
   rgb_output.values[0] = 128;
   rgb_output.values[1] = 0;
   rgb_output.values[2] = 0;
@@ -60,17 +61,45 @@ void config_init()
   rgb_output2.values[0] = 0;
   rgb_output2.values[1] = 128;
   rgb_output2.values[2] = 0;
-//  outputs[out] = &rgb_output2.hdr;  out++;
+  outputs[out] = &rgb_output2.hdr;  out++;
 
   pixel_output.hdr.type = HMTL_OUTPUT_PIXELS;
   pixel_output.hdr.output = 2;
   pixel_output.clockPin = 12;
   pixel_output.dataPin = 8;
-  pixel_output.numPixels = 50;
-//  outputs[out] = &pixel_output.hdr; out++;
+  pixel_output.numPixels = 20;
+  pixel_output.type = WS2801_GRB; // WS2801_RGB;
+  outputs[out] = &pixel_output.hdr; out++;
+#else
+  val_output.hdr.type = HMTL_OUTPUT_VALUE;
+  val_output.hdr.output = 0;
+  val_output.pin = 3;
+  val_output.value = 64;
+  outputs[out] = &val_output.hdr;   out++;
 
+  val_output2.hdr.type = HMTL_OUTPUT_VALUE;
+  val_output2.hdr.output = 1;
+  val_output2.pin = 5;
+  val_output2.value = 128;
+  outputs[out] = &val_output2.hdr;   out++;
+
+  val_output3.hdr.type = HMTL_OUTPUT_VALUE;
+  val_output3.hdr.output = 2;
+  val_output3.pin = 6;
+  val_output3.value = 256;
+  outputs[out] = &val_output3.hdr;   out++;
+
+  val_output4.hdr.type = HMTL_OUTPUT_VALUE;
+  val_output4.hdr.output = 3;
+  val_output4.pin = 9;
+  val_output4.value = 0;
+  outputs[out] = &val_output4.hdr;   out++;
+
+#endif
+
+  
   hmtl_default_config(&config);
-  config.address = 0;
+  config.address = 2;
   config.num_outputs = out;
 }
 
