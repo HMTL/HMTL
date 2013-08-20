@@ -14,10 +14,12 @@
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
 
+#define PIN_DEBUG_LED  13
+
 // Pixel strand outputs
 PixelUtil pixels;
 
-#define MAX_OUTPUTS 3
+#define MAX_OUTPUTS 4
 config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 config_max_t readoutputs[MAX_OUTPUTS];
@@ -55,6 +57,8 @@ void loop() {
   for (int i = 0; i < config.num_outputs; i++) {
     hmtl_update_output(outputs[i], &pixels);
   }
+
+  blink_value(PIN_DEBUG_LED, config.address, 500, 4);
 
   delay(DELAY);
 }
