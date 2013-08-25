@@ -33,12 +33,12 @@ config_pixels_t pixel_output;
 
 #define TYPE_POOFER 1
 #define TYPE_LIGHTS 2
-#define MODE TYPE_POOFER
+#define MODE TYPE_LIGHTS
 
 #define ADDR_LIGHT1 0
 #define ADDR_LIGHT2 1
 #define ADDR_POOFER 2
-#define ADDRESS ADDR_POOFER
+#define ADDRESS ADDR_LIGHT1
 
 boolean force_write = true; // XXX - Should not be enabled except for debugging
 
@@ -110,6 +110,10 @@ void config_init()
   config.address = ADDRESS;
   config.num_outputs = out;
   config.flags = 0;
+
+  if (ADDRESS == ADDR_LIGHT1) {
+    config.flags |= HMTL_FLAG_MASTER | HMTL_FLAG_SERIAL;
+  }
 }
 
 
