@@ -16,6 +16,16 @@ typedef struct {
   byte value;
 } msg_output_value_t; // XXX Ditch me
 
+#define HMTL_MAX_MSG_LEN 128
+
+#define HMTL_MSG_START 'K'
+
+typedef struct {
+  byte startcode;
+  byte crc;
+  byte length;
+  byte address;
+} msg_hdr_t;
 
 typedef struct {
   byte type;
@@ -39,7 +49,7 @@ typedef struct {
   byte values[MAX_PROGRAM_VAL];
 } msg_program_t;
 
-typedef msg_rgb_t msg_max_t;
+typedef msg_program_t msg_max_t;
 
 /******************************************************************************
  * Module configuration
@@ -53,12 +63,16 @@ typedef struct {
   uint8_t     version;
   uint8_t     address;
   uint8_t     num_outputs;
+  uint8_t     flags;
 } config_hdr_t;
 
 #define HMTL_OUTPUT_VALUE   0x1
 #define HMTL_OUTPUT_RGB     0x2
 #define HMTL_OUTPUT_PROGRAM 0x3
 #define HMTL_OUTPUT_PIXELS  0x4
+
+#define HMTL_FLAG_MASTER 0x1
+#define HMTL_FLAG_SERIAL 0x2
 
 typedef struct {
   output_hdr_t hdr;
@@ -82,6 +96,7 @@ typedef struct {
   byte clockPin;
   byte dataPin;
   uint16_t numPixels;
+  byte type;
 } config_pixels_t;
 
 typedef config_rgb_t config_max_t; // Set to the largest output structure
@@ -96,5 +111,20 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 int hmtl_setup_output(output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
+
+
+
+int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
+
+
+#define HTML_MAX_OUT 6
+
+class HMTL_module 
+{
+  uint8_t address;
+
+  config_max_t outputs[HTML_MAX_OUT];
+};
+
 
 #endif

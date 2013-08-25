@@ -1,3 +1,6 @@
+/*
+ * This code instantiates a slave module
+ */
 
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
@@ -27,7 +30,7 @@ RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 // Pixel strand outputs
 Adafruit_WS2801 pixels;
 
-#define MAX_OUTPUTS 3
+#define MAX_OUTPUTS 5
 config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 config_max_t readoutputs[MAX_OUTPUTS];
@@ -66,7 +69,7 @@ void loop() {
   /* Check for messages to this address */
   read_state();
 
-#if 1
+#if 0
   /* Populate the outputs with test data */
   for (int i = 0; i < config.num_outputs; i++) {
     hmtl_test_output(outputs[i], &pixels);

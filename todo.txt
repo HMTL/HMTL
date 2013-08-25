@@ -23,3 +23,17 @@ General
 - Add class around outputs, to allow for more state
 
 - Add transport mechanism (ie RS485) to the config
+
+
+Real todo
+---------
+
+* Get generalized HMTLModule working that can be slave or master
+* Slave code in HMTLModule
+  - Test only mode
+* Changes to write a master config
+* Master code in HMTLModule
+  - Read from serial
+  - Set own outputs
+  - Retransmit to destination
+  - Test only mode

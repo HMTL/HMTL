@@ -28,9 +28,19 @@ output_hdr_t *outputs[MAX_OUTPUTS];
 config_value_t val_output, val_output2, val_output3, val_output4;
 config_rgb_t rgb_output, rgb_output2;
 config_pixels_t pixel_output;
-boolean force_write = true; // XXX - Should not be enabled except for debugging
 
 // Initialize from a 2D array [type][pin pin pin val val val], etc
+
+#define TYPE_POOFER 1
+#define TYPE_LIGHTS 2
+#define MODE TYPE_POOFER
+
+#define ADDR_LIGHT1 0
+#define ADDR_LIGHT2 1
+#define ADDR_POOFER 2
+#define ADDRESS ADDR_POOFER
+
+boolean force_write = true; // XXX - Should not be enabled except for debugging
 
 void config_init() 
 {
@@ -42,65 +52,64 @@ void config_init()
   val_output.value = 0;
 //  outputs[out] = &val_output.hdr;   out++;
 
-#if 0
-  rgb_output.hdr.type = HMTL_OUTPUT_RGB;
-  rgb_output.hdr.output = 0;
-  rgb_output.pins[0] = 3;
-  rgb_output.pins[1] = 5;
-  rgb_output.pins[2] = 6;
-  rgb_output.values[0] = 128;
-  rgb_output.values[1] = 0;
-  rgb_output.values[2] = 0;
-  outputs[out] = &rgb_output.hdr;   out++;
+  if (MODE == TYPE_LIGHTS) {
+    rgb_output.hdr.type = HMTL_OUTPUT_RGB;
+    rgb_output.hdr.output = 0;
+    rgb_output.pins[0] = 3;
+    rgb_output.pins[1] = 5;
+    rgb_output.pins[2] = 6;
+    rgb_output.values[0] = 128;
+    rgb_output.values[1] = 0;
+    rgb_output.values[2] = 0;
+    outputs[out] = &rgb_output.hdr;   out++;
 
-  rgb_output2.hdr.type = HMTL_OUTPUT_RGB;
-  rgb_output2.hdr.output = 1;
-  rgb_output2.pins[0] = 9;
-  rgb_output2.pins[1] = 10;
-  rgb_output2.pins[2] = 11;
-  rgb_output2.values[0] = 0;
-  rgb_output2.values[1] = 128;
-  rgb_output2.values[2] = 0;
-  outputs[out] = &rgb_output2.hdr;  out++;
+    rgb_output2.hdr.type = HMTL_OUTPUT_RGB;
+    rgb_output2.hdr.output = 1;
+    rgb_output2.pins[0] = 9;
+    rgb_output2.pins[1] = 10;
+    rgb_output2.pins[2] = 11;
+    rgb_output2.values[0] = 0;
+    rgb_output2.values[1] = 128;
+    rgb_output2.values[2] = 0;
+    outputs[out] = &rgb_output2.hdr;  out++;
 
-  pixel_output.hdr.type = HMTL_OUTPUT_PIXELS;
-  pixel_output.hdr.output = 2;
-  pixel_output.clockPin = 12;
-  pixel_output.dataPin = 8;
-  pixel_output.numPixels = 20;
-  pixel_output.type = WS2801_GRB; // WS2801_RGB;
-  outputs[out] = &pixel_output.hdr; out++;
-#else
-  val_output.hdr.type = HMTL_OUTPUT_VALUE;
-  val_output.hdr.output = 0;
-  val_output.pin = 3;
-  val_output.value = 64;
-  outputs[out] = &val_output.hdr;   out++;
+    pixel_output.hdr.type = HMTL_OUTPUT_PIXELS;
+    pixel_output.hdr.output = 2;
+    pixel_output.clockPin = 12;
+    pixel_output.dataPin = 8;
+    pixel_output.numPixels = 20;
+    pixel_output.type = WS2801_GRB; // WS2801_RGB;
+    outputs[out] = &pixel_output.hdr; out++;
+  } else if (MODE == TYPE_POOFER) {
+    val_output.hdr.type = HMTL_OUTPUT_VALUE;
+    val_output.hdr.output = 0;
+    val_output.pin = 3;
+    val_output.value = 0;
+    outputs[out] = &val_output.hdr;   out++;
 
-  val_output2.hdr.type = HMTL_OUTPUT_VALUE;
-  val_output2.hdr.output = 1;
-  val_output2.pin = 5;
-  val_output2.value = 128;
-  outputs[out] = &val_output2.hdr;   out++;
+    val_output2.hdr.type = HMTL_OUTPUT_VALUE;
+    val_output2.hdr.output = 1;
+    val_output2.pin = 5;
+    val_output2.value = 0;
+    outputs[out] = &val_output2.hdr;   out++;
 
-  val_output3.hdr.type = HMTL_OUTPUT_VALUE;
-  val_output3.hdr.output = 2;
-  val_output3.pin = 6;
-  val_output3.value = 256;
-  outputs[out] = &val_output3.hdr;   out++;
+    val_output3.hdr.type = HMTL_OUTPUT_VALUE;
+    val_output3.hdr.output = 2;
+    val_output3.pin = 6;
+    val_output3.value = 0;
+    outputs[out] = &val_output3.hdr;   out++;
 
-  val_output4.hdr.type = HMTL_OUTPUT_VALUE;
-  val_output4.hdr.output = 3;
-  val_output4.pin = 9;
-  val_output4.value = 0;
-  outputs[out] = &val_output4.hdr;   out++;
+    val_output4.hdr.type = HMTL_OUTPUT_VALUE;
+    val_output4.hdr.output = 3;
+    val_output4.pin = 9;
+    val_output4.value = 0;
+    outputs[out] = &val_output4.hdr;   out++;
+  }
 
-#endif
-
-  
   hmtl_default_config(&config);
-  config.address = 2;
+  config.address = ADDRESS;
   config.num_outputs = out;
+  config.flags = 0;
 }
 
 

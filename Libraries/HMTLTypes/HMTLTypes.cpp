@@ -140,7 +140,8 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
           PixelUtil *pixels = (PixelUtil *)data;
           *pixels = PixelUtil(out->numPixels,
                               out->dataPin,
-                              out->clockPin);
+                              out->clockPin,
+                              out->type);
         } else {
           DEBUG_ERR(F("Expect PixelUtil data struct for pixel configs"));
         }
@@ -204,7 +205,8 @@ int hmtl_test_output(output_hdr_t *hdr, void *data)
       case HMTL_OUTPUT_VALUE: 
       {
         config_value_t *out = (config_value_t *)hdr;
-        out->value = (out->value + TEST_PWM_STEP) % TEST_MAX_VAL;
+        out->value = 255;
+        //out->value = (out->value + TEST_PWM_STEP) % TEST_MAX_VAL;
         break;
       }
       case HMTL_OUTPUT_RGB:
@@ -248,6 +250,7 @@ void hmtl_default_config(config_hdr_t *hdr)
   hdr->version = HMTL_CONFIG_VERSION;
   hdr->address = 0;
   hdr->num_outputs = 0;
+  hdr->flags = 0;
   DEBUG_VALUELN(DEBUG_LOW, F("hmtl_default_config: address="), hdr->address);
 }
 
@@ -257,11 +260,12 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
   DEBUG_VALUE(0, "hmtl_print_config: mag: ", hdr->magic);
   DEBUG_VALUE(0, " version: ", hdr->version);
   DEBUG_VALUE(0, " address: ", hdr->address);
-  DEBUG_VALUELN(0, " outputs: ", hdr->num_outputs);
+  DEBUG_VALUE(0, " outputs: ", hdr->num_outputs);
+  DEBUG_VALUELN(0, " flags: ", hdr->flags);
 
   for (int i = 0; i < hdr->num_outputs; i++) {
     output_hdr_t *out1 = (output_hdr_t *)outputs[i];
-    DEBUG_VALUE(0, "addr=", (int)out1);
+    DEBUG_VALUE(0, "offset=", (int)out1);
     DEBUG_VALUE(0, " type=", out1->type);
     DEBUG_VALUE(0, " out=", out1->output);
     DEBUG_PRINT(0, " - ");
@@ -298,7 +302,8 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
           config_pixels_t *out2 = (config_pixels_t *)out1;
           DEBUG_VALUE(0, "pixels clock=", out2->clockPin);
           DEBUG_VALUE(0, " data=", out2->dataPin);
-          DEBUG_VALUELN(0, " num=", out2->numPixels);
+          DEBUG_VALUE(0, " num=", out2->numPixels);
+          DEBUG_VALUELN(0, " type=", out2->type);
           break;
         }
         default:
@@ -310,3 +315,209 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
   }
 }
 
+/* Process an incoming message for this module */
+int
+hmtl_handle_msg(msg_hdr_t *msg_hdr,
+                config_hdr_t *config_hdr, output_hdr_t *outputs[])
+{
+  output_hdr_t *msg = (output_hdr_t *)(msg_hdr++);
+  DEBUG_VALUE(DEBUG_HIGH, F("hmtl_handle_msg: type="), msg->type);
+  DEBUG_VALUE(DEBUG_HIGH, F(" out="), msg->output);
+
+  if (msg->output > config_hdr->num_outputs) {
+    DEBUG_ERR(F("hmtl_handle_msg: too many outputs"));
+    return -1;
+  }
+
+  output_hdr_t *out = outputs[msg->output];
+
+  switch (msg->type) {
+      case HMTL_OUTPUT_VALUE:
+      {
+        msg_value_t *msg2 = (msg_value_t *)msg_hdr;
+        switch (out->type) {
+            case HMTL_OUTPUT_VALUE:
+            {
+              config_value_t *val = (config_value_t *)out;
+              val->value = msg2->value;
+              DEBUG_VALUELN(DEBUG_HIGH, F(" val="), msg2->value);
+              break;
+            }
+            default:
+            {
+              DEBUG_VALUELN(DEBUG_ERROR, F("hmtl_handle_msg: invalid msg type for value output.  msg="), msg->type);
+              break;
+            }
+        }
+        break;
+      }
+
+      case HMTL_OUTPUT_RGB:
+      {
+        msg_rgb_t *msg2 = (msg_rgb_t *)msg_hdr;
+        switch (out->type) {
+            case HMTL_OUTPUT_RGB:
+            {
+              config_rgb_t *rgb = (config_rgb_t *)out;
+              DEBUG_PRINT(DEBUG_HIGH, " rgb=");
+              for (int i = 0; i < 3; i++) {
+                rgb->values[i] = msg2->values[i];
+                DEBUG_VALUE(DEBUG_HIGH, F(" "), msg2->values[i]);
+              }
+              DEBUG_PRINT(DEBUG_HIGH, ".");
+              break;
+            }
+
+//            XXX - Add handling of fade or other programs
+
+            default:
+            {
+              DEBUG_VALUELN(DEBUG_ERROR, F("hmtl_handle_msg: invalid msg type for rgb output.  msg="), msg->type);
+              break;
+            }
+
+        }
+        break;
+      }
+
+      case HMTL_OUTPUT_PROGRAM:
+//        XXX - Need to add timed on program
+        break;
+
+      case HMTL_OUTPUT_PIXELS:
+
+        break;
+  }
+
+  return -1;
+}
+
+/* Send this message to the destination module */
+int
+hmtl_transmit_msg(msg_hdr_t *msg_hdr) 
+{
+//  XXX
+  return -1;
+}
+
+/*
+ * Read in a message structure from the serial interface
+ */
+boolean
+hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr) 
+{
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)&msg[0];
+  byte offset = *offset_ptr;
+  boolean complete;
+
+  while (Serial.available()) {
+    if (offset > msg_len) {
+      /* Offset has exceed the buffer size, start fresh */
+      offset = 0;
+      DEBUG_ERR(F("hmtl_serial_update: exceed max msg len"));
+    }
+
+    byte val = Serial.read();
+
+    if (offset == 0) {
+      /* Wait for the start code at the beginning of the message */
+      if (val != HMTL_MSG_START) {
+        DEBUG_ERR(F("hmtl_serial_update: not start code"));
+        continue;
+      }
+
+      /* This is probably the beginning of the message */ 
+    }
+
+    msg[offset] = val;
+    offset++;
+
+    if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+      DEBUG_ERR(F("hmtl_serial_update: msg lenghth is too short"));
+      offset = 0;
+      continue;
+    }
+
+    if (offset >= sizeof (msg_hdr_t)) {
+      /* We have the entire message header */
+
+      if (offset == msg_hdr->length) {
+        /* This is a complete message */
+        complete = true;
+        break;
+      }
+    }
+  }
+
+  *offset_ptr = offset;
+  return complete;
+}
+
+/* Update configs based on serial commands */
+int
+hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]) 
+{
+  static byte msg[HMTL_MAX_MSG_LEN];
+  static byte offset = 0;
+  int read = 0;
+
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)&msg[0];
+
+  while (Serial.available()) {
+    if (offset > HMTL_MAX_MSG_LEN) {
+      /* Offset has exceed the buffer size, start fresh */
+      offset = 0;
+      DEBUG_ERR(F("hmtl_serial_update: exceed max msg len"));
+    }
+
+    byte val = Serial.read();
+
+    if (offset == 0) {
+      /* Wait for the start code at the beginning of the message */
+      if (val != HMTL_MSG_START) {
+        DEBUG_ERR(F("hmtl_serial_update: not start code"));
+        continue;
+      }
+
+      /* This is probably the beginning of the message */ 
+    }
+
+    msg[offset] = val;
+    offset++;
+    read++;
+
+    if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+      DEBUG_ERR(F("hmtl_serial_update: msg lenghth is too short"));
+      offset = 0;
+      continue;
+    }
+
+    if (offset >= sizeof (msg_hdr_t)) {
+      /* We have the entire message header */
+
+      if (offset == msg_hdr->length) {
+        /* This is a complete message */
+
+        // XXX - This is where we'd add CRC comparison
+
+        if (msg_hdr->address == config_hdr->address) {
+          /* The message is for this address, process it */
+          hmtl_handle_msg(msg_hdr, config_hdr, outputs);
+        } else if (config_hdr->flags & HMTL_FLAG_MASTER) {
+          /*
+           * We are the master node and this message is not for us,
+           * retransmit it.
+           */
+          hmtl_transmit_msg(msg_hdr);
+        } else {
+          DEBUG_ERR(F("hmtl_serial_update: not master, msg not for us"));
+        }
+        
+        /* Reset the offset to start on a new message */
+        offset = 0;
+      }
+    }
+  }
+
+  return read;
+}

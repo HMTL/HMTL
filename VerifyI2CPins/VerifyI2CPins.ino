@@ -1,3 +1,4 @@
+
 /*
  * This code is intended to verify that the I2C pins (A4 and A5) are working
  * correctly, for instance after stupid wiring mistakes.

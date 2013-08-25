@@ -27,7 +27,48 @@
 
 RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 
-#define NUM_SLAVES 3
+#define NUM_SLAVES  3
+#define MAX_OUTPUTS 5
+output_hdr_t *outputs[NUM_SLAVES][MAX_OUTPUTS];
+
+//XXX - We need a "module" class which includes the configs, as well as addresses and such.  Everything the slave modules includes, plus the master module
+
+HMTL_module modules[3];
+
+void config_init()
+{
+  HMTL_module *mod;
+
+  mod = modules[0];
+  mod->address = 0;
+
+  config_rgb_t *rgb;
+  config_pixles_t *pixel;
+
+  rgb = (config_rgb_t *)&mod->outputs[0];
+  rgb->hdr.type = HMTL_OUTPUT_RGB;
+  rgb->hdr.output = 0;
+  rgb->rgb[0] = 0;
+  rgb->rgb[1] = 0;
+  rgb->rgb[2] = 0;
+
+  rgb = (config_rgb_t *)&mod->outputs[1];
+  rgb->hdr.type = HMTL_OUTPUT_RGB;
+  rgb->hdr.output = 1;
+  rgb->rgb[0] = 0;
+  rgb->rgb[1] = 0;
+  rgb->rgb[2] = 0;
+
+  pixel = (config_pixel_t *)&mod->outputs[2];
+  pixel->hdr.type = HMTL_OUTPUT_PIXELS;
+  pixel->hdr.output = 2;
+
+  // Additional modules go here
+
+}
+
+
+
 #define NUM_OUTPUTS 3
 boolean output_value[NUM_SLAVES][NUM_OUTPUTS] = {
   {0, 0, 0},
