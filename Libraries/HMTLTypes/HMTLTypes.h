@@ -55,6 +55,8 @@ typedef msg_program_t msg_max_t;
  * Module configuration
  */
 
+#define HMTL_MAX_OUTPUTS 6 // The maximum number of outputs for a module
+
 #define HMTL_CONFIG_ADDR  0x0E
 #define HMTL_CONFIG_MAGIC 0x5C
 #define HMTL_CONFIG_VERSION 1
@@ -111,7 +113,7 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 int hmtl_setup_output(output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
-
+int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
 
 int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);

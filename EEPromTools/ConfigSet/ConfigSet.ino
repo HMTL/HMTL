@@ -31,10 +31,6 @@ config_pixels_t pixel_output;
 
 // Initialize from a 2D array [type][pin pin pin val val val], etc
 
-#define TYPE_POOFER 1
-#define TYPE_LIGHTS 2
-#define MODE TYPE_LIGHTS
-
 #define ADDR_LIGHT1 0
 #define ADDR_LIGHT2 1
 #define ADDR_POOFER 2
@@ -52,12 +48,12 @@ void config_init()
   val_output.value = 0;
 //  outputs[out] = &val_output.hdr;   out++;
 
-  if (MODE == TYPE_LIGHTS) {
+  if (ADDRESS == ADDR_LIGHT1) {
     rgb_output.hdr.type = HMTL_OUTPUT_RGB;
     rgb_output.hdr.output = 0;
-    rgb_output.pins[0] = 3;
-    rgb_output.pins[1] = 5;
-    rgb_output.pins[2] = 6;
+    rgb_output.pins[0] = 5; // R
+    rgb_output.pins[1] = 3; // G
+    rgb_output.pins[2] = 6; // B
     rgb_output.values[0] = 128;
     rgb_output.values[1] = 0;
     rgb_output.values[2] = 0;
@@ -65,9 +61,9 @@ void config_init()
 
     rgb_output2.hdr.type = HMTL_OUTPUT_RGB;
     rgb_output2.hdr.output = 1;
-    rgb_output2.pins[0] = 9;
-    rgb_output2.pins[1] = 10;
-    rgb_output2.pins[2] = 11;
+    rgb_output2.pins[0] = 10; // R
+    rgb_output2.pins[1] = 11; // G
+    rgb_output2.pins[2] = 9;  // B
     rgb_output2.values[0] = 0;
     rgb_output2.values[1] = 128;
     rgb_output2.values[2] = 0;
@@ -77,10 +73,38 @@ void config_init()
     pixel_output.hdr.output = 2;
     pixel_output.clockPin = 12;
     pixel_output.dataPin = 8;
-    pixel_output.numPixels = 20;
-    pixel_output.type = WS2801_GRB; // WS2801_RGB;
+    pixel_output.numPixels = 50;
+    pixel_output.type = WS2801_RGB; // WS2801_GRB;
     outputs[out] = &pixel_output.hdr; out++;
-  } else if (MODE == TYPE_POOFER) {
+  } else if (ADDRESS == ADDR_LIGHT2) {
+    rgb_output.hdr.type = HMTL_OUTPUT_RGB;
+    rgb_output.hdr.output = 0;
+    rgb_output.pins[0] = 3; // R
+    rgb_output.pins[1] = 6; // G
+    rgb_output.pins[2] = 5; // B
+    rgb_output.values[0] = 128;
+    rgb_output.values[1] = 0;
+    rgb_output.values[2] = 0;
+    outputs[out] = &rgb_output.hdr;   out++;
+
+    rgb_output2.hdr.type = HMTL_OUTPUT_RGB;
+    rgb_output2.hdr.output = 1;
+    rgb_output2.pins[0] = 9;  // R
+    rgb_output2.pins[1] = 11; // G
+    rgb_output2.pins[2] = 10; // B
+    rgb_output2.values[0] = 0;
+    rgb_output2.values[1] = 128;
+    rgb_output2.values[2] = 0;
+    outputs[out] = &rgb_output2.hdr;  out++;
+
+    pixel_output.hdr.type = HMTL_OUTPUT_PIXELS;
+    pixel_output.hdr.output = 2;
+    pixel_output.clockPin = 12;
+    pixel_output.dataPin = 8;
+    pixel_output.numPixels = 50;
+    pixel_output.type = WS2801_RGB; // WS2801_GRB;
+    outputs[out] = &pixel_output.hdr; out++;
+  } else if (ADDRESS == ADDR_POOFER) {
     val_output.hdr.type = HMTL_OUTPUT_VALUE;
     val_output.hdr.output = 0;
     val_output.pin = 3;
