@@ -15,6 +15,8 @@
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
+#include "Wire.h"
+#include "MPR121.h"
 
 boolean wrote_config = false;
 

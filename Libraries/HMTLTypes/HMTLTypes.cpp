@@ -10,6 +10,7 @@
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
+#include "MPR121.h"
 
 int hmtl_output_size(output_hdr_t *output) 
 {
@@ -22,6 +23,8 @@ int hmtl_output_size(output_hdr_t *output)
         return sizeof (config_program_t);
       case HMTL_OUTPUT_PIXELS:
         return sizeof (config_pixels_t);
+      case HMTL_OUTPUT_MPR121:
+        return sizeof (config_mpr121_t);
       default:
         DEBUG_ERR(F("hmtl_output_size: bad output type"));
         return -1;    
@@ -39,6 +42,8 @@ uint16_t hmtl_msg_size(output_hdr_t *output)
         return sizeof (msg_program_t);
       case HMTL_OUTPUT_PIXELS:
         return sizeof (msg_program_t);
+      case HMTL_OUTPUT_MPR121:
+        return sizeof (msg_program_t); // XXX: Make a MPR121 specific type
       default:
         DEBUG_ERR(F("hmtl_output_size: bad output type"));
         return 0;    
@@ -131,10 +136,12 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
       case HMTL_OUTPUT_PROGRAM:
       {
 //        config_program_t *out = (config_program_t *)hdr;
+        DEBUG_PRINT(DEBUG_HIGH, " program");
         break;
       }
       case HMTL_OUTPUT_PIXELS:
       {
+        DEBUG_PRINT(DEBUG_HIGH, " pixels");
         if (data != NULL) {
           config_pixels_t *out = (config_pixels_t *)hdr;
           PixelUtil *pixels = (PixelUtil *)data;
@@ -143,7 +150,29 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
                               out->clockPin,
                               out->type);
         } else {
-          DEBUG_ERR(F("Expect PixelUtil data struct for pixel configs"));
+          DEBUG_ERR(F("Expected PixelUtil data struct for pixel configs"));
+          return -1;
+        }
+        break;
+      }
+      case HMTL_OUTPUT_MPR121:
+      {
+        DEBUG_PRINT(DEBUG_HIGH, " mpr121");
+        if (data != NULL) {
+          config_mpr121_t *out = (config_mpr121_t *)hdr;
+	  MPR121 *capSensor = (MPR121 *)data;
+	  *capSensor = MPR121(out->irqPin,
+			      out->useInterrupt);
+	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
+	    byte touch = out->thresholds[i] & 0x0F;
+	    byte release = (out->thresholds[i] & 0xF0) >> 4;
+	    if (touch || release) {
+	      capSensor->setThreshold(i, touch, release);
+	    }
+	  }
+        } else {
+          DEBUG_ERR(F("Expected MPR121 data struct for mpr121 configs"));
+          return -1;
         }
         break;
       }
@@ -153,6 +182,8 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
         return -1;
       }
   }
+
+  DEBUG_PRINTLN(DEBUG_HIGH, "");
 
   return 0;
 }
@@ -185,6 +216,11 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
         PixelUtil *pixels = (PixelUtil *)data;
         pixels->update();
         break;
+      }
+      case HMTL_OUTPUT_MPR121:
+      {
+	// XXX - Should this be reading the inputs?
+	break;
       }
       default: 
       {
@@ -232,6 +268,11 @@ int hmtl_test_output(output_hdr_t *hdr, void *data)
         pixels->setPixelRGB(currentPixel, 255, 0, 0);
         break;
       }
+      case HMTL_OUTPUT_MPR121:
+      {
+	// Nothing to do here
+	break;
+      }
       default: 
       {
         DEBUG_ERR(F("hmtl_test_output: unknown type"));
@@ -269,20 +310,93 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
       {
 //          config_pixels_t *out = (config_pixels_t *)hdr;
         PixelUtil *pixels = (PixelUtil *)data;
+#if 0
         static int prevPixel = pixels->numPixels() - 1;
         static int currPixel = 0;
         static int nextPixel = 1;
         pixels->setPixelRGB(prevPixel, 0, 0, 0);
         pixels->setPixelRGB(currPixel, 128, 0, 0);
-        pixels->setPixelRGB(nextPixel, 255, 0, 0);
+        pixels->setPixelRGB(nextPixel, 0, 255, 0);
 
         prevPixel = (prevPixel + 1) % pixels->numPixels();
         currPixel = (currPixel + 1) % pixels->numPixels();
         nextPixel = (nextPixel + 1) % pixels->numPixels();
 
-        pixels->setPixelRGB(nextPixel, 128, 0, 0);
+        pixels->setPixelRGB(nextPixel, 0, 0, 125);
+#endif
 
+#if 0
+#define TEST_MAX_RAINBOW 128
+	static int rainbow = 0;
+        for (byte i = 0; i < pixels->numPixels(); i++) {
+	  pixels->setPixelRGB(i, 
+			      pixel_wheel(((i * 256 / pixels->numPixels()) + rainbow) % 256, TEST_MAX_RAINBOW) );
+	}
+	rainbow = (rainbow + 1) % (256 * 5);
+#endif
+
+#if 1
+#define TEST_PERIOD_MS    100
+
+	
+#define TEST_PATTERN_SIZE 9
+        static byte pattern[TEST_PATTERN_SIZE][3] = {
+          {64,  0,   128},
+	  {128, 0,   64 },
+	  {255, 0,   0  },
+	  {128, 64,  0  },
+	  {64,  128, 0  },
+	  {0,   255, 0  },
+	  {0,   128, 64 },
+          {0,   64,  128},
+          {0,   0,   255},
+        };
+	
+	/*
+#define TEST_PATTERN_SIZE 5
+        static byte pattern[TEST_PATTERN_SIZE][3] = {
+	{64, 64, 64},
+	  {128, 128, 128},
+	    {256, 256, 256},
+	      {128, 128, 128},
+		{64, 64, 64},
+		  };
+	*/
+	/*
+#define TEST_PATTERN_SIZE 9
+        static byte pattern[TEST_PATTERN_SIZE][3] = {
+          {16, 00, 00},
+          {32, 00, 00},
+	  {64, 00, 00},
+	  {128, 00, 00},
+	  {256, 00, 00},
+          {128, 00, 00},
+          {64, 00, 00},
+	  {32, 00, 00},
+	  {16, 00, 00},
+	};
+	*/
+	static long next_time = millis() + TEST_PERIOD_MS;
+        static byte current = 0;
+
+	long now = millis();
+	if (now > next_time) {
+          pixels->setPixelRGB(current % pixels->numPixels(), 0, 0, 0);
+	  current++;
+	  next_time += TEST_PERIOD_MS;
+        }
+
+        for (byte i = 0; i <  TEST_PATTERN_SIZE; i++) {
+	  pixels->setPixelRGB((current + i) % pixels->numPixels(),
+			      pattern[i][0], pattern[i][1], pattern[i][2]);
+	}
+#endif
         break;
+      }
+      case HMTL_OUTPUT_MPR121:
+      {
+	// Nothing to do here
+	break;
       }
       default: 
       {
@@ -358,6 +472,24 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
           DEBUG_VALUELN(0, " type=", out2->type);
           break;
         }
+        case HMTL_OUTPUT_MPR121:
+	{
+	  config_mpr121_t *out2 = (config_mpr121_t *)out1;
+	  DEBUG_VALUE(0, "mpr121 irq=", out2->irqPin);
+	  DEBUG_VALUE(0, " useInt=", out2->useInterrupt);
+	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
+	    byte touch = out2->thresholds[i] & 0x0F;
+	    byte release = (out2->thresholds[i] & 0xF0) >> 4;
+	    if (touch || release) {
+	      DEBUG_VALUE(0, " thresh=", i);
+	      DEBUG_VALUE(0, ",", touch);
+	      DEBUG_VALUE(0, ",", release);
+	    }
+	  }
+	  DEBUG_PRINT_END();
+
+	  break;
+	}
         default:
         {
           DEBUG_PRINTLN(0, "Unknown type");
@@ -438,6 +570,10 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
 
       case HMTL_OUTPUT_PIXELS:
 
+        break;
+
+      case HMTL_OUTPUT_MPR121:
+	// XXX - Need to do something here
         break;
   }
 

@@ -72,6 +72,7 @@ typedef struct {
 #define HMTL_OUTPUT_RGB     0x2
 #define HMTL_OUTPUT_PROGRAM 0x3
 #define HMTL_OUTPUT_PIXELS  0x4
+#define HMTL_OUTPUT_MPR121  0x5
 
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
@@ -100,6 +101,14 @@ typedef struct {
   uint16_t numPixels;
   byte type;
 } config_pixels_t;
+
+#define MAX_MPR121_PINS 12
+typedef struct {
+  output_hdr_t hdr;
+  byte irqPin;
+  boolean useInterrupt;
+  byte thresholds[MAX_MPR121_PINS];
+} config_mpr121_t;
 
 typedef config_rgb_t config_max_t; // Set to the largest output structure
 

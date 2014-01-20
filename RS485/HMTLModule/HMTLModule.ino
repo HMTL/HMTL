@@ -2,6 +2,7 @@
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
 #include "SPI.h"
+#include "Wire.h"
 #include "Adafruit_WS2801.h"
 
 
@@ -13,6 +14,7 @@
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
 #include "RS485Utils.h"
+#include "MPR121.h"
 
 /* Pin definitions */
 #define PIN_LIGHT_SENSE A0
@@ -111,7 +113,7 @@ void loop()
   }
 
   blink_value(PIN_DEBUG_LED, config.address, 500, 4);
-  delay(100); // XXX
+  delay(10); // XXX
 }
 
 //void send_output(byte address, 
