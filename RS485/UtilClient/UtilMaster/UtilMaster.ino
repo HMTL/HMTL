@@ -172,7 +172,7 @@ void loop()
   int slave;
 
   int light_value = analogRead(PIN_LIGHT_SENSE);
-  DEBUG_VALUELN(DEBUG_HIGH, F("light_value:"), light_value);
+  DEBUG_VALUELN(DEBUG_HIGH, "light_value:", light_value);
   if (light_value > 120) {
     output1 = true;
     digitalWrite(PIN_OUTPUT1, HIGH); 
@@ -183,7 +183,7 @@ void loop()
       if (trigger) digitalWrite(PIN_OUTPUT1, HIGH);
       else digitalWrite(PIN_OUTPUT1, LOW);
     }
-    DEBUG_VALUELN(DEBUG_HIGH, F("Light trigger:"), trigger);
+    DEBUG_VALUELN(DEBUG_HIGH, "Light trigger:", trigger);
   } else if (light_value < 40) {
     output1 = false;
     digitalWrite(PIN_OUTPUT1, LOW);
@@ -259,11 +259,11 @@ void send_state(int slave)
   /* Fill in the send buffer with this address's output state */
   msg_output_value_t *msg;
   unsigned int msg_len = 0;
-  DEBUG_VALUE(DEBUG_HIGH, F("send_state:"), slave);
+  DEBUG_VALUE(DEBUG_HIGH, "send_state:", slave);
   for (int output = 0; output < NUM_OUTPUTS; output++) {
     if (msg_len > (MAX_MSG_DATA - sizeof (msg_output_value_t))) {
       /* Prevent buffer overflow */
-      DEBUG_ERR(F("ERROR: send_state: msg exceeded length"));
+      DEBUG_ERR("ERROR: send_state: msg exceeded length");
       break;
     }
 

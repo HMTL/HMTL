@@ -28,7 +28,7 @@
 RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 
 // Pixel strand outputs
-Adafruit_WS2801 pixels;
+Adafruit_WS2801 pixels; // XXX - Should this be PixelUtil?
 
 config_hdr_t config;
 output_hdr_t *outputs[HMTL_MAX_OUTPUTS];

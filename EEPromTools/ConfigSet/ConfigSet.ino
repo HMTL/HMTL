@@ -38,7 +38,7 @@ config_pixels_t pixel_output;
 #define ADDR_POOFER 2
 #define ADDRESS ADDR_LIGHT1
 
-boolean force_write = true; // XXX - Should not be enabled except for debugging
+boolean force_write = false; // XXX - Should not be enabled except for debugging
 
 void config_init() 
 {

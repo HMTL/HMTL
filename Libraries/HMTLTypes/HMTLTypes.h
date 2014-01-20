@@ -8,6 +8,8 @@
  * Transport-agnostic message types
  */
 
+#include "MPR121.h"
+
 /*
  * Generic message to set a given output to the indicated value
  */
@@ -102,7 +104,7 @@ typedef struct {
   byte type;
 } config_pixels_t;
 
-#define MAX_MPR121_PINS 12
+#define MAX_MPR121_PINS MPR121::MAX_SENSORS
 typedef struct {
   output_hdr_t hdr;
   byte irqPin;
@@ -110,7 +112,7 @@ typedef struct {
   byte thresholds[MAX_MPR121_PINS];
 } config_mpr121_t;
 
-typedef config_rgb_t config_max_t; // Set to the largest output structure
+typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
 uint16_t hmtl_msg_size(output_hdr_t *output);
 

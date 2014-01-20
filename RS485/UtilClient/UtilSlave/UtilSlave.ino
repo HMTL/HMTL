@@ -97,23 +97,23 @@ void read_state()
 
   if (data != NULL) {
     if (msglen < sizeof (output_hdr_t)) {
-      DEBUG_ERR(F("ERROR: read_state: msglen less than minimum size"));
+      DEBUG_ERR("ERROR: read_state: msglen less than minimum size");
       return;
     }
 
     output_hdr_t *hdr = (output_hdr_t *)data;
     if (hdr->output >= config.num_outputs) {
-      DEBUG_ERR(F("ERROR: read_state: too many outputs"));
+      DEBUG_ERR("ERROR: read_state: too many outputs");
       return;
     }
 
     output_hdr_t *out = outputs[hdr->output];
     if (hdr->type != out->type) {
-      DEBUG_ERR(F("ERROR: read_state: wrong type for output"));
+      DEBUG_ERR("ERROR: read_state: wrong type for output");
       return;
     }
     if (msglen < hmtl_msg_size(hdr)) {
-      DEBUG_ERR(F("ERROR: read_state: msglen less than type's size"));
+      DEBUG_ERR("ERROR: read_state: msglen less than type's size");
       return;
     }
 

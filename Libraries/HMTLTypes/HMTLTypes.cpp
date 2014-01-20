@@ -26,7 +26,7 @@ int hmtl_output_size(output_hdr_t *output)
       case HMTL_OUTPUT_MPR121:
         return sizeof (config_mpr121_t);
       default:
-        DEBUG_ERR(F("hmtl_output_size: bad output type"));
+        DEBUG_ERR("hmtl_output_size: bad output type");
         return -1;    
   }
 }
@@ -45,7 +45,7 @@ uint16_t hmtl_msg_size(output_hdr_t *output)
       case HMTL_OUTPUT_MPR121:
         return sizeof (msg_program_t); // XXX: Make a MPR121 specific type
       default:
-        DEBUG_ERR(F("hmtl_output_size: bad output type"));
+        DEBUG_ERR("hmtl_output_size: bad output type");
         return 0;    
   }
 }
@@ -58,31 +58,31 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
   addr = EEPROM_safe_read(HMTL_CONFIG_ADDR,
                           (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
-    DEBUG_ERR(F("hmtl_read_config: error reading config from eeprom"));
+    DEBUG_ERR("hmtl_read_config: error reading config from eeprom");
     return -1;
   }
 
   if (hdr->magic != HMTL_CONFIG_MAGIC) {
-    DEBUG_ERR(F("hmtl_read_config: read config with invalid magic"));
+    DEBUG_ERR("hmtl_read_config: read config with invalid magic");
     return -2;
   }
 
   if ((hdr->num_outputs > 0) && (max_outputs != 0)) {
     /* Read in the outputs if any were indicated and a buffer was provided */
     if (max_outputs < hdr->num_outputs) {
-      DEBUG_ERR(F("hmtl_read_config: not enough outputs"));
+      DEBUG_ERR("hmtl_read_config: not enough outputs");
       return -3;
     }
     for (int i = 0; i < hdr->num_outputs; i++) {
       addr = EEPROM_safe_read(addr,
                               (uint8_t *)&outputs[i], sizeof (config_max_t));
       if (addr <= 0) {
-        DEBUG_ERR(F("hmtl_read_config: error reading outputs"));
+        DEBUG_ERR("hmtl_read_config: error reading outputs");
       }
     }
   }
 
-  DEBUG_VALUELN(DEBUG_LOW, F("hmtl_read_config: read address="), hdr->address);
+  DEBUG_VALUELN(DEBUG_LOW, "hmtl_read_config: read address=", hdr->address);
 
   return hdr->address;
 }
@@ -95,7 +95,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
   addr = EEPROM_safe_write(HMTL_CONFIG_ADDR,
                            (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
-    DEBUG_ERR(F("hmtl_write_config: failed to write config to EEProm"));
+    DEBUG_ERR("hmtl_write_config: failed to write config to EEProm");
     return 0;
   }
 
@@ -104,7 +104,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
     addr = EEPROM_safe_write(addr, (uint8_t *)output,
                              hmtl_output_size(output));
     if (addr < 0) {
-      DEBUG_ERR(F("hmtl_write_config: failed to write outputs to EEProm"));
+      DEBUG_ERR("hmtl_write_config: failed to write outputs to EEProm");
       return 0;
     }
   }
@@ -150,7 +150,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
                               out->clockPin,
                               out->type);
         } else {
-          DEBUG_ERR(F("Expected PixelUtil data struct for pixel configs"));
+          DEBUG_ERR("Expected PixelUtil data struct for pixel configs");
           return -1;
         }
         break;
@@ -171,14 +171,14 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
 	    }
 	  }
         } else {
-          DEBUG_ERR(F("Expected MPR121 data struct for mpr121 configs"));
+          DEBUG_ERR("Expected MPR121 data struct for mpr121 configs");
           return -1;
         }
         break;
       }
       default:
       {
-        DEBUG_VALUELN(DEBUG_ERROR, F("Invalid type"), hdr->type);
+        DEBUG_VALUELN(DEBUG_ERROR, "Invalid type", hdr->type);
         return -1;
       }
   }
@@ -224,7 +224,7 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
       }
       default: 
       {
-        DEBUG_ERR(F("hmtl_update_output: unknown type"));
+        DEBUG_ERR("hmtl_update_output: unknown type");
         return -1;
       }
   }
@@ -275,7 +275,7 @@ int hmtl_test_output(output_hdr_t *hdr, void *data)
       }
       default: 
       {
-        DEBUG_ERR(F("hmtl_test_output: unknown type"));
+        DEBUG_ERR("hmtl_test_output: unknown type");
         return -1;
       }
 
@@ -335,7 +335,7 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
 	rainbow = (rainbow + 1) % (256 * 5);
 #endif
 
-#if 1
+#if 0
 #define TEST_PERIOD_MS    100
 
 	
@@ -400,7 +400,7 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
       }
       default: 
       {
-        DEBUG_ERR(F("hmtl_test_output: unknown type"));
+        DEBUG_ERR("hmtl_test_output: unknown type");
         return -1;
       }
 
@@ -417,7 +417,7 @@ void hmtl_default_config(config_hdr_t *hdr)
   hdr->address = 0;
   hdr->num_outputs = 0;
   hdr->flags = 0;
-  DEBUG_VALUELN(DEBUG_LOW, F("hmtl_default_config: address="), hdr->address);
+  DEBUG_VALUELN(DEBUG_LOW, "hmtl_default_config: address=", hdr->address);
 }
 
 /* Print out details of a config */
@@ -505,11 +505,11 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
                 config_hdr_t *config_hdr, output_hdr_t *outputs[])
 {
   output_hdr_t *msg = (output_hdr_t *)(msg_hdr++);
-  DEBUG_VALUE(DEBUG_HIGH, F("hmtl_handle_msg: type="), msg->type);
-  DEBUG_VALUE(DEBUG_HIGH, F(" out="), msg->output);
+  DEBUG_VALUE(DEBUG_HIGH, "hmtl_handle_msg: type=", msg->type);
+  DEBUG_VALUE(DEBUG_HIGH, " out=", msg->output);
 
   if (msg->output > config_hdr->num_outputs) {
-    DEBUG_ERR(F("hmtl_handle_msg: too many outputs"));
+    DEBUG_ERR("hmtl_handle_msg: too many outputs");
     return -1;
   }
 
@@ -524,12 +524,12 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
             {
               config_value_t *val = (config_value_t *)out;
               val->value = msg2->value;
-              DEBUG_VALUELN(DEBUG_HIGH, F(" val="), msg2->value);
+              DEBUG_VALUELN(DEBUG_HIGH, " val=", msg2->value);
               break;
             }
             default:
             {
-              DEBUG_VALUELN(DEBUG_ERROR, F("hmtl_handle_msg: invalid msg type for value output.  msg="), msg->type);
+              DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for value output.  msg=", msg->type);
               break;
             }
         }
@@ -546,7 +546,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
               DEBUG_PRINT(DEBUG_HIGH, " rgb=");
               for (int i = 0; i < 3; i++) {
                 rgb->values[i] = msg2->values[i];
-                DEBUG_VALUE(DEBUG_HIGH, F(" "), msg2->values[i]);
+                DEBUG_VALUE(DEBUG_HIGH, " ", msg2->values[i]);
               }
               DEBUG_PRINT(DEBUG_HIGH, ".");
               break;
@@ -556,7 +556,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
 
             default:
             {
-              DEBUG_VALUELN(DEBUG_ERROR, F("hmtl_handle_msg: invalid msg type for rgb output.  msg="), msg->type);
+              DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for rgb output.  msg=", msg->type);
               break;
             }
 
@@ -602,7 +602,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     if (offset > msg_len) {
       /* Offset has exceed the buffer size, start fresh */
       offset = 0;
-      DEBUG_ERR(F("hmtl_serial_update: exceed max msg len"));
+      DEBUG_ERR("hmtl_serial_update: exceed max msg len");
     }
 
     byte val = Serial.read();
@@ -610,7 +610,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     if (offset == 0) {
       /* Wait for the start code at the beginning of the message */
       if (val != HMTL_MSG_START) {
-        DEBUG_ERR(F("hmtl_serial_update: not start code"));
+        DEBUG_ERR("hmtl_serial_update: not start code");
         continue;
       }
 
@@ -621,7 +621,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     offset++;
 
     if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-      DEBUG_ERR(F("hmtl_serial_update: msg lenghth is too short"));
+      DEBUG_ERR("hmtl_serial_update: msg lenghth is too short");
       offset = 0;
       continue;
     }
@@ -655,7 +655,7 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
     if (offset > HMTL_MAX_MSG_LEN) {
       /* Offset has exceed the buffer size, start fresh */
       offset = 0;
-      DEBUG_ERR(F("hmtl_serial_update: exceed max msg len"));
+      DEBUG_ERR("hmtl_serial_update: exceed max msg len");
     }
 
     byte val = Serial.read();
@@ -663,7 +663,7 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
     if (offset == 0) {
       /* Wait for the start code at the beginning of the message */
       if (val != HMTL_MSG_START) {
-        DEBUG_ERR(F("hmtl_serial_update: not start code"));
+        DEBUG_ERR("hmtl_serial_update: not start code");
         continue;
       }
 
@@ -675,7 +675,7 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
     read++;
 
     if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-      DEBUG_ERR(F("hmtl_serial_update: msg lenghth is too short"));
+      DEBUG_ERR("hmtl_serial_update: msg lenghth is too short");
       offset = 0;
       continue;
     }
@@ -698,7 +698,7 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
            */
           hmtl_transmit_msg(msg_hdr);
         } else {
-          DEBUG_ERR(F("hmtl_serial_update: not master, msg not for us"));
+          DEBUG_ERR("hmtl_serial_update: not master, msg not for us");
         }
         
         /* Reset the offset to start on a new message */
