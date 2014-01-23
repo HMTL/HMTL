@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h>
 #include "SPI.h"
 #include "Adafruit_WS2801.h"
+#include "Wire.h"
 
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
@@ -12,10 +13,11 @@
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
 #include "RS485Utils.h"
+#include "MPR121.h"
 
-#define PIN_RS485_1     2
-#define PIN_RS485_2     7 // XXX: This changed from 3 on the old ones
-#define PIN_RS485_3     4
+#define PIN_RS485_1     4 // 2 on board v1
+#define PIN_RS485_2     7
+#define PIN_RS485_3     5 // 4 on board v1
 
 RS485Socket rs485(PIN_RS485_1, PIN_RS485_2, PIN_RS485_3, (DEBUG_LEVEL != 0));
 
