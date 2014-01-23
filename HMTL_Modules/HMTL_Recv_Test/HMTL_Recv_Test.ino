@@ -18,9 +18,9 @@
 #include "RS485Utils.h"
 #include "MPR121.h"
 
-#define PIN_RS485_1  2 // 4 on board v2
+#define PIN_RS485_1  2 // 2 on board v1, 4 on board v2
 #define PIN_RS485_2  7 
-#define PIN_RS485_3  4 // 5 on board v2
+#define PIN_RS485_3  4 // 4 on board v1, 5 on board v2
 
 #define RED_LED      9 // 10 on board v2
 #define GREEN_LED   10 // 11 on board v2
