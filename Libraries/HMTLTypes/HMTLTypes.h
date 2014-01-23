@@ -75,6 +75,7 @@ typedef struct {
 #define HMTL_OUTPUT_PROGRAM 0x3
 #define HMTL_OUTPUT_PIXELS  0x4
 #define HMTL_OUTPUT_MPR121  0x5
+#define HMTL_OUTPUT_RS485   0x6
 
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
@@ -111,6 +112,13 @@ typedef struct {
   boolean useInterrupt;
   byte thresholds[MAX_MPR121_PINS];
 } config_mpr121_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  byte recvPin;
+  byte xmitPin;
+  byte enablePin;
+} config_rs485_t;
 
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
