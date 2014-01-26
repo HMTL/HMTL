@@ -163,10 +163,10 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
         if (data != NULL) {
           config_pixels_t *out = (config_pixels_t *)hdr;
           PixelUtil *pixels = (PixelUtil *)data;
-          *pixels = PixelUtil(out->numPixels,
-                              out->dataPin,
-                              out->clockPin,
-                              out->type);
+          pixels->init(out->numPixels,
+		       out->dataPin,
+		       out->clockPin,
+		       out->type);
         } else {
           DEBUG_ERR("Expected PixelUtil data struct for pixel configs");
           return -1;
@@ -179,8 +179,9 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
         if (data != NULL) {
           config_mpr121_t *out = (config_mpr121_t *)hdr;
 	  MPR121 *capSensor = (MPR121 *)data;
-	  *capSensor = MPR121(out->irqPin,
-			      out->useInterrupt);
+	  capSensor->init(out->irqPin,
+			  out->useInterrupt,
+			  START_ADDRESS); // XXX - Only single address
 	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
 	    byte touch = out->thresholds[i] & 0x0F;
 	    byte release = (out->thresholds[i] & 0xF0) >> 4;
@@ -200,8 +201,8 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
         if (data != NULL) {
           config_rs485_t *out = (config_rs485_t *)hdr;
 	  RS485Socket *rs485 = (RS485Socket *)data;
-	  *rs485 = RS485Socket(out->recvPin, out->xmitPin, out->enablePin,
-			       true); // Set to true to enable debugging
+	  rs485->init(out->recvPin, out->xmitPin, out->enablePin,
+		     true); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;

@@ -26,7 +26,7 @@
 #define GREEN_LED   10 // 11 on board v2
 #define BLUE_LED    11 // 13 on board v2
 
-#define RCV_LED     13
+#define RCV_LED     13 // Only three LEDs on v2
 
 #define MY_ADDR   0x01 // Socket receive address
 
@@ -52,7 +52,7 @@ void loop() {
 
   const byte *data = rs485.getMsg(MY_ADDR, &msglen);
   if (data != NULL) {
-    int value = (data[0] << 8) || data[1];
+    int value = (data[0] << 8) | data[1];
     DEBUG_VALUELN(0, "value=", value);
     digitalWrite(RCV_LED, HIGH);
     if (value == 0) {
