@@ -55,6 +55,10 @@ uint16_t hmtl_msg_size(output_hdr_t *output)
   }
 }
 
+/*
+ * Read in the HMTL config, returning the EEProm address following
+ * what was read.
+ */
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs) 
 {
@@ -87,11 +91,17 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
     }
   }
 
-  DEBUG_VALUELN(DEBUG_LOW, "hmtl_read_config: read address=", hdr->address);
+  DEBUG_VALUE(DEBUG_LOW, "hmtl_read_config: size=", addr - HMTL_CONFIG_ADDR);
+  DEBUG_VALUELN(DEBUG_LOW, " end=", addr);
+  DEBUG_VALUELN(DEBUG_LOW, " module address=", hdr->address);
 
-  return hdr->address;
+  return addr;
 }
 
+/*
+ * Write out the HMTL config, returning the EEProm address following
+ * what was written.
+ */
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
   int addr;
@@ -101,7 +111,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
                            (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
     DEBUG_ERR("hmtl_write_config: failed to write config to EEProm");
-    return 0;
+    return -1;
   }
 
   for (int i = 0; i < hdr->num_outputs; i++) {
@@ -110,11 +120,14 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
                              hmtl_output_size(output));
     if (addr < 0) {
       DEBUG_ERR("hmtl_write_config: failed to write outputs to EEProm");
-      return 0;
+      return -2;
     }
   }
 
-  return 1;
+  DEBUG_VALUE(DEBUG_LOW, "hmtl_write_config: size=", addr - HMTL_CONFIG_ADDR);
+  DEBUG_VALUELN(DEBUG_LOW, " end=", addr);
+
+  return addr;
 }
 
 /* Initialized the pins of an output */
@@ -162,7 +175,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
       }
       case HMTL_OUTPUT_MPR121:
       {
-        DEBUG_PRINT(DEBUG_HIGH, " mpr121");
+        DEBUG_PRINTLN(DEBUG_HIGH, " mpr121");
         if (data != NULL) {
           config_mpr121_t *out = (config_mpr121_t *)hdr;
 	  MPR121 *capSensor = (MPR121 *)data;
@@ -188,7 +201,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
           config_rs485_t *out = (config_rs485_t *)hdr;
 	  RS485Socket *rs485 = (RS485Socket *)data;
 	  *rs485 = RS485Socket(out->recvPin, out->xmitPin, out->enablePin,
-			       false); // Set to true to enable debugging
+			       true); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
