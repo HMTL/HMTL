@@ -56,6 +56,7 @@ void loop() {
     DEBUG_VALUELN(0, "value=", value);
     digitalWrite(RCV_LED, HIGH);
     if (value == 0) {
+      DEBUG_PRINTLN(0, "Recieved reset");
       digitalWrite(RED_LED, LOW);
       digitalWrite(GREEN_LED, LOW);
       digitalWrite(BLUE_LED, LOW);

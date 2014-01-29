@@ -181,7 +181,8 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
 	  MPR121 *capSensor = (MPR121 *)data;
 	  capSensor->init(out->irqPin,
 			  out->useInterrupt,
-			  START_ADDRESS); // XXX - Only single address
+			  START_ADDRESS,  // XXX - Only single address
+			  false);         // XXX - No touch times
 	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
 	    byte touch = out->thresholds[i] & 0x0F;
 	    byte release = (out->thresholds[i] & 0xF0) >> 4;
@@ -202,7 +203,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
           config_rs485_t *out = (config_rs485_t *)hdr;
 	  RS485Socket *rs485 = (RS485Socket *)data;
 	  rs485->init(out->recvPin, out->xmitPin, out->enablePin,
-		     true); // Set to true to enable debugging
+		     false); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
