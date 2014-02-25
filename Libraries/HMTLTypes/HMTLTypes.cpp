@@ -345,8 +345,8 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
       case HMTL_OUTPUT_PIXELS:
       {
 //          config_pixels_t *out = (config_pixels_t *)hdr;
-        PixelUtil *pixels = (PixelUtil *)data;
 #if 0
+        PixelUtil *pixels = (PixelUtil *)data;
         static int prevPixel = pixels->numPixels() - 1;
         static int currPixel = 0;
         static int nextPixel = 1;
