@@ -32,12 +32,20 @@
 
 #define DEBUG_LED 13
 
+#define PIN_RS485_1  2
+#define PIN_RS485_2  7 
+#define PIN_RS485_3  4
+
 #define DATA_PIN 12
 #define CLOCK_PIN 8
-#elif HMTL_VERSION == 2
+#elif (HMTL_VERSION == 2) || (HMTL_VERSION == 3)
 #define RED_LED   10
 #define GREEN_LED 11
 #define BLUE_LED  13
+
+#define PIN_RS485_1  4
+#define PIN_RS485_2  7 
+#define PIN_RS485_3  5
 
 #define DATA_PIN 12
 #define CLOCK_PIN 8
@@ -61,6 +69,7 @@ config_max_t readoutputs[MAX_OUTPUTS];
 config_rgb_t rgb_output;
 config_pixels_t pixel_output;
 config_value_t value_output;
+config_rs485_t rs485_output;
 
 int configOffset = -1;
 PixelUtil pixels;
@@ -95,6 +104,13 @@ void config_init() {
   outputs[out] = &value_output.hdr;   out++;
 #endif
 
+  rs485_output.hdr.type = HMTL_OUTPUT_RS485;
+  rs485_output.hdr.output = out;
+  rs485_output.recvPin = PIN_RS485_1;
+  rs485_output.xmitPin = PIN_RS485_2;
+  rs485_output.enablePin = PIN_RS485_3;
+  outputs[out] = &rs485_output.hdr; out++;
+
   hmtl_default_config(&config);
   config.address = DEVICE_ID;
   config.num_outputs = out;
@@ -108,6 +124,10 @@ void config_init() {
 
 void setup() {
   Serial.begin(9600);
+
+  if (force_write) {
+    DEBUG_ERR("***** Force write is enabled! *****");
+  }
 
   readconfig.address = -1;
   configOffset = hmtl_read_config(&readconfig, 
