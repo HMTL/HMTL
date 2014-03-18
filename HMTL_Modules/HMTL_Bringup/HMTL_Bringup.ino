@@ -52,7 +52,7 @@
 #endif
 
 /* Board specific values */
-#define DEVICE_ID  2
+#define DEVICE_ID  0x10
 
 #define NUM_PIXELS 105
 
@@ -134,6 +134,7 @@ void setup() {
 				  readoutputs, 
 				  MAX_OUTPUTS);
   if ((configOffset < 0) ||
+      (config.address != DEVICE_ID) ||
       force_write) {
     // Setup and write the configuration
     config_init();

@@ -101,45 +101,67 @@ void setup() {
 void loop() {
   unsigned int msglen;
 
-  //const byte *data = rs485.getMsg(1, &msglen);
-  const byte *data = rs485.getMsg(RS485_ADDR_ANY, &msglen);
+  const byte *data = rs485.getMsg(config.address, &msglen);
+  //const byte *data = rs485.getMsg(RS485_ADDR_ANY, &msglen);
   if (data != NULL) {
-    int value = (data[0] << 8) | data[1];
-    DEBUG_HEXVALLN(0, "value=", value);
-    if (value_output.pin != (byte)-1) digitalWrite(value_output.pin, HIGH);
-    if (value == 0) {
-      DEBUG_PRINTLN(0, "Recieved reset");
-      digitalWrite(rgb_output.pins[0], LOW);
-      digitalWrite(rgb_output.pins[1], LOW);
-      digitalWrite(rgb_output.pins[2], LOW);
-      setAllPixels(0, 0, 0);
+    DEBUG_VALUE(0, "Recv len=", msglen);
+    DEBUG_VALUE(0, " addr=", RS485_HDR_FROM_DATA(data)->address);
+    
+    if (msglen == 4) {
+      uint32_t value = ((uint32_t)data[0] << 24) |
+	((uint32_t)data[1] << 16) |
+	((uint32_t)data[2] << 8) | 
+	(uint32_t)data[3];
+      DEBUG_HEXVAL(0, " data=", data[0]);
+      DEBUG_HEXVAL(0, " ", data[1]);
+      DEBUG_HEXVAL(0, " ", data[2]);
+      DEBUG_HEXVAL(0, " ", data[3]);
+      
+      DEBUG_HEXVAL(0, " rgb=", pixel_red(value));
+      DEBUG_HEXVAL(0, " ", pixel_green(value));
+      DEBUG_HEXVAL(0, " ", pixel_blue(value));
+
+      DEBUG_PRINT_END();
+
+      setAllPixels(pixel_red(value), pixel_green(value), pixel_blue(value));
     } else {
-      switch (value % 3) {
-      case 0:
-	digitalWrite(rgb_output.pins[0], HIGH);
-	digitalWrite(rgb_output.pins[1], LOW);
-	digitalWrite(rgb_output.pins[2], LOW);
-	setAllPixels(255, 0, 0);
-	break;
-      case 1:
-	digitalWrite(rgb_output.pins[0], LOW);
-	digitalWrite(rgb_output.pins[1], HIGH);
-	digitalWrite(rgb_output.pins[2], LOW);
-	setAllPixels(0, 255, 0);
-	break;
-      case 2:
+      int value = (data[0] << 8) | data[1];
+      DEBUG_HEXVALLN(0, " value=", value);
+      if (value_output.pin != (byte)-1) digitalWrite(value_output.pin, HIGH);
+      if (value == 0) {
+	DEBUG_PRINTLN(0, "Recieved reset");
 	digitalWrite(rgb_output.pins[0], LOW);
 	digitalWrite(rgb_output.pins[1], LOW);
-	digitalWrite(rgb_output.pins[2], HIGH);
-	setAllPixels(0, 0, 255);
-	break;
+	digitalWrite(rgb_output.pins[2], LOW);
+	setAllPixels(0, 0, 0);
+      } else {
+	switch (value % 3) {
+	case 0:
+	  digitalWrite(rgb_output.pins[0], HIGH);
+	  digitalWrite(rgb_output.pins[1], LOW);
+	  digitalWrite(rgb_output.pins[2], LOW);
+	  setAllPixels(255, 0, 0);
+	  break;
+	case 1:
+	  digitalWrite(rgb_output.pins[0], LOW);
+	  digitalWrite(rgb_output.pins[1], HIGH);
+	  digitalWrite(rgb_output.pins[2], LOW);
+	  setAllPixels(0, 255, 0);
+	  break;
+	case 2:
+	  digitalWrite(rgb_output.pins[0], LOW);
+	  digitalWrite(rgb_output.pins[1], LOW);
+	  digitalWrite(rgb_output.pins[2], HIGH);
+	  setAllPixels(0, 0, 255);
+	  break;
+	}
       }
     }
   } else {
     delay(20);
     if (value_output.pin != (byte)-1) digitalWrite(value_output.pin, LOW);
   }
-    pixels.update();
+  pixels.update();
 }
 
 void setAllPixels(byte r, byte g, byte b) {
