@@ -23,9 +23,9 @@
 /******/
 
 /* VERSION specific values ***************************************************/
-#define HMTL_VERSION 1
+#define HMTL_VERSION 3
 
-#if HMTL_VERSION == 1
+#if (HMTL_VERSION == 1)
 #define RED_LED    9
 #define GREEN_LED 10
 #define BLUE_LED  11
@@ -38,7 +38,7 @@
 
 #define DATA_PIN 12
 #define CLOCK_PIN 8
-#elif (HMTL_VERSION == 2) || (HMTL_VERSION == 3)
+#elif (HMTL_VERSION == 2)
 #define RED_LED   10
 #define GREEN_LED 11
 #define BLUE_LED  13
@@ -49,10 +49,21 @@
 
 #define DATA_PIN 12
 #define CLOCK_PIN 8
+#elif (HMTL_VERSION == 3)
+#define RED_LED   11
+#define GREEN_LED 13
+#define BLUE_LED  10
+
+#define PIN_RS485_1  4
+#define PIN_RS485_2  7 
+#define PIN_RS485_3  5
+
+#define DATA_PIN 12
+#define CLOCK_PIN 8
 #endif
 
 /* Board specific values */
-#define DEVICE_ID  0x10
+#define DEVICE_ID  0x0011
 
 #define NUM_PIXELS 105
 
@@ -190,6 +201,7 @@ void setup() {
 
 void loop() {
 
+  DEBUG_PRINTLN(0, "White");
   for (unsigned int i=0; i < pixels.numPixels(); i++) 
     pixels.setPixelRGB(i, 255, 255, 255);  
   pixels.update();
@@ -203,6 +215,7 @@ void loop() {
   digitalWrite(value_output.pin, LOW);
 #endif
 
+  DEBUG_PRINTLN(0, "Red");
   digitalWrite(rgb_output.pins[0], HIGH);
   for (unsigned int i=0; i < pixels.numPixels(); i++) 
     pixels.setPixelRGB(i, 255, 0, 0);  
@@ -210,6 +223,7 @@ void loop() {
 
   delay(1000);
 
+  DEBUG_PRINTLN(0, "Green");
   digitalWrite(rgb_output.pins[0], LOW);
   digitalWrite(rgb_output.pins[1], HIGH);
   for (unsigned int i=0; i < pixels.numPixels(); i++) 
@@ -218,6 +232,7 @@ void loop() {
 
   delay(1000);
 
+  DEBUG_PRINTLN(0, "Blue");
   digitalWrite(rgb_output.pins[1], LOW);
   digitalWrite(rgb_output.pins[2], HIGH);
   for (unsigned int i=0; i < pixels.numPixels(); i++) 
