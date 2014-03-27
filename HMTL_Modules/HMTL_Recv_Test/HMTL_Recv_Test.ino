@@ -97,33 +97,53 @@ void setup() {
   DEBUG_VALUELN(DEBUG_LOW, "RS485 socket initialized. device_id=", config.address);
 }
 
-
+unsigned long lastRecv = 0;
 void loop() {
   unsigned int msglen;
 
   const byte *data = rs485.getMsg(config.address, &msglen);
   //const byte *data = rs485.getMsg(RS485_ADDR_ANY, &msglen);
   if (data != NULL) {
+    unsigned long now = millis();
     DEBUG_VALUE(0, "Recv len=", msglen);
     DEBUG_VALUE(0, " addr=", RS485_HDR_FROM_DATA(data)->address);
+    DEBUG_VALUE(0, " delay=", now - lastRecv);
+
+    lastRecv = millis();
     
     if (msglen == 4) {
+      static unsigned long lastChanged = 0;
+      static uint32_t lastValue = 0;
+      static uint32_t fadeCount = 0;
+
       uint32_t value = ((uint32_t)data[0] << 24) |
 	((uint32_t)data[1] << 16) |
 	((uint32_t)data[2] << 8) | 
 	(uint32_t)data[3];
       DEBUG_HEXVAL(0, " data=", data[0]);
-      DEBUG_HEXVAL(0, " ", data[1]);
-      DEBUG_HEXVAL(0, " ", data[2]);
-      DEBUG_HEXVAL(0, " ", data[3]);
+      DEBUG_HEXVAL(0, ".", data[1]);
+      DEBUG_HEXVAL(0, ".", data[2]);
+      DEBUG_HEXVAL(0, ".", data[3]);
       
       DEBUG_HEXVAL(0, " rgb=", pixel_red(value));
-      DEBUG_HEXVAL(0, " ", pixel_green(value));
-      DEBUG_HEXVAL(0, " ", pixel_blue(value));
+      DEBUG_HEXVAL(0, ",", pixel_green(value));
+      DEBUG_HEXVAL(0, ",", pixel_blue(value));
 
       DEBUG_PRINT_END();
 
-      setAllPixels(pixel_red(value), pixel_green(value), pixel_blue(value));
+      if (value != lastValue) {
+	lastChanged = millis();
+	setAllPixels(pixel_red(value), pixel_green(value), pixel_blue(value));
+	lastValue = value;
+	fadeCount = 0;
+      } else {
+
+	if ((unsigned long)(millis() - lastChanged) >
+			    (unsigned long)(60000)) {
+	  // Turn off if nothing changed for a minute
+	  setAllPixels(0, 0, 0);
+	}
+      }
     } else {
       int value = (data[0] << 8) | data[1];
       DEBUG_HEXVALLN(0, " value=", value);
@@ -161,6 +181,12 @@ void loop() {
     delay(20);
     if (value_output.pin != (byte)-1) digitalWrite(value_output.pin, LOW);
   }
+
+  if ((millis() - lastRecv) > (unsigned long)1000) {
+    // Turn off if we stop receiving
+    setAllPixels(0, 0, 0);
+  }
+
   pixels.update();
 }
 
