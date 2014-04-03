@@ -61,14 +61,27 @@ typedef msg_program_t msg_max_t;
 
 #define HMTL_CONFIG_ADDR  0x0E
 #define HMTL_CONFIG_MAGIC 0x5C
-#define HMTL_CONFIG_VERSION 1
+#define HMTL_CONFIG_VERSION 2
 typedef struct {
   uint8_t     magic;
   uint8_t     version;
   uint8_t     address;
   uint8_t     num_outputs;
   uint8_t     flags;
-} config_hdr_t;
+} config_hdr_v1_t;
+
+typedef struct {
+  uint8_t     magic;
+  uint8_t     protocol_version;
+  uint8_t     hardware_version;
+  uint16_t    address;
+  uint8_t     reserved;
+
+  uint8_t     num_outputs;
+  uint8_t     flags;
+} config_hdr_v2_t;
+
+typedef config_hdr_v2_t config_hdr_t;
 
 #define HMTL_OUTPUT_VALUE   0x1
 #define HMTL_OUTPUT_RGB     0x2

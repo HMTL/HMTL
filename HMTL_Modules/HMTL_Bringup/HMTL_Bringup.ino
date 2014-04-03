@@ -64,8 +64,8 @@
 
 /* Board specific values */
 #define DEVICE_ID  0x0011
-
-#define NUM_PIXELS 105
+#define HMTL_VERSION 3
+#define NUM_PIXELS 45
 
 /* XXX: Set to true to force the config to be written */
 boolean force_write = false;
@@ -124,6 +124,7 @@ void config_init() {
 
   hmtl_default_config(&config);
   config.address = DEVICE_ID;
+  config.hardware_version = HMTL_VERSION;
   config.num_outputs = out;
   config.flags = 0;
 
@@ -145,7 +146,7 @@ void setup() {
 				  readoutputs, 
 				  MAX_OUTPUTS);
   if ((configOffset < 0) ||
-      (config.address != DEVICE_ID) ||
+      //      (config.address != DEVICE_ID) || // This mucked with setting things up elsewhere
       force_write) {
     // Setup and write the configuration
     config_init();

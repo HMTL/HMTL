@@ -106,7 +106,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
   int addr;
   hdr->magic = HMTL_CONFIG_MAGIC;
-  hdr->version = HMTL_CONFIG_VERSION;
+  hdr->protocol_version = HMTL_CONFIG_VERSION;
   addr = EEPROM_safe_write(HMTL_CONFIG_ADDR,
                            (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
@@ -114,13 +114,15 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
     return -1;
   }
 
-  for (int i = 0; i < hdr->num_outputs; i++) {
-    output_hdr_t *output = outputs[i];
-    addr = EEPROM_safe_write(addr, (uint8_t *)output,
-                             hmtl_output_size(output));
-    if (addr < 0) {
-      DEBUG_ERR("hmtl_write_config: failed to write outputs to EEProm");
-      return -2;
+  if (outputs != NULL) {
+    for (int i = 0; i < hdr->num_outputs; i++) {
+      output_hdr_t *output = outputs[i];
+      addr = EEPROM_safe_write(addr, (uint8_t *)output,
+			       hmtl_output_size(output));
+      if (addr < 0) {
+	DEBUG_ERR("hmtl_write_config: failed to write outputs to EEProm");
+	return -2;
+      }
     }
   }
 
@@ -446,7 +448,8 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
 void hmtl_default_config(config_hdr_t *hdr)
 {
   hdr->magic = HMTL_CONFIG_MAGIC;
-  hdr->version = HMTL_CONFIG_VERSION;
+  hdr->protocol_version = HMTL_CONFIG_VERSION;
+  hdr->hardware_version = 0;
   hdr->address = 0;
   hdr->num_outputs = 0;
   hdr->flags = 0;
@@ -458,10 +461,14 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
 #ifdef DEBUG_LEVEL
   DEBUG_VALUE(DEBUG_LOW, "hmtl_print_config: mag: ", hdr->magic);
-  DEBUG_VALUE(DEBUG_LOW, " version: ", hdr->version);
+  DEBUG_VALUE(DEBUG_LOW, " protocol_version: ", hdr->protocol_version);
+  DEBUG_VALUE(DEBUG_LOW, " hardware_version: ", hdr->hardware_version);
   DEBUG_VALUE(DEBUG_LOW, " address: ", hdr->address);
   DEBUG_VALUE(DEBUG_LOW, " outputs: ", hdr->num_outputs);
   DEBUG_VALUELN(DEBUG_LOW, " flags: ", hdr->flags);
+
+  if (outputs == NULL) 
+    return;
 
   for (int i = 0; i < hdr->num_outputs; i++) {
     output_hdr_t *out1 = (output_hdr_t *)outputs[i];
