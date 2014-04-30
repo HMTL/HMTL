@@ -1,0 +1,26 @@
+{
+    "config": {
+	"address": 1,
+	"version": 1,
+	"flags": 0
+    },
+    "outputs": [
+	{
+	    "type": "value",
+	    "pin": 13,
+	    "value": 0
+	},
+	{
+	    "type": "rgb",
+	    "pins": [ 10, 11, 12],
+	    "values": [ 0, 0, 0 ]
+	},
+	{
+	    "type": "pixels",
+	    "clockpin": 12,
+	    "datapin": 8,
+	    "numpixels": 50,
+	    "rgbtype": 0
+	}
+    ]
+}
