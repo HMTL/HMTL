@@ -34,15 +34,26 @@ def handle_args():
 
     return (options, args)
 
+def get_line():
+    data = ser.readline().strip().decode()
+    print("get_line: received '%s'" % (data))
+    return data
+
+def send_command(command):
+    print("send_command: sending '%s'" % (command))
+    data = command + "\n"
+    ser.write(bytes(data, 'utf-8'))
+
 def waitForReady():
     """Wait for the Arduino to send its ready signal"""
-    data = ser.readline().strip().decode()
-    if (len(recv) == 0):
-        print("Receive returned empty, timed out");
-        return False
-    if (data == "Ready"):
-        print("Recieved ready from Arduino")
-        return True
+    while True:
+        data = get_line()
+        if (len(data) == 0):
+            print("Receive returned empty, timed out");
+            return False
+        if (data == HMTLprotocol.HMTL_CONFIG_READY):
+            print("Recieved ready from Arduino")
+            return True
 
 def sendAndConfirm(data):
     """Send a command and wait for the ACK"""
@@ -50,8 +61,8 @@ def sendAndConfirm(data):
     if (options.dryrun):
         return True
 
-    ser.write(data)
-    ack = ser.readline.strip()
+    send_command(data)
+    ack = get_line()
     if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
         return True
     else:
@@ -63,6 +74,8 @@ def sendConfig(data):
         exit(1)
 
     print("Sending configuration");
+
+    # XXX: Send the configuration
 
     if (sendAndConfirm(HMTLprotocol.HMTL_CONFIG_END) == False):
         print("Failed to get ack from end message")
@@ -80,9 +93,8 @@ def main():
 
     if (options.dryrun == False):
         # Open the serial connection and wait for 
-        ser = serial.Serial(device, 9600, timeout=1)
+        ser = serial.Serial(device, 9600, timeout=10)
         if (waitForReady() == False):
-            XXXX
             exit(1)
 
     json_file = open(options.filename)
