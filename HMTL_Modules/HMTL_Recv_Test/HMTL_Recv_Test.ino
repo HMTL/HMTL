@@ -31,7 +31,7 @@ config_value_t value_output = {{0, 0}, // hdr
 			       0       // value
 };
 
-#define MAX_OUTPUTS 4
+#define MAX_OUTPUTS 8
 config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 config_max_t readoutputs[MAX_OUTPUTS];

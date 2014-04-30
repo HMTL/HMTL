@@ -71,7 +71,7 @@
 boolean force_write = false;
 boolean wrote_config = false;
 
-#define MAX_OUTPUTS 4
+#define MAX_OUTPUTS 8
 config_hdr_t config;
 output_hdr_t *outputs[MAX_OUTPUTS];
 config_hdr_t readconfig;
@@ -81,6 +81,14 @@ config_rgb_t rgb_output;
 config_pixels_t pixel_output;
 config_value_t value_output;
 config_rs485_t rs485_output;
+
+#define TRIGGER_BOARD
+#ifdef  TRIGGER_BOARD
+#define NUM_TRIGGERS 4
+uint8_t trigger_pins[NUM_TRIGGERS] = { 2, 3, 6, 9 };
+config_value_t triggers[NUM_TRIGGERS];
+#endif
+
 
 int configOffset = -1;
 PixelUtil pixels;
@@ -121,6 +129,16 @@ void config_init() {
   rs485_output.xmitPin = PIN_RS485_2;
   rs485_output.enablePin = PIN_RS485_3;
   outputs[out] = &rs485_output.hdr; out++;
+
+#ifdef TRIGGER_BOARD
+  for (byte i = 0; i < NUM_TRIGGERS; i++) {
+    triggers[i].hdr.type = HMTL_OUTPUT_VALUE;
+    triggers[i].hdr.output = out;
+    triggers[i].pin = trigger_pins[i];
+    triggers[i].value = 0;
+    outputs[out] = &triggers[i].hdr;   out++;
+  }
+#endif
 
   hmtl_default_config(&config);
   config.address = DEVICE_ID;
