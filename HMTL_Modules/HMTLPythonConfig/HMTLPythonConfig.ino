@@ -192,6 +192,30 @@ void handle_command(byte *cmd, byte len) {
       config_outputs++;
       break;
     }
+    case HMTL_OUTPUT_RS485: {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received RS485 output");
+      if (config_length != sizeof (config_rs485_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for RS485:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rs485_t));
+	break;
+      }
+      config_rs485_t *rs485 = (config_rs485_t *)config_start;
+      hmtl_print_output(&rs485->hdr);
+
+      if (!hmtl_validate_rs485(rs485)) {
+	DEBUG_ERR("Recieved invalid rs485 output");
+	break;
+      }
+
+      memcpy(&rawoutputs[config_outputs], rs485, sizeof (config_rs485_t));
+      rawoutputs[config_outputs].hdr.output = config_outputs;
+      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
+      config_outputs++;
+      break;
+    }
+
 
     default: {
       DEBUG_VALUELN(DEBUG_ERROR, "Received unknown configuration type:",

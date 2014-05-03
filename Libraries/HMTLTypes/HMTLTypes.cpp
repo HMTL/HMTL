@@ -514,6 +514,15 @@ boolean hmtl_validate_pixels(config_pixels_t *pixels) {
   return true;
 }
 
+boolean hmtl_validate_rs485(config_rs485_t *rs485) {
+  if (rs485->recvPin > 13) return false;
+  if (rs485->xmitPin > 13) return false;
+  if (rs485->enablePin > 13) return false;
+  if (rs485->recvPin == rs485->xmitPin) return false;
+  if (rs485->recvPin == rs485->enablePin) return false;
+  if (rs485->enablePin == rs485->xmitPin) return false;
+  return true;
+}
 
 
 /******************************************************************************

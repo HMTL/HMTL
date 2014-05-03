@@ -43,6 +43,8 @@ OUTPUT_VALUE_FMT = '<Bh'
 OUTPUT_RGB_FMT   = '<BBBBBB'
 OUTPUT_PIXELS_FMT = '<BBHB'
 
+OUTPUT_RS485_FMT = '<BBB'
+
 #
 # Configuration validation
 #
@@ -80,6 +82,11 @@ def validate_output(output):
         if (not check_required(output, "datapin")): return False
         if (not check_required(output, "numpixels")): return False
         if (not check_required(output, "rgbtype")): return False
+    elif (output["type"] == "rs485"):
+        if (not check_required(output, "recvpin")): return False
+        if (not check_required(output, "xmitpin")): return False
+        if (not check_required(output, "enablepin")): return False
+
 
 #XXX: Continue here
 
@@ -170,6 +177,11 @@ def get_output_struct(output):
                                     output['datapin'],
                                     output['numpixels'],
                                     output['rgbtype'])
+    elif (type == "rs485"):
+        packed_output = struct.pack(OUTPUT_RS485_FMT,
+                                    output['recvpin'],
+                                    output['xmitpin'],
+                                    output['enablepin'])
     else:
         packed_output = b"" # XXX
 
