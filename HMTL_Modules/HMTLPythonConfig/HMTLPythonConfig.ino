@@ -46,32 +46,39 @@ void loop()
   if (handle_command()) {
     digitalWrite(DEBUG_PIN, HIGH);
   } else {
-    delay(500);
+    delay(50);
     digitalWrite(DEBUG_PIN, LOW);
   }
 }
 
-#define BUFF_LEN 128
+#define BUFF_LEN 128 + sizeof(HMTL_TERMINATOR)
 boolean handle_command()
 {
-  static byte buff[BUFF_LEN + 1];
+  static byte buff[BUFF_LEN];
   static byte offset = 0;
   boolean received_command = false;
 
   while (Serial.available()) {
     buff[offset] = Serial.read();
-    
-    offset++;
-    if (buff[offset - 1] == '\n') {
-      // Replace the newline with termination
-      buff[offset - 1] = '\0';
+    DEBUG_HEXVAL(DEBUG_TRACE, "Recv char:", buff[offset]);
+    DEBUG_VALUELN(DEBUG_TRACE, " off:", offset);
 
-      handle_command(buff, offset - 1); // ??? Whats the correct length?
+    // Check for termination
+    if ((offset >= 3) &&
+	((uint32_t)buff[offset - 3] << 24 |
+	 (uint32_t)buff[offset - 2] << 16 |
+	 (uint32_t)buff[offset - 1] << 8 |
+	 (uint32_t)buff[offset]) == HMTL_TERMINATOR) {
+      // Replace the terminator with string-end
+      buff[offset - 3] = '\0';
+
+      handle_command(buff, offset - 3); // ??? Whats the correct length?
       offset = 0;
       received_command = true;
+    } else {
+      offset++;
+      if (offset >= BUFF_LEN) offset = 0;
     }
-
-    if (offset >= BUFF_LEN) offset = 0;
   }
 
   return received_command;
@@ -129,11 +136,35 @@ void handle_command(byte *cmd, byte len) {
       hmtl_print_output(&val->hdr);
 
       if (!hmtl_validate_value(val)) {
-	DEBUG_ERR("Recieved invalid output");
+	DEBUG_ERR("Recieved invalid value output");
 	break;
       }
 
-      memcpy(&rawoutputs, val, sizeof (config_value_t));
+      memcpy(&rawoutputs[config_outputs], val, sizeof (config_value_t));
+      rawoutputs[config_outputs].hdr.output = config_outputs;
+      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
+      config_outputs++;
+      break;
+    }
+    case HMTL_OUTPUT_RGB: {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received RGB output");
+      if (config_length != sizeof (config_rgb_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for RGB:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rgb_t));
+	break;
+      }
+      config_rgb_t *rgb = (config_rgb_t *)config_start;
+      hmtl_print_output(&rgb->hdr);
+
+      if (!hmtl_validate_rgb(rgb)) {
+	DEBUG_ERR("Recieved invalid rgb output");
+	break;
+      }
+
+      memcpy(&rawoutputs[config_outputs], rgb, sizeof (config_rgb_t));
+      rawoutputs[config_outputs].hdr.output = config_outputs;
       outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
       config_outputs++;
       break;

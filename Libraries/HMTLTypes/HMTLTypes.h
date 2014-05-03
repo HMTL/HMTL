@@ -152,6 +152,7 @@ int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
 /* Configuration validation */
 boolean hmtl_validate_header(config_hdr_t *config_hdr);
 boolean hmtl_validate_value(config_value_t *val);
+boolean hmtl_validate_rgb(config_rgb_t *rgb);
 
 /* Debug printing of configuration */
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);

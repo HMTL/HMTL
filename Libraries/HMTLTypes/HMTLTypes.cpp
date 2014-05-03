@@ -489,9 +489,17 @@ boolean hmtl_validate_header(config_hdr_t *hdr) {
 }
 
 boolean hmtl_validate_value(config_value_t *val) {
-  // XXX
+  if (val->pin > 13) return false;
   return true;
 }
+
+boolean hmtl_validate_rgb(config_rgb_t *rgb) {
+  for (int pin = 0; pin < 3; pin++) {
+    if (rgb->pins[pin] > 13) return false;
+  }
+  return true;
+}
+
 
 /******************************************************************************
  * Debug printing of configuration
@@ -499,7 +507,7 @@ boolean hmtl_validate_value(config_value_t *val) {
 
 void hmtl_print_header(config_hdr_t *hdr) {
 #ifdef DEBUG_LEVEL
-  DEBUG_VALUE(DEBUG_LOW, "hmtl_print_config: mag: ", hdr->magic);
+  DEBUG_VALUE(DEBUG_LOW, "  header: mag: ", hdr->magic);
   DEBUG_VALUE(DEBUG_LOW, " protocol_version: ", hdr->protocol_version);
   DEBUG_VALUE(DEBUG_LOW, " hardware_version: ", hdr->hardware_version);
   DEBUG_VALUE(DEBUG_LOW, " address: ", hdr->address);
@@ -510,9 +518,9 @@ void hmtl_print_header(config_hdr_t *hdr) {
 
 void hmtl_print_output(output_hdr_t *out) {
 #ifdef DEBUG_LEVEL
-  DEBUG_VALUE(DEBUG_LOW, "offset=", (int)out);
+  DEBUG_VALUE(DEBUG_LOW, "  output ", out->output);
+  DEBUG_VALUE(DEBUG_LOW, " offset=", (int)out);
   DEBUG_VALUE(DEBUG_LOW, " type=", out->type);
-  DEBUG_VALUE(DEBUG_LOW, " out=", out->output);
   DEBUG_PRINT(DEBUG_LOW, " - ");
   switch (out->type) {
   case HMTL_OUTPUT_VALUE:
@@ -590,6 +598,7 @@ void hmtl_print_output(output_hdr_t *out) {
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
 #ifdef DEBUG_LEVEL
+  DEBUG_PRINTLN(DEBUG_LOW, "hmtl_print_config:");
   hmtl_print_header(hdr);
 
   if (outputs == NULL) 

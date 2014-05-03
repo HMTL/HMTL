@@ -7,7 +7,9 @@
 #define HMTL_CONFIG_END   "end"
 #define HMTL_CONFIG_PRINT "print"
 
-#define CONFIG_START_BYTE 0xFE
+#define HMTL_TERMINATOR   (uint32_t)(0xFEFEFEFE)
+
+#define CONFIG_START_BYTE 0xFD
 #define CONFIG_START_SIZE 2
 
 #endif

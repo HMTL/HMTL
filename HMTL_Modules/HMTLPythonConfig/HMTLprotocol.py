@@ -14,14 +14,14 @@ HMTL_CONFIG_START  = "start"
 HMTL_CONFIG_END    = "end"
 HMTL_CONFIG_PRINT  = "print"
 
-HMTL_TERMINATOR    = '\n' # Indicates end of command
+HMTL_TERMINATOR    = b'\xfe\xfe\xfe\xfe' # Indicates end of command
 
 #
 # Config starts with the config start byte, followed by the type of object,
 # followed by the encoded form of that onbject
 #
 CONFIG_START_FMT = '<BB'
-CONFIG_START_BYTE = 0xFE
+CONFIG_START_BYTE = 0xFD
 
 # These values must match those in HMTLTypes.h
 CONFIG_TYPES = {
@@ -38,6 +38,9 @@ CONFIG_TYPES = {
 HEADER_FMT = '<BBBHBBB'
 HEADER_MAGIC = 0x5C
 
+OUTPUT_HDR_FMT   = '<BB'
+OUTPUT_VALUE_FMT = '<Bh'
+OUTPUT_RGB_FMT   = '<BBBBBB'
 
 #
 # Configuration validation
@@ -78,6 +81,9 @@ def validate_output(output):
         if (not check_required(output, "rgbtype")): return False
 
 #XXX: Continue here
+
+#XXX: Should check for any value matching HMTL_TERMINATION???
+
     return True
 
 def validate_config(data):
@@ -138,6 +144,26 @@ def get_header_struct(data):
     return packed_start + packed
 
 def get_output_struct(output):
-    packed_start = get_config_start(output["type"])
+    print("get_output_struct: %s" % (output))
+    type = output["type"]
 
-    return packed_start
+    packed_start = get_config_start(type)
+    packed_hdr = struct.pack(OUTPUT_HDR_FMT,
+                             CONFIG_TYPES[type], # type
+                             0) # output # filled in by module
+    if (type == "value"):
+        packed_output = struct.pack(OUTPUT_VALUE_FMT,
+                                    output["pin"],
+                                    output["value"])
+    elif (type == "rgb"):
+        packed_output = struct.pack(OUTPUT_RGB_FMT,
+                                    output['pins'][0],
+                                    output['pins'][1],
+                                    output['pins'][2],
+                                    output['values'][0],
+                                    output['values'][1],
+                                    output['values'][2])
+    else:
+        packed_output = b"" # XXX
+
+    return packed_start + packed_hdr + packed_output;

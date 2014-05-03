@@ -36,7 +36,7 @@ def handle_args():
 
 def get_line():
     data = ser.readline().strip()
-    print("get_line: received '%s'" % (data))
+    print("  - received '%s'" % (data))
 
     try:
         retdata = data.decode()
@@ -68,7 +68,7 @@ def send_and_confirm(data):
         return True
 
     send_data(data)
-    send_data(bytes(HMTLprotocol.HMTL_TERMINATOR, 'utf-8'))
+    send_data(HMTLprotocol.HMTL_TERMINATOR)
 
     while True:
         ack = get_line()
@@ -76,12 +76,12 @@ def send_and_confirm(data):
             return True
 
 def send_command(command):
-    print("send_command: sending '%s'" % (command))
+    print("send_command: '%s'" % (command))
     data = bytes(command, 'utf-8')
     send_and_confirm(data)
 
 def send_config(config):
-    print("send_config: config '%s'" % (config))
+    print("send_config: '%s'" % (config))
     send_and_confirm(config)
 
 def sendConfig(config_data):
@@ -95,10 +95,8 @@ def sendConfig(config_data):
     send_config(header_struct)
 
     for output in config_data["outputs"]:
-        if (output["type"] == "value"):
-            pass
-            #output_struct = HMTLprotocol.get_output_struct(config_data)
-            #send_config(output_struct)
+        output_struct = HMTLprotocol.get_output_struct(output)
+        send_config(output_struct)
 
     if (send_command(HMTLprotocol.HMTL_CONFIG_END) == False):
         print("Failed to get ack from end message")
