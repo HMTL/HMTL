@@ -5,23 +5,43 @@
 
 """HMTL Protocol definitions module"""
 
-# Protocol constants
-HMTL_CONFIG_READY="Ready"
+import struct
 
-HMTL_CONFIG_ACK="ok"
+# Protocol commands
+HMTL_CONFIG_READY  = "ready"
+HMTL_CONFIG_ACK    = "ok"
+HMTL_CONFIG_START  = "start"
+HMTL_CONFIG_END    = "end"
+HMTL_CONFIG_PRINT  = "print"
 
-HMTL_CONFIG_START="start"
-HMTL_CONFIG_END="end"
+HMTL_TERMINATOR    = '\n' # Indicates end of command
+
+#
+# Config starts with the config start byte, followed by the type of object,
+# followed by the encoded form of that onbject
+#
+CONFIG_START_FMT = '<BB'
+CONFIG_START_BYTE = 0xFE
 
 # These values must match those in HMTLTypes.h
-types = {
-    "value"   : 1,
-    "rgb"     : 2,
-    "program" : 3,
-    "pixels"  : 4,
-    "mpr121"  : 5,
-    "rs485"   : 6
+CONFIG_TYPES = {
+    "header"  : 0x0,
+    "value"   : 0x1,
+    "rgb"     : 0x2,
+    "program" : 0x3,
+    "pixels"  : 0x4,
+    "mpr121"  : 0x5,
+    "rs485"   : 0x6
 }
+
+# Individial object formats
+HEADER_FMT = '<BBBHBBB'
+HEADER_MAGIC = 0x5C
+
+
+#
+# Configuration validation
+#
 
 def check_required(output, value, length=None):
     if (not value in output):
@@ -39,7 +59,7 @@ def validate_output(output):
     if (not "type" in output):
         print("No 'type' field in output: " + str(output))
         return False
-    if (not output["type"] in types):
+    if (not output["type"] in CONFIG_TYPES):
         print(output["type"] + " is not a valid HMTL type")
         return False
 
@@ -65,9 +85,22 @@ def validate_config(data):
 
     print("* Validating configuration data")
 
-    if (not "config" in data):
-        print("Input file does not contain 'config'")
+    if (not "header" in data):
+        print("Input file does not contain 'header'")
         return False
+
+    config = data["header"]
+    if (not "protocol_version" in config):
+        print("No protocol_version in config")
+        return False
+    if (not "hardware_version" in config):
+        print("No hardware_version in config")
+        return False
+    if (not "address" in config):
+        print("No address in config")
+        return False
+    if (not "flags" in config):
+        config['flags'] = 0
 
     if (not "outputs" in data):
         print("Input file does not contain 'data'")
@@ -78,3 +111,33 @@ def validate_config(data):
             return False;
 
     return True
+
+#
+# Configuration formatting
+#
+
+def get_config_start(type):
+    packed = struct.pack(CONFIG_START_FMT,
+                         CONFIG_START_BYTE,
+                         CONFIG_TYPES[type])
+    return packed
+
+def get_header_struct(data):
+    config = data['header']
+
+    packed_start = get_config_start('header')
+
+    packed = struct.pack(HEADER_FMT,
+                         HEADER_MAGIC,
+                         config['protocol_version'],
+                         config['hardware_version'],
+                         config['address'],
+                         0,
+                         len(data['outputs']),
+                         config['flags'])
+    return packed_start + packed
+
+def get_output_struct(output):
+    packed_start = get_config_start(output["type"])
+
+    return packed_start

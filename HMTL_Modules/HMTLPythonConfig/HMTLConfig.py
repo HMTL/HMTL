@@ -35,14 +35,18 @@ def handle_args():
     return (options, args)
 
 def get_line():
-    data = ser.readline().strip().decode()
+    data = ser.readline().strip()
     print("get_line: received '%s'" % (data))
-    return data
 
-def send_command(command):
-    print("send_command: sending '%s'" % (command))
-    data = command + "\n"
-    ser.write(bytes(data, 'utf-8'))
+    try:
+        retdata = data.decode()
+    except UnicodeDecodeError:
+        retdata = None
+
+    return retdata
+
+def send_data(data):
+    ser.write(data)
 
 def waitForReady():
     """Wait for the Arduino to send its ready signal"""
@@ -55,29 +59,48 @@ def waitForReady():
             print("Recieved ready from Arduino")
             return True
 
-def sendAndConfirm(data):
+def send_and_confirm(data):
     """Send a command and wait for the ACK"""
+
+    print("send_and_confirm: %s" % (data))
 
     if (options.dryrun):
         return True
 
-    send_command(data)
-    ack = get_line()
-    if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
-        return True
-    else:
-        return False
+    send_data(data)
+    send_data(bytes(HMTLprotocol.HMTL_TERMINATOR, 'utf-8'))
 
-def sendConfig(data):
-    if (sendAndConfirm(HMTLprotocol.HMTL_CONFIG_START) == False):
+    while True:
+        ack = get_line()
+        if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
+            return True
+
+def send_command(command):
+    print("send_command: sending '%s'" % (command))
+    data = bytes(command, 'utf-8')
+    send_and_confirm(data)
+
+def send_config(config):
+    print("send_config: config '%s'" % (config))
+    send_and_confirm(config)
+
+def sendConfig(config_data):
+    if (send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
         print("Failed to get ack from start message")
         exit(1)
 
     print("Sending configuration");
 
-    # XXX: Send the configuration
+    header_struct = HMTLprotocol.get_header_struct(config_data)
+    send_config(header_struct)
 
-    if (sendAndConfirm(HMTLprotocol.HMTL_CONFIG_END) == False):
+    for output in config_data["outputs"]:
+        if (output["type"] == "value"):
+            pass
+            #output_struct = HMTLprotocol.get_output_struct(config_data)
+            #send_config(output_struct)
+
+    if (send_command(HMTLprotocol.HMTL_CONFIG_END) == False):
         print("Failed to get ack from end message")
         exit(1)
 
@@ -98,16 +121,18 @@ def main():
             exit(1)
 
     json_file = open(options.filename)
-    data = json.load(json_file)
+    config_data = json.load(json_file)
     json_file.close()
     
     print("* Config read from '" + options.filename + "':")
-    pprint(data);
+    pprint(config_data);
 
-    if (not HMTLprotocol.validate_config(data)):
+    if (not HMTLprotocol.validate_config(config_data)):
         print("Exiting due to invalid configuration file")
         exit(1)
 
-    sendConfig(data)
+    sendConfig(config_data)
+
+    send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
 
 main()

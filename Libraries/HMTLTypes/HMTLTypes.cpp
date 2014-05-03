@@ -231,7 +231,16 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
       case HMTL_OUTPUT_VALUE: 
       {
         config_value_t *out = (config_value_t *)hdr;
-        analogWrite(out->pin, out->value);
+#if 0
+	if (pin_is_PWM(out->pin)) {
+	  analogWrite(out->pin, out->value);
+	} else {
+	  digitalWrite(out->pin, (out->value != 0));
+	}
+#else
+	// On an non-PWM pin this outputs HIGH if value >= 128
+	analogWrite(out->pin, out->value);
+#endif
         break;
       }
       case HMTL_OUTPUT_RGB:
@@ -456,9 +465,39 @@ void hmtl_default_config(config_hdr_t *hdr)
   DEBUG_VALUELN(DEBUG_LOW, "hmtl_default_config: address=", hdr->address);
 }
 
-/* Print out details of a config */
-void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
-{
+/******************************************************************************
+ * Configuration validation
+ */
+
+boolean hmtl_validate_header(config_hdr_t *hdr) {
+  if (hdr->magic != HMTL_CONFIG_MAGIC) return false;
+  switch (hdr->protocol_version) {
+  case 1: {
+    config_hdr_v1_t *hdr_v1 = (config_hdr_v1_t *)hdr;
+    if (hdr_v1->num_outputs > HMTL_MAX_OUTPUTS) return false;
+    break;
+  }
+  case 2: {
+    config_hdr_v2_t *hdr_v2 = (config_hdr_v2_t *)hdr;
+    if (hdr_v2->num_outputs > HMTL_MAX_OUTPUTS) return false;
+    break;
+  }
+  default: return false;
+  }
+
+  return true;
+}
+
+boolean hmtl_validate_value(config_value_t *val) {
+  // XXX
+  return true;
+}
+
+/******************************************************************************
+ * Debug printing of configuration
+ */
+
+void hmtl_print_header(config_hdr_t *hdr) {
 #ifdef DEBUG_LEVEL
   DEBUG_VALUE(DEBUG_LOW, "hmtl_print_config: mag: ", hdr->magic);
   DEBUG_VALUE(DEBUG_LOW, " protocol_version: ", hdr->protocol_version);
@@ -466,85 +505,104 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
   DEBUG_VALUE(DEBUG_LOW, " address: ", hdr->address);
   DEBUG_VALUE(DEBUG_LOW, " outputs: ", hdr->num_outputs);
   DEBUG_VALUELN(DEBUG_LOW, " flags: ", hdr->flags);
+#endif
+}
+
+void hmtl_print_output(output_hdr_t *out) {
+#ifdef DEBUG_LEVEL
+  DEBUG_VALUE(DEBUG_LOW, "offset=", (int)out);
+  DEBUG_VALUE(DEBUG_LOW, " type=", out->type);
+  DEBUG_VALUE(DEBUG_LOW, " out=", out->output);
+  DEBUG_PRINT(DEBUG_LOW, " - ");
+  switch (out->type) {
+  case HMTL_OUTPUT_VALUE:
+    {
+      config_value_t *out2 = (config_value_t *)out;
+      DEBUG_VALUE(DEBUG_LOW, "value pin=", out2->pin);
+      DEBUG_VALUELN(DEBUG_LOW, " val=", out2->value);
+      break;
+    }
+  case HMTL_OUTPUT_RGB:
+    {
+      config_rgb_t *out2 = (config_rgb_t *)out;
+      DEBUG_VALUE(DEBUG_LOW, "rgb pin0=", out2->pins[0]);
+      DEBUG_VALUE(DEBUG_LOW, " pin1=", out2->pins[1]);
+      DEBUG_VALUE(DEBUG_LOW, " pin2=", out2->pins[2]);
+      DEBUG_VALUE(DEBUG_LOW, " val0=", out2->values[0]);
+      DEBUG_VALUE(DEBUG_LOW, " val1=", out2->values[1]);
+      DEBUG_VALUELN(DEBUG_LOW, " val2=", out2->values[2]);
+      break;
+    }
+  case HMTL_OUTPUT_PROGRAM:
+    {
+      config_program_t *out2 = (config_program_t *)out;
+      DEBUG_PRINTLN(DEBUG_LOW, "program");
+      for (int i = 0; i < MAX_PROGRAM_VAL; i++) {
+	DEBUG_VALUELN(DEBUG_LOW, " val=", out2->values[i]);
+      }
+      break;
+    }
+  case HMTL_OUTPUT_PIXELS:
+    {
+      config_pixels_t *out2 = (config_pixels_t *)out;
+      DEBUG_VALUE(DEBUG_LOW, "pixels clock=", out2->clockPin);
+      DEBUG_VALUE(DEBUG_LOW, " data=", out2->dataPin);
+      DEBUG_VALUE(DEBUG_LOW, " num=", out2->numPixels);
+      DEBUG_VALUELN(DEBUG_LOW, " type=", out2->type);
+      break;
+    }
+  case HMTL_OUTPUT_MPR121:
+    {
+      config_mpr121_t *out2 = (config_mpr121_t *)out;
+      DEBUG_VALUE(DEBUG_LOW, "mpr121 irq=", out2->irqPin);
+      DEBUG_VALUE(DEBUG_LOW, " useInt=", out2->useInterrupt);
+      for (int i = 0; i < MAX_MPR121_PINS; i++) {
+	byte touch = out2->thresholds[i] & 0x0F;
+	byte release = (out2->thresholds[i] & 0xF0) >> 4;
+	if (touch || release) {
+	  DEBUG_VALUE(DEBUG_LOW, " thresh=", i);
+	  DEBUG_VALUE(DEBUG_LOW, ",", touch);
+	  DEBUG_VALUE(DEBUG_LOW, ",", release);
+	}
+      }
+      DEBUG_PRINT_END();
+      break;
+    }
+  case HMTL_OUTPUT_RS485:
+    {
+      config_rs485_t *out2 = (config_rs485_t *)out;
+      DEBUG_VALUE(DEBUG_LOW, "rs485 recv=", out2->recvPin);
+      DEBUG_VALUE(DEBUG_LOW, " ximt=", out2->xmitPin);
+      DEBUG_VALUE(DEBUG_LOW, " enable=", out2->enablePin);
+      DEBUG_PRINT_END();
+      break;
+    }
+  default:
+    {
+      DEBUG_PRINTLN(DEBUG_LOW, "Unknown type");
+      break;
+    }
+  }
+#endif
+}
+
+/* Print out details of a config */
+void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
+{
+#ifdef DEBUG_LEVEL
+  hmtl_print_header(hdr);
 
   if (outputs == NULL) 
     return;
 
   for (int i = 0; i < hdr->num_outputs; i++) {
-    output_hdr_t *out1 = (output_hdr_t *)outputs[i];
-    DEBUG_VALUE(DEBUG_LOW, "offset=", (int)out1);
-    DEBUG_VALUE(DEBUG_LOW, " type=", out1->type);
-    DEBUG_VALUE(DEBUG_LOW, " out=", out1->output);
-    DEBUG_PRINT(DEBUG_LOW, " - ");
-    switch (out1->type) {
-        case HMTL_OUTPUT_VALUE: 
-        {
-          config_value_t *out2 = (config_value_t *)out1;
-          DEBUG_VALUE(DEBUG_LOW, "value pin=", out2->pin);
-          DEBUG_VALUELN(DEBUG_LOW, " val=", out2->value);
-          break;
-        }
-        case HMTL_OUTPUT_RGB:
-        {
-          config_rgb_t *out2 = (config_rgb_t *)out1;
-          DEBUG_VALUE(DEBUG_LOW, "rgb pin0=", out2->pins[0]);
-          DEBUG_VALUE(DEBUG_LOW, " pin1=", out2->pins[1]);
-          DEBUG_VALUE(DEBUG_LOW, " pin2=", out2->pins[2]);
-          DEBUG_VALUE(DEBUG_LOW, " val0=", out2->values[0]);
-          DEBUG_VALUE(DEBUG_LOW, " val1=", out2->values[1]);
-          DEBUG_VALUELN(DEBUG_LOW, " val2=", out2->values[2]);
-          break;
-        }
-        case HMTL_OUTPUT_PROGRAM:
-        {
-          config_program_t *out2 = (config_program_t *)out1;
-          DEBUG_PRINTLN(DEBUG_LOW, "program");
-          for (int i = 0; i < MAX_PROGRAM_VAL; i++) {
-            DEBUG_VALUELN(DEBUG_LOW, " val=", out2->values[i]);
-          }
-          break;
-        }
-        case HMTL_OUTPUT_PIXELS:
-        {
-          config_pixels_t *out2 = (config_pixels_t *)out1;
-          DEBUG_VALUE(DEBUG_LOW, "pixels clock=", out2->clockPin);
-          DEBUG_VALUE(DEBUG_LOW, " data=", out2->dataPin);
-          DEBUG_VALUE(DEBUG_LOW, " num=", out2->numPixels);
-          DEBUG_VALUELN(DEBUG_LOW, " type=", out2->type);
-          break;
-        }
-        case HMTL_OUTPUT_MPR121:
-	{
-	  config_mpr121_t *out2 = (config_mpr121_t *)out1;
-	  DEBUG_VALUE(DEBUG_LOW, "mpr121 irq=", out2->irqPin);
-	  DEBUG_VALUE(DEBUG_LOW, " useInt=", out2->useInterrupt);
-	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
-	    byte touch = out2->thresholds[i] & 0x0F;
-	    byte release = (out2->thresholds[i] & 0xF0) >> 4;
-	    if (touch || release) {
-	      DEBUG_VALUE(DEBUG_LOW, " thresh=", i);
-	      DEBUG_VALUE(DEBUG_LOW, ",", touch);
-	      DEBUG_VALUE(DEBUG_LOW, ",", release);
-	    }
-	  }
-	  DEBUG_PRINT_END();
-	  break;
-	}
-        case HMTL_OUTPUT_RS485:
-	{
-	  config_rs485_t *out2 = (config_rs485_t *)out1;
-	  DEBUG_VALUE(DEBUG_LOW, "rs485 recv=", out2->recvPin);
-	  DEBUG_VALUE(DEBUG_LOW, " ximt=", out2->xmitPin);
-	  DEBUG_VALUE(DEBUG_LOW, " enable=", out2->enablePin);
-	  DEBUG_PRINT_END();
-	  break;
-	}
-        default:
-        {
-          DEBUG_PRINTLN(DEBUG_LOW, "Unknown type");
-          break;
-        }        
+    output_hdr_t *out = (output_hdr_t *)outputs[i];
+    if (out == NULL) {
+      DEBUG_VALUE(DEBUG_LOW, "Output ", i);
+      DEBUG_PRINTLN(DEBUG_LOW, " is NULL");
+      continue;
     }
+    hmtl_print_output(out);
   }
 #endif
 }

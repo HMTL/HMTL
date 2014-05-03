@@ -8,8 +8,6 @@
  * Transport-agnostic message types
  */
 
-#include "MPR121.h"
-
 /*
  * Generic message to set a given output to the indicated value
  */
@@ -57,7 +55,7 @@ typedef msg_program_t msg_max_t;
  * Module configuration
  */
 
-#define HMTL_MAX_OUTPUTS 6 // The maximum number of outputs for a module
+#define HMTL_MAX_OUTPUTS 8 // The maximum number of outputs for a module
 
 #define HMTL_CONFIG_ADDR  0x0E
 #define HMTL_CONFIG_MAGIC 0x5C
@@ -83,6 +81,8 @@ typedef struct {
 
 typedef config_hdr_v2_t config_hdr_t;
 
+#define HMTL_NO_ADDRESS (uint16_t)-1
+
 #define HMTL_OUTPUT_VALUE   0x1
 #define HMTL_OUTPUT_RGB     0x2
 #define HMTL_OUTPUT_PROGRAM 0x3
@@ -96,7 +96,7 @@ typedef config_hdr_v2_t config_hdr_t;
 typedef struct {
   output_hdr_t hdr;
   byte pin;
-  int value;
+  int value; // XXX - Make this byte?  PWM only goes to 2552
 } config_value_t;
 
 typedef struct {
@@ -118,7 +118,8 @@ typedef struct {
   byte type;
 } config_pixels_t;
 
-#define MAX_MPR121_PINS MPR121::MAX_SENSORS
+// This should be MPR121::MAX_SENSORS, but we don't want to include that here
+#define MAX_MPR121_PINS 12
 typedef struct {
   output_hdr_t hdr;
   byte irqPin;
@@ -141,15 +142,21 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
-void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 int hmtl_setup_output(output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
-
 int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
 
+/* Configuration validation */
+boolean hmtl_validate_header(config_hdr_t *config_hdr);
+boolean hmtl_validate_value(config_value_t *val);
+
+/* Debug printing of configuration */
+void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
+void hmtl_print_header(config_hdr_t *hdr);
+void hmtl_print_output(output_hdr_t *val);
 
 #define HTML_MAX_OUT 6
 
