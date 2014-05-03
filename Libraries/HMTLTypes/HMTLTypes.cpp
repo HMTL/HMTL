@@ -494,11 +494,26 @@ boolean hmtl_validate_value(config_value_t *val) {
 }
 
 boolean hmtl_validate_rgb(config_rgb_t *rgb) {
+  uint32_t pinmap = 0;
+  uint32_t pinbit;
+
   for (int pin = 0; pin < 3; pin++) {
     if (rgb->pins[pin] > 13) return false;
+    pinbit = (1 << rgb->pins[pin]);
+    if (pinmap & pinbit) return false;
+    pinmap |= pinbit;
   }
   return true;
 }
+
+boolean hmtl_validate_pixels(config_pixels_t *pixels) {
+  if (pixels->clockPin > 13) return false;
+  if (pixels->dataPin > 13) return false;
+  if (pixels->clockPin == pixels->dataPin) return false;
+  if ((pixels->type != 0) && (pixels->type != WS2801_RGB)) return false;
+  return true;
+}
+
 
 
 /******************************************************************************

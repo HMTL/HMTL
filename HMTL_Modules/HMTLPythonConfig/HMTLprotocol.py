@@ -41,6 +41,7 @@ HEADER_MAGIC = 0x5C
 OUTPUT_HDR_FMT   = '<BB'
 OUTPUT_VALUE_FMT = '<Bh'
 OUTPUT_RGB_FMT   = '<BBBBBB'
+OUTPUT_PIXELS_FMT = '<BBHB'
 
 #
 # Configuration validation
@@ -163,6 +164,12 @@ def get_output_struct(output):
                                     output['values'][0],
                                     output['values'][1],
                                     output['values'][2])
+    elif (type == "pixels"):
+        packed_output = struct.pack(OUTPUT_PIXELS_FMT,
+                                    output['clockpin'],
+                                    output['datapin'],
+                                    output['numpixels'],
+                                    output['rgbtype'])
     else:
         packed_output = b"" # XXX
 

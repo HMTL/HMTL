@@ -169,6 +169,29 @@ void handle_command(byte *cmd, byte len) {
       config_outputs++;
       break;
     }
+    case HMTL_OUTPUT_PIXELS: {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received PIXELS output");
+      if (config_length != sizeof (config_pixels_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for PIXELS:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_pixels_t));
+	break;
+      }
+      config_pixels_t *pixels = (config_pixels_t *)config_start;
+      hmtl_print_output(&pixels->hdr);
+
+      if (!hmtl_validate_pixels(pixels)) {
+	DEBUG_ERR("Recieved invalid pixels output");
+	break;
+      }
+
+      memcpy(&rawoutputs[config_outputs], pixels, sizeof (config_pixels_t));
+      rawoutputs[config_outputs].hdr.output = config_outputs;
+      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
+      config_outputs++;
+      break;
+    }
 
     default: {
       DEBUG_VALUELN(DEBUG_ERROR, "Received unknown configuration type:",
