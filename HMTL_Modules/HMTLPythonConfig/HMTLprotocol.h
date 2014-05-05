@@ -3,9 +3,11 @@
 
 #define HMTL_READY        "ready"
 #define HMTL_ACK          "ok"
+#define HMTL_FAIL         "fail"
 #define HMTL_CONFIG_START "start"
 #define HMTL_CONFIG_END   "end"
 #define HMTL_CONFIG_PRINT "print"
+#define HMTL_CONFIG_WRITE "write"
 
 #define HMTL_TERMINATOR   (uint32_t)(0xFEFEFEFE)
 

@@ -16,7 +16,7 @@
 #include "PixelUtil.h"
 #include "MPR121.h"
 #include "RS485Utils.h"
-
+#include "Wire.h"
 
 
 #define DEBUG_PIN 13
@@ -84,8 +84,14 @@ boolean handle_command()
   return received_command;
 }
 
-void handle_command(byte *cmd, byte len) {
+#define STATE_NEW    0
+#define STATE_READY  1
+#define STATE_DONE   2
+#define STATE_ERROR -1
 
+int state = STATE_NEW;
+
+void handle_command(byte *cmd, byte len) {
   DEBUG_VALUE(DEBUG_HIGH, "Recv: ", (char *)cmd);
   DEBUG_PRINT(DEBUG_HIGH, " Hex:");
   for (int i = 0; i < len; i++) {
@@ -95,6 +101,12 @@ void handle_command(byte *cmd, byte len) {
 
   if (cmd[0] == CONFIG_START_BYTE) {
     /* This is a configuration command */
+
+    if (state != STATE_READY) {
+      DEBUG_ERR("Received configuration before START");
+      goto FAIL;
+    }
+
     byte type = cmd[1];
 
     // TODO: Check for valid command length
@@ -109,14 +121,14 @@ void handle_command(byte *cmd, byte len) {
 		    "Received config message wrong len for header: ",
 		    config_length);
 	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_hdr_t));
-	break;
+	goto FAIL;
       }
       config_hdr_t *hdr = (config_hdr_t *)config_start;
       hmtl_print_header(hdr);
 
       if (!hmtl_validate_header(hdr)) {
 	DEBUG_ERR("Recieved invalid hdr");
-	break;
+	goto FAIL;
       }
 
       memcpy(&config_hdr, hdr, sizeof (config_hdr_t));
@@ -130,14 +142,14 @@ void handle_command(byte *cmd, byte len) {
 		    "Received config message with wrong len for value:",
 		    config_length);
 	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_value_t));
-	break;
+	goto FAIL;
       }
       config_value_t *val = (config_value_t *)config_start;
       hmtl_print_output(&val->hdr);
 
       if (!hmtl_validate_value(val)) {
 	DEBUG_ERR("Recieved invalid value output");
-	break;
+	goto FAIL;
       }
 
       memcpy(&rawoutputs[config_outputs], val, sizeof (config_value_t));
@@ -153,14 +165,14 @@ void handle_command(byte *cmd, byte len) {
 		    "Received config message with wrong len for RGB:",
 		    config_length);
 	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rgb_t));
-	break;
+	goto FAIL;
       }
       config_rgb_t *rgb = (config_rgb_t *)config_start;
       hmtl_print_output(&rgb->hdr);
 
       if (!hmtl_validate_rgb(rgb)) {
 	DEBUG_ERR("Recieved invalid rgb output");
-	break;
+	goto FAIL;
       }
 
       memcpy(&rawoutputs[config_outputs], rgb, sizeof (config_rgb_t));
@@ -176,17 +188,40 @@ void handle_command(byte *cmd, byte len) {
 		    "Received config message with wrong len for PIXELS:",
 		    config_length);
 	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_pixels_t));
-	break;
+	goto FAIL;
       }
       config_pixels_t *pixels = (config_pixels_t *)config_start;
       hmtl_print_output(&pixels->hdr);
 
       if (!hmtl_validate_pixels(pixels)) {
 	DEBUG_ERR("Recieved invalid pixels output");
-	break;
+	goto FAIL;
       }
 
       memcpy(&rawoutputs[config_outputs], pixels, sizeof (config_pixels_t));
+      rawoutputs[config_outputs].hdr.output = config_outputs;
+      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
+      config_outputs++;
+      break;
+    }
+    case HMTL_OUTPUT_MPR121: {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received MPR121 output");
+      if (config_length != sizeof (config_mpr121_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for MPR121:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_mpr121_t));
+	goto FAIL;
+      }
+      config_mpr121_t *mpr121 = (config_mpr121_t *)config_start;
+      hmtl_print_output(&mpr121->hdr);
+
+      if (!hmtl_validate_mpr121(mpr121)) {
+	DEBUG_ERR("Recieved invalid mpr121 output");
+	break;
+      }
+
+      memcpy(&rawoutputs[config_outputs], mpr121, sizeof (config_mpr121_t));
       rawoutputs[config_outputs].hdr.output = config_outputs;
       outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
       config_outputs++;
@@ -199,14 +234,14 @@ void handle_command(byte *cmd, byte len) {
 		    "Received config message with wrong len for RS485:",
 		    config_length);
 	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rs485_t));
-	break;
+	goto FAIL;
       }
       config_rs485_t *rs485 = (config_rs485_t *)config_start;
       hmtl_print_output(&rs485->hdr);
 
       if (!hmtl_validate_rs485(rs485)) {
 	DEBUG_ERR("Recieved invalid rs485 output");
-	break;
+	goto FAIL;
       }
 
       memcpy(&rawoutputs[config_outputs], rs485, sizeof (config_rs485_t));
@@ -216,26 +251,64 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
 
-
     default: {
       DEBUG_VALUELN(DEBUG_ERROR, "Received unknown configuration type:",
 		    type);
-      break;
+      goto FAIL;
     }
     }
   } else {
     /* Treat this as a plain text command */
     char *str = (char *)cmd;
+
     if (strcmp(str, HMTL_CONFIG_START) == 0) {
       DEBUG_PRINTLN(DEBUG_HIGH, "Received config start");
-    } else if (strcmp(str, HMTL_CONFIG_END) == 0) {
+      state = STATE_READY;
+    }
+
+    else if (strcmp(str, HMTL_CONFIG_END) == 0) {
       DEBUG_PRINTLN(DEBUG_HIGH, "Received config end");
-    } else if (strcmp(str, HMTL_CONFIG_PRINT) == 0) {
+      if (state != STATE_READY) {
+	DEBUG_ERR("Recived END before START");
+	goto FAIL;
+      }
+
+      /* Validate the configuration */
+      if (!hmtl_validate_config(&config_hdr, outputs, config_outputs)) {
+	DEBUG_ERR("Overall configuration was not valid");
+	goto FAIL;
+      }
+
+      state = STATE_DONE;
+    }
+
+    else if (strcmp(str, HMTL_CONFIG_WRITE) == 0) {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received config write");
+
+      if (state != STATE_DONE) {
+	DEBUG_ERR("Received WRITE when state is not DONE");
+	goto FAIL;
+      }
+
+      int configOffset = hmtl_write_config(&config_hdr, outputs);
+      if (configOffset < 0) {
+	DEBUG_ERR("Failed to write configuration");
+	goto FAIL;
+      }
+    }
+
+    else if (strcmp(str, HMTL_CONFIG_PRINT) == 0) {
       DEBUG_PRINTLN(DEBUG_HIGH, "Received config print");
       hmtl_print_config(&config_hdr, outputs);
     }
   }
 
-  // Send the ACK
+  // Reply with ACK
   Serial.println(HMTL_ACK);
+  return;
+
+ FAIL:
+  // Reply with FAIL
+  Serial.print(HMTL_FAIL);
+  state = STATE_ERROR;
 }

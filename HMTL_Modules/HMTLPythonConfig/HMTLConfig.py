@@ -13,6 +13,9 @@ import HMTLprotocol
 # scanning
 device = '/dev/tty.usbserial-AM01SJJQ'
 
+class HMTLConfigException(Exception):
+    pass
+
 def handle_args():
     global options
 
@@ -23,6 +26,8 @@ def handle_args():
                       help="Arduino USB device")
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)
+    parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
+                      help="Write configuration", default=False)
 
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
@@ -74,6 +79,8 @@ def send_and_confirm(data):
         ack = get_line()
         if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
             return True
+        if (ack == HMTLprotocol.HMTL_CONFIG_FAIL):
+            raise HMTLConfigException("Configuration command failed")
 
 def send_command(command):
     print("send_command: '%s'" % (command))
@@ -84,7 +91,7 @@ def send_config(config):
     print("send_config: '%s'" % (config))
     send_and_confirm(config)
 
-def sendConfig(config_data):
+def send_configuration(config_data):
     if (send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
         print("Failed to get ack from start message")
         exit(1)
@@ -129,8 +136,13 @@ def main():
         print("Exiting due to invalid configuration file")
         exit(1)
 
-    sendConfig(config_data)
+    send_configuration(config_data)
 
+    # Have the module output its entire configuration
     send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+
+    if (options.writeconfig == True):
+        # Write out the module's config to EEPROM
+        send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
 
 main()

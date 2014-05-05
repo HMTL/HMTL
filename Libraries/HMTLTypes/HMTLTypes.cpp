@@ -514,6 +514,11 @@ boolean hmtl_validate_pixels(config_pixels_t *pixels) {
   return true;
 }
 
+boolean hmtl_validate_mpr121(config_mpr121_t *mpr121) {
+  if (mpr121->irqPin > 13) return false;
+  return true;
+}
+
 boolean hmtl_validate_rs485(config_rs485_t *rs485) {
   if (rs485->recvPin > 13) return false;
   if (rs485->xmitPin > 13) return false;
@@ -522,6 +527,91 @@ boolean hmtl_validate_rs485(config_rs485_t *rs485) {
   if (rs485->recvPin == rs485->enablePin) return false;
   if (rs485->enablePin == rs485->xmitPin) return false;
   return true;
+}
+
+boolean hmtl_validate_config(config_hdr_t *hdr, output_hdr_t *outputs[],
+			     int num_outputs) {
+  uint32_t pinmap = 0;
+  uint32_t pinbit;
+
+  if (!hmtl_validate_header(hdr)) goto VALIDATE_ERROR;
+  if (hdr->num_outputs != num_outputs) {
+    DEBUG_ERR("Number of outputs does not match");
+    return false;
+  }
+
+  /* Verify that all pins are unique */
+  for (int i = 0; i < num_outputs; i++) {
+    output_hdr_t *out = outputs[i];
+    switch (out->type) {
+    case HMTL_OUTPUT_VALUE: {
+      config_value_t *out2 = (config_value_t *)out;
+    if (!hmtl_validate_value(out2)) goto VALIDATE_ERROR;
+      pinbit = (1 << out2->pin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap |= pinbit;
+      break;
+    }
+    case HMTL_OUTPUT_RGB: {
+      config_rgb_t *out2 = (config_rgb_t *)out;
+      if (!hmtl_validate_rgb(out2)) goto VALIDATE_ERROR;
+      for (int pin = 0; pin < 3; pin++) {
+	pinbit = (1 << out2->pins[pin]);
+	if (pinmap & pinbit) goto PIN_ERROR;
+	pinmap != pinbit;
+      }
+      break;
+    }
+    case HMTL_OUTPUT_PIXELS: {
+      config_pixels_t *out2 = (config_pixels_t *)out;
+      if (!hmtl_validate_pixels(out2)) goto VALIDATE_ERROR;
+      pinbit = (1 << out2->clockPin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap != pinbit;
+      pinbit = (1 << out2->dataPin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap != pinbit;
+    }
+    case HMTL_OUTPUT_MPR121: {
+      config_mpr121_t *out2 = (config_mpr121_t *)out;
+      if (!hmtl_validate_mpr121(out2)) goto VALIDATE_ERROR;
+      pinbit = (1 << out2->irqPin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap |= pinbit;
+      break;
+    }
+    case HMTL_OUTPUT_RS485: {
+      config_rs485_t *out2 = (config_rs485_t *)out;
+      if (!hmtl_validate_rs485(out2)) goto VALIDATE_ERROR;
+      pinbit = (1 << out2->recvPin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap |= pinbit;
+
+      pinbit = (1 << out2->xmitPin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap |= pinbit;
+
+      pinbit = (1 << out2->enablePin);
+      if (pinmap & pinbit) goto PIN_ERROR;
+      pinmap |= pinbit;
+      break;
+    }
+    default: {
+      DEBUG_ERR("Invalid output type");
+      return false;
+    }
+    }
+  }
+
+  return true;
+
+ PIN_ERROR:
+  DEBUG_ERR("Pin used multiple times");
+  return false;
+ VALIDATE_ERROR:
+  DEBUG_ERR("A config was invalid");
+  return false;
+
 }
 
 
@@ -604,7 +694,7 @@ void hmtl_print_output(output_hdr_t *out) {
     {
       config_rs485_t *out2 = (config_rs485_t *)out;
       DEBUG_VALUE(DEBUG_LOW, "rs485 recv=", out2->recvPin);
-      DEBUG_VALUE(DEBUG_LOW, " ximt=", out2->xmitPin);
+      DEBUG_VALUE(DEBUG_LOW, " xmit=", out2->xmitPin);
       DEBUG_VALUE(DEBUG_LOW, " enable=", out2->enablePin);
       DEBUG_PRINT_END();
       break;

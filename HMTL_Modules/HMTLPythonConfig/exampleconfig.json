@@ -28,6 +28,13 @@
 	    "recvpin": 4,
 	    "xmitpin": 7,
 	    "enablepin": 5
+	},
+	{
+	    "type": "mpr121",
+	    "irqpin": 2,
+	    "useinterrupt": 0,
+	    "trigger": [ 15, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+	    "release": [ 12, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
 	}
     ]
 }

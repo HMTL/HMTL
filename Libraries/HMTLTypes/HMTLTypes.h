@@ -154,7 +154,10 @@ boolean hmtl_validate_header(config_hdr_t *config_hdr);
 boolean hmtl_validate_value(config_value_t *val);
 boolean hmtl_validate_rgb(config_rgb_t *rgb);
 boolean hmtl_validate_pixels(config_pixels_t *pixels);
+boolean hmtl_validate_mpr121(config_mpr121_t *mpr121);
 boolean hmtl_validate_rs485(config_rs485_t *rs485);
+boolean hmtl_validate_config(config_hdr_t *config_hdr, output_hdr_t *outputs[],
+			     int num_outputs);
 
 /* Debug printing of configuration */
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);

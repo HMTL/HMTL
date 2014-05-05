@@ -10,9 +10,12 @@ import struct
 # Protocol commands
 HMTL_CONFIG_READY  = "ready"
 HMTL_CONFIG_ACK    = "ok"
+HMTL_CONFIG_FAIL   = "fail"
+
 HMTL_CONFIG_START  = "start"
 HMTL_CONFIG_END    = "end"
 HMTL_CONFIG_PRINT  = "print"
+HMTL_CONFIG_WRITE  = "write"
 
 HMTL_TERMINATOR    = b'\xfe\xfe\xfe\xfe' # Indicates end of command
 
@@ -42,7 +45,7 @@ OUTPUT_HDR_FMT   = '<BB'
 OUTPUT_VALUE_FMT = '<Bh'
 OUTPUT_RGB_FMT   = '<BBBBBB'
 OUTPUT_PIXELS_FMT = '<BBHB'
-
+OUTPUT_MPR121_FMT = '<BB' + 'B'*12
 OUTPUT_RS485_FMT = '<BBB'
 
 #
@@ -86,6 +89,19 @@ def validate_output(output):
         if (not check_required(output, "recvpin")): return False
         if (not check_required(output, "xmitpin")): return False
         if (not check_required(output, "enablepin")): return False
+    elif (output["type"] == "mpr121"):
+        if (not check_required(output, "irqpin")): return False
+        if (not check_required(output, "useinterrupt")): return False
+        if (not check_required(output, "trigger", 12)): return False
+        if (not check_required(output, "release", 12)): return False
+        for val in output["trigger"]:
+            if (val > 0xF):
+                print("ERROR: MPR121 trigger values must be <= %d" % (0xF))
+                return False
+        for val in output["release"]:
+            if (val > 0xF):
+                print("ERROR: MPR121 release values must be <= %d" % (0xF))
+                return False
 
 
 #XXX: Continue here
@@ -93,6 +109,16 @@ def validate_output(output):
 #XXX: Should check for any value matching HMTL_TERMINATION???
 
     return True
+
+def post_process_config(output):
+    if (output["type"] == "mpr121"):
+        # Need to combine trigger and release values into single threshold
+        # value:  (release << 4) | (trigger)
+        output["threshold"] = [ 0 for i in range(0, len(output["trigger"]))]
+        for i in range(0, len(output["trigger"])):
+            output["threshold"][i] = (output["release"][i] << 4) | (output["trigger"][i])
+        #print("thresholds:", [ "%x" % val for val in output["threshold"]])
+
 
 def validate_config(data):
     """Verify that the configuration file is valid"""
@@ -123,6 +149,9 @@ def validate_config(data):
     for output in data["outputs"]:
         if (not validate_output(output)):
             return False;
+
+    for output in data["outputs"]:
+        post_process_config(output)
 
     return True
 
@@ -182,6 +211,11 @@ def get_output_struct(output):
                                     output['recvpin'],
                                     output['xmitpin'],
                                     output['enablepin'])
+    elif (type == "mpr121"):
+        args = [OUTPUT_MPR121_FMT, output["irqpin"],
+                output["useinterrupt"]] + [x for x in output["threshold"]]
+        print("TEST:", args)
+        packed_output = struct.pack(*args)
     else:
         packed_output = b"" # XXX
 
