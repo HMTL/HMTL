@@ -21,11 +21,9 @@
 
 #define DEBUG_PIN 13
 
-#define MAX_OUTPUTS 8
-
 config_hdr_t config_hdr;
-output_hdr_t *outputs[MAX_OUTPUTS];
-config_max_t rawoutputs[MAX_OUTPUTS];
+output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
+config_max_t rawoutputs[HMTL_MAX_OUTPUTS];
 int config_outputs = 0;
 
 void setup()
@@ -34,7 +32,7 @@ void setup()
   pinMode(DEBUG_PIN, OUTPUT);
 
   /* Setup the output pointer array */
-  for (int i = 0; i < MAX_OUTPUTS; i++) {
+  for (int i = 0; i < HMTL_MAX_OUTPUTS; i++) {
     outputs[i] = NULL;
   }
 
@@ -43,7 +41,7 @@ void setup()
 
 void loop()
 {
-  if (handle_command()) {
+  if (receive_command()) {
     digitalWrite(DEBUG_PIN, HIGH);
   } else {
     delay(50);
@@ -51,8 +49,33 @@ void loop()
   }
 }
 
+/* Read the current configuration from EEPROM */
+boolean read_configuration() {
+  int configOffset = hmtl_read_config(&config_hdr,
+				      rawoutputs,
+				      HMTL_MAX_OUTPUTS);
+  if (configOffset < 0) {
+    DEBUG_ERR("Failed to read configuration");
+    return false;
+  }
+
+  // Fill in the output array
+  for (int i = 0; i < HMTL_MAX_OUTPUTS; i++) {
+    if (i < config_hdr.num_outputs) {
+      outputs[i] = &rawoutputs[i].hdr;
+    } else {
+      outputs[i] = NULL;
+    }
+  }
+
+  return true;
+}
+
+/*
+ * Read in commands from the serial device
+ */
 #define BUFF_LEN 128 + sizeof(HMTL_TERMINATOR)
-boolean handle_command()
+boolean receive_command()
 {
   static byte buff[BUFF_LEN];
   static byte offset = 0;
@@ -84,13 +107,16 @@ boolean handle_command()
   return received_command;
 }
 
+/* State machine for receiving and writing a configuration */
 #define STATE_NEW    0
 #define STATE_READY  1
 #define STATE_DONE   2
 #define STATE_ERROR -1
-
 int state = STATE_NEW;
 
+/*
+ * Process a complete command
+ */
 void handle_command(byte *cmd, byte len) {
   DEBUG_VALUE(DEBUG_HIGH, "Recv: ", (char *)cmd);
   DEBUG_PRINT(DEBUG_HIGH, " Hex:");
@@ -300,6 +326,13 @@ void handle_command(byte *cmd, byte len) {
     else if (strcmp(str, HMTL_CONFIG_PRINT) == 0) {
       DEBUG_PRINTLN(DEBUG_HIGH, "Received config print");
       hmtl_print_config(&config_hdr, outputs);
+    }
+
+    else if (strcmp(str, HMTL_CONFIG_READ) == 0) {
+      DEBUG_PRINTLN(DEBUG_HIGH, "Received config read");
+      if (!read_configuration()) {
+	goto FAIL;
+      }
     }
   }
 

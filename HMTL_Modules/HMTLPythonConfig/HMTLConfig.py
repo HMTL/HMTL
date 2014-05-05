@@ -28,6 +28,8 @@ def handle_args():
                       help="Perform dryrun only", default=False)
     parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
                       help="Write configuration", default=False)
+    parser.add_option("-p", "--print", dest="printconfig", action="store_true",
+                      help="Read and print the current configuration", default=False)
 
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
@@ -124,6 +126,11 @@ def main():
         ser = serial.Serial(device, 9600, timeout=10)
         if (waitForReady() == False):
             exit(1)
+
+    if (options.printconfig == True):
+        send_command(HMTLprotocol.HMTL_CONFIG_READ)
+        send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+        exit(0)
 
     json_file = open(options.filename)
     config_data = json.load(json_file)

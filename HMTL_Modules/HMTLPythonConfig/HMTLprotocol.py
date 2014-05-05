@@ -14,6 +14,7 @@ HMTL_CONFIG_FAIL   = "fail"
 
 HMTL_CONFIG_START  = "start"
 HMTL_CONFIG_END    = "end"
+HMTL_CONFIG_READ   = "read"
 HMTL_CONFIG_PRINT  = "print"
 HMTL_CONFIG_WRITE  = "write"
 
