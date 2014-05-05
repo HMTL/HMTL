@@ -92,7 +92,7 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
   }
 
   DEBUG_VALUE(DEBUG_LOW, "hmtl_read_config: size=", addr - HMTL_CONFIG_ADDR);
-  DEBUG_VALUELN(DEBUG_LOW, " end=", addr);
+  DEBUG_VALUE(DEBUG_LOW, " end=", addr);
   DEBUG_VALUELN(DEBUG_LOW, " module address=", hdr->address);
 
   return addr;
@@ -135,7 +135,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 /* Initialized the pins of an output */
 int hmtl_setup_output(output_hdr_t *hdr, void *data)
 {
-  DEBUG_VALUE(DEBUG_HIGH, "setup_output: type=", hdr->type);
+  DEBUG_VALUE(DEBUG_HIGH, "hmtl_setup_output: type=", hdr->type);
   switch (hdr->type) {
       case HMTL_OUTPUT_VALUE: 
       {

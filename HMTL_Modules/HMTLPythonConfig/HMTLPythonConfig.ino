@@ -82,24 +82,37 @@ boolean receive_command()
   static byte buff[BUFF_LEN];
   static byte offset = 0;
   boolean received_command = false;
+  int command_len = 0;
 
   while (Serial.available()) {
     buff[offset] = Serial.read();
     DEBUG_HEXVAL(DEBUG_TRACE, "Recv char:", buff[offset]);
     DEBUG_VALUELN(DEBUG_TRACE, " off:", offset);
 
-    // Check for termination
-    if ((offset >= 3) &&
+    /*
+     * Check for termination.  This can come in two forms:
+     *   1) If the first character is a potential letter, '\n' can terminate
+     *   2) The 4byte HMTL_TERMINATOR
+     */
+    if ((offset >= 1) &&
+	(buff[0] >= 'A') && (buff[0] <= 'z') &&
+	(buff[offset] == '\n')) {
+      command_len = offset;
+      received_command = true;
+    } else if ((offset >= 3) &&
 	((uint32_t)buff[offset - 3] << 24 |
 	 (uint32_t)buff[offset - 2] << 16 |
 	 (uint32_t)buff[offset - 1] << 8 |
 	 (uint32_t)buff[offset]) == HMTL_TERMINATOR) {
-      // Replace the terminator with string-end
-      buff[offset - 3] = '\0';
-
-      handle_command(buff, offset - 3); // ??? Whats the correct length?
-      offset = 0;
+      command_len = offset - 3;
       received_command = true;
+    }
+
+    if (received_command) {
+      // Replace the terminator with string-end
+      buff[command_len] = '\0';
+      handle_command(buff, command_len);
+      offset = 0;
     } else {
       offset++;
       if (offset >= BUFF_LEN) offset = 0;
