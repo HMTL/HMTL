@@ -24,7 +24,7 @@ def handle_args():
                       help="HMTL configuration file", metavar="FILE")
     parser.add_option("-d", "--device", dest="device",
                       help="Arduino USB device")
-    parser.add_option("-a", "--address", dest="address",
+    parser.add_option("-a", "--address", dest="address", type="int",
                       help="Set address");
 
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
@@ -45,10 +45,6 @@ def handle_args():
         (options.address == None)):
         parser.print_help()
         exit("Must specify mode")
-
-    if (options.address):
-        # XXX: This can probably be handled with an arg to add_option()
-        options.address = int(options.address)
 
     if ((options.dryrun == False) and (options.device == None)):
         parser.print_help()
