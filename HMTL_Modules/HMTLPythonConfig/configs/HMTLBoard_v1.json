@@ -1,0 +1,34 @@
+{
+    "info": "This config is the default for the first HMTL PCB"
+    "header": {
+	"protocol_version": 2,
+	"hardware_version": 1,
+	"address": 0,
+	"flags": 0
+    },
+    "outputs": [
+	{
+	    "type": "value",
+	    "pin": 13,
+	    "value": 0
+	},
+	{
+	    "type": "rgb",
+	    "pins": [ 9, 10, 11 ],
+	    "values": [ 0, 0, 0 ]
+	},
+	{
+	    "type": "pixels",
+	    "clockpin": 8,
+	    "datapin": 12,
+	    "numpixels": 50,
+	    "rgbtype": 0
+	},
+	{
+	    "type": "rs485",
+	    "recvpin": 2,
+	    "xmitpin": 7,
+	    "enablepin": 4
+	}
+    ]
+}

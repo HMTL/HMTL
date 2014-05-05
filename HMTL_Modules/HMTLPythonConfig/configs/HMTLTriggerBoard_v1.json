@@ -1,0 +1,57 @@
+{
+    "info": "This config is the default for the 4th revision HMTL PCB"
+    "header": {
+	"protocol_version": 2,
+	"hardware_version": ???,
+	"address": 0,
+	"flags": 0
+    },
+    "outputs": [
+	{
+	    "type": "rgb",
+	    "pins": [ 13, 10, 11 ],
+	    "values": [ 0, 0, 0 ],
+	    "info": "On-board RGB LED"
+	},
+	{
+	    "type": "rs485",
+	    "recvpin": 4,
+	    "xmitpin": 7,
+	    "enablepin": 2
+	},
+	{
+	    "type": "value",
+	    "pin": 9,
+	    "value": 0,
+	    "info": "PWM output 1"
+	},
+	{
+	    "type": "value",
+	    "pin": 6,
+	    "value": 0,
+	    "info": "PWM Output 2"
+	},
+	{
+	    "type": "value",
+	    "pin": 5,
+	    "value": 0,
+	    "info": "PWM Output 3"
+	},
+
+
+	{
+	    "type": "value",
+	    "pin": 3,
+	    "value": 0,
+	    "info": "PWM Output 4"
+	},
+	{
+	    "type": "pixels",
+	    "clockpin": 8,
+	    "datapin": 12,
+	    "numpixels": 50,
+	    "rgbtype": 0,
+	    "info": "Optional connection on back of board"
+	}
+    ]
+}
