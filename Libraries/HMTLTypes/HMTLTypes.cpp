@@ -558,7 +558,7 @@ boolean hmtl_validate_config(config_hdr_t *hdr, output_hdr_t *outputs[],
       for (int pin = 0; pin < 3; pin++) {
 	pinbit = (1 << out2->pins[pin]);
 	if (pinmap & pinbit) goto PIN_ERROR;
-	pinmap != pinbit;
+	pinmap |= pinbit;
       }
       break;
     }
@@ -567,10 +567,11 @@ boolean hmtl_validate_config(config_hdr_t *hdr, output_hdr_t *outputs[],
       if (!hmtl_validate_pixels(out2)) goto VALIDATE_ERROR;
       pinbit = (1 << out2->clockPin);
       if (pinmap & pinbit) goto PIN_ERROR;
-      pinmap != pinbit;
+      pinmap |= pinbit;
       pinbit = (1 << out2->dataPin);
       if (pinmap & pinbit) goto PIN_ERROR;
-      pinmap != pinbit;
+      pinmap |= pinbit;
+      break;
     }
     case HMTL_OUTPUT_MPR121: {
       config_mpr121_t *out2 = (config_mpr121_t *)out;

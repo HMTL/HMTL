@@ -8,12 +8,12 @@
     "outputs": [
 	{
 	    "type": "value",
-	    "pin": 13,
+	    "pin": 3,
 	    "value": 0
 	},
 	{
 	    "type": "rgb",
-	    "pins": [ 10, 11, 12],
+	    "pins": [ 10, 11, 13 ],
 	    "values": [ 0, 0, 0 ]
 	},
 	{

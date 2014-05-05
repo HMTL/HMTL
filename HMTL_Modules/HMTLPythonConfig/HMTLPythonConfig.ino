@@ -365,6 +365,6 @@ void handle_command(byte *cmd, byte len) {
 
  FAIL:
   // Reply with FAIL
-  Serial.print(HMTL_FAIL);
+  Serial.println(HMTL_FAIL);
   state = STATE_ERROR;
 }
