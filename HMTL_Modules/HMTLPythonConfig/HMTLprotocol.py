@@ -35,7 +35,10 @@ CONFIG_TYPES = {
     "program" : 0x3,
     "pixels"  : 0x4,
     "mpr121"  : 0x5,
-    "rs485"   : 0x6
+    "rs485"   : 0x6,
+    
+    # The following values are for special commands
+    "address" : 0xE0,
 }
 
 # Individial object formats
@@ -48,6 +51,8 @@ OUTPUT_RGB_FMT   = '<BBBBBB'
 OUTPUT_PIXELS_FMT = '<BBHB'
 OUTPUT_MPR121_FMT = '<BB' + 'B'*12
 OUTPUT_RS485_FMT = '<BBB'
+
+UPDATE_ADDRESS_FMT = '<H'
 
 #
 # Configuration validation
@@ -104,9 +109,6 @@ def validate_output(output):
                 print("ERROR: MPR121 release values must be <= %d" % (0xF))
                 return False
 
-
-#XXX: Continue here
-
 #XXX: Should check for any value matching HMTL_TERMINATION???
 
     return True
@@ -124,7 +126,7 @@ def post_process_config(output):
 def validate_config(data):
     """Verify that the configuration file is valid"""
 
-    print("* Validating configuration data")
+    print("***** Validating configuration data *****")
 
     if (not "header" in data):
         print("Input file does not contain 'header'")
@@ -182,7 +184,7 @@ def get_header_struct(data):
     return packed_start + packed
 
 def get_output_struct(output):
-    print("get_output_struct: %s" % (output))
+#    print("get_output_struct: %s" % (output))
     type = output["type"]
 
     packed_start = get_config_start(type)
@@ -215,9 +217,17 @@ def get_output_struct(output):
     elif (type == "mpr121"):
         args = [OUTPUT_MPR121_FMT, output["irqpin"],
                 output["useinterrupt"]] + [x for x in output["threshold"]]
-        print("TEST:", args)
         packed_output = struct.pack(*args)
     else:
         packed_output = b"" # XXX
 
     return packed_start + packed_hdr + packed_output;
+
+def get_address_struct(address):
+    print("get_address_struct: address %d" % (address))
+
+    packed_start = get_config_start("address")
+    packed_address = struct.pack(UPDATE_ADDRESS_FMT,
+                                 address)
+    
+    return packed_start + packed_address

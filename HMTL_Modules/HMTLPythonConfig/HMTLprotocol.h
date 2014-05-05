@@ -11,6 +11,8 @@
 #define HMTL_CONFIG_PRINT "print"
 #define HMTL_CONFIG_WRITE "write"
 
+#define HMTL_COMMAND_ADDRESS 0xE0
+
 /* Terminator indicating that a complete command has been received */
 #define HMTL_TERMINATOR   (uint32_t)(0xFEFEFEFE)
 
