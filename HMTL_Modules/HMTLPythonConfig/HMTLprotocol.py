@@ -153,6 +153,7 @@ def validate_config(data):
         if (not validate_output(output)):
             return False;
 
+    # Perform post-validation processing
     for output in data["outputs"]:
         post_process_config(output)
 

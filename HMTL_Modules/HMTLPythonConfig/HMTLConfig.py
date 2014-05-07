@@ -1,4 +1,5 @@
-#!/usr/local/bin/python3
+#!/usr/bin/python
+##!/usr/local/bin/python3
 #
 # This reads a HMTL configuration in JSON format and sends it over the serial
 # connection to a HMTL module
@@ -7,6 +8,9 @@ from optparse import OptionParser
 import json
 from pprint import pprint
 import serial
+from binascii import hexlify
+
+import portscan
 import HMTLprotocol
 
 # XXX: The serial device for the Arduino.  This should be determined via
@@ -27,6 +31,10 @@ def handle_args():
     parser.add_option("-a", "--address", dest="address", type="int",
                       help="Set address");
 
+    parser.add_option("-c", "--chooseport", dest="chooseport", action="store_true",
+                      help="Choose port from list of available ports", default=False)
+
+
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)
     parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
@@ -45,6 +53,9 @@ def handle_args():
         (options.address == None)):
         parser.print_help()
         exit("Must specify mode")
+
+    if (options.chooseport):
+        options.device = portscan.choose_port()
 
     if ((options.dryrun == False) and (options.device == None)):
         parser.print_help()
@@ -99,12 +110,13 @@ def send_and_confirm(data):
 # Send a text command
 def send_command(command):
     print("send_command: %s" % (command))
-    data = bytes(command, 'utf-8')
-    send_and_confirm(data)
+    #    data = bytes(command, 'utf-8')
+    #    send_and_confirm(data)
+    send_and_confirm(command)
 
 # Send a binary config update
 def send_config(type, config):
-    print("send_config:  %-10s %s" % (type, config))
+    print("send_config:  %-10s %s" % (type, hexlify(config)))
     send_and_confirm(config)
 
 # Send the entire configuration

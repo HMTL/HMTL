@@ -1,8 +1,8 @@
 {
-    "info": "This config is the default for the 4th revision HMTL PCB"
+    "info": "This config is the default for the 1st revision HMTL Trigger PCB",
     "header": {
 	"protocol_version": 2,
-	"hardware_version": ???,
+	"hardware_version": 5,
 	"address": 0,
 	"flags": 0
     },
@@ -37,8 +37,6 @@
 	    "value": 0,
 	    "info": "PWM Output 3"
 	},
-
-
 	{
 	    "type": "value",
 	    "pin": 3,
