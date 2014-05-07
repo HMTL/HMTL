@@ -1,0 +1,51 @@
+#!/usr/bin/python
+#
+# This script reads from serial and prints the output
+#
+
+from optparse import OptionParser
+import serial
+import portscan
+
+def handle_args():
+    global options
+
+    parser = OptionParser()
+    parser.add_option("-d", "--device", dest="device",
+                      help="Arduino USB device")
+    parser.add_option("-c", "--chooseport", dest="chooseport", action="store_true",
+                      help="Choose port from list of available ports", default=False)
+
+    parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
+                      help="Verbose output", default=False)
+
+    (options, args) = parser.parse_args()
+
+    # Required args
+    if (options.chooseport):
+        options.device = portscan.choose_port()
+
+    if (options.device == None):
+        parser.print_help()
+        exit("Must specify device");
+
+    return (options, args)
+
+def main():
+    global device
+    global ser
+
+    handle_args()
+
+    if (options.device != None):
+        device = options.device
+    
+    ser = serial.Serial(device, 9600, timeout=10)
+    while True:
+        data = ser.readline().strip()
+        try:
+            print("%s" % (data.decode()))
+        except UnicodeDecodeError:
+            print("'%s'" % (data))
+
+main()
