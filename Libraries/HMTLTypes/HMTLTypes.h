@@ -4,6 +4,9 @@
 #ifndef HMTLTYPES_H
 #define HMTLTYPES_H
 
+#include "PixelUtil.h"
+#include "RS485Utils.h"
+
 /******************************************************************************
  * Transport-agnostic message types
  */
@@ -140,6 +143,12 @@ uint16_t hmtl_msg_size(output_hdr_t *output);
 
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
+int32_t hmtl_setup(config_hdr_t *config, 
+		   config_max_t readoutputs[], output_hdr_t *outputs[], 
+		   byte num_outputs, RS485Socket *rs485, PixelUtil *pixels,
+		   config_rgb_t *rgb_output, config_value_t *value_output,
+		   int *configOffset);
+
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
 int hmtl_setup_output(output_hdr_t *hdr, void *data);

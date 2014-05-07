@@ -945,3 +945,72 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
 
   return read;
 }
+
+/*
+ * Read in the EEProm config and initialize ouputs
+ */
+int32_t hmtl_setup(config_hdr_t *config, 
+		   config_max_t readoutputs[], output_hdr_t *outputs[], 
+		   byte num_outputs,
+		   
+		   RS485Socket *rs485,
+		   PixelUtil *pixels,
+		   config_rgb_t *rgb_output,
+		   config_value_t *value_output,
+		   
+		   int *configOffset
+	       ) {
+  int32_t outputs_found = 0;
+
+  int offset = hmtl_read_config(config,
+				readoutputs, 
+				num_outputs);
+  if (offset < 0) {
+    DEBUG_ERR("Failed to read configuration");
+    DEBUG_ERR_STATE(12);
+  }
+  if (configOffset) *configOffset = offset;
+
+  DEBUG_VALUELN(DEBUG_LOW, "Read config.  offset=", offset);
+  for (int i = 0; i < config->num_outputs; i++) {
+    if (i >= num_outputs) {
+      DEBUG_VALUELN(DEBUG_ERROR, "Too many outputs:", config->num_outputs);
+      DEBUG_ERR_STATE(13);
+    }
+    outputs[i] = (output_hdr_t *)&readoutputs[i];
+  }
+
+  DEBUG_COMMAND(DEBUG_HIGH, hmtl_print_config(config, outputs));
+
+  /* Initialize the outputs */
+  for (int i = 0; i < config->num_outputs; i++) {
+    void *data = NULL;
+    byte type = ((output_hdr_t *)outputs[i])->type;
+    switch (type) {
+    case HMTL_OUTPUT_PIXELS: {
+      if (pixels == NULL) continue;
+      data = pixels;
+      break;
+    }
+    case HMTL_OUTPUT_RS485: {
+      if (rs485 == NULL) continue;
+      data = rs485;
+      break;
+    }
+    case HMTL_OUTPUT_RGB: {
+      if (rgb_output == NULL) continue;
+      memcpy(rgb_output, outputs[i], sizeof (config_rgb_t));
+      break;
+    }
+    case HMTL_OUTPUT_VALUE: {
+      if (value_output == NULL) continue;
+      memcpy(value_output, outputs[i], sizeof (config_value_t));
+      break;
+    }
+    }
+    hmtl_setup_output((output_hdr_t *)outputs[i], data);
+    outputs_found |= (1 << type);
+  }
+
+  return outputs_found;
+}
