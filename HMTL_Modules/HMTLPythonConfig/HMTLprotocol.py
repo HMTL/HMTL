@@ -240,7 +240,7 @@ def get_test_struct(output, value):
                          0,    # CRC - XXX: TODO!
                          1,    # Protocol version
                          10,   # Message length
-                         255,  # Destination address 255 is "Any"
+                         65535,  # Destination address 65535 is "Any"
 
                          CONFIG_TYPES["value"], # Message type 
                          output % 4,            # Output number
