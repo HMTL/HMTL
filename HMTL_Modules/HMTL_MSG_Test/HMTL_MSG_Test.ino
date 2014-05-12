@@ -94,7 +94,7 @@ void loop() {
   unsigned int msglen;
   msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, RS485_ADDR_ANY);
   if (msg_hdr != NULL) {
-    DEBUG_VALUE(DEBUG_HIGH, "Received msg len=", msglen);
+    DEBUG_VALUE(DEBUG_HIGH, "Received rs485 msg len=", msglen);
     DEBUG_PRINT(DEBUG_HIGH, " ");
     DEBUG_COMMAND(DEBUG_HIGH, 
 		  print_hex_string((byte *)&msg, msglen)

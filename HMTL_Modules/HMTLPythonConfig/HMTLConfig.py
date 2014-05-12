@@ -13,6 +13,7 @@ import time
 
 import portscan
 import HMTLprotocol
+from HMTLSerial import *
 
 class HMTLConfigException(Exception):
     pass
@@ -41,9 +42,6 @@ def handle_args():
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
 
-    parser.add_option("-t", "--test", dest="testmode", action="store_true",
-                      help="Test Mode", default=False)
-
 
 
     (options, args) = parser.parse_args()
@@ -52,8 +50,7 @@ def handle_args():
     # Required args
     if ((options.filename == None) and
         (options.printconfig == False) and
-        (options.address == None) and
-        (options.testmode == None)):
+        (options.address == None)):
         parser.print_help()
         exit("Must specify mode")
 
@@ -65,63 +62,6 @@ def handle_args():
         exit("Must specify device if not in dry-run mode");
 
     return (options, args)
-
-def vprint(str):
-    if (options.verbose):
-        print(str)
-
-def get_line():
-    data = ser.readline().strip()
-
-    try:
-        retdata = data.decode()
-        vprint("  - received '%s'" % (retdata))
-    except UnicodeDecodeError:
-        vprint("  - received raw '%s'" % (data))
-        retdata = None
-
-    return retdata
-
-# Wait for data from device indicating its ready for commands
-def waitForReady():
-    """Wait for the Arduino to send its ready signal"""
-    print("***** Waiting for ready from Arduino *****")
-    while True:
-        data = get_line()
-        if (len(data) == 0):
-            raise Exception("Receive returned empty, timed out")
-        if (data == HMTLprotocol.HMTL_CONFIG_READY):
-            return True
-
-# Send terminated data and wait for (N)ACK
-def send_and_confirm(data, terminated):
-    """Send a command and wait for the ACK"""
-
-    if (options.dryrun):
-        return True
-
-    ser.write(data)
-    if (terminated):
-        ser.write(HMTLprotocol.HMTL_TERMINATOR)
-
-    while True:
-        ack = get_line()
-        if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
-            return True
-        if (ack == HMTLprotocol.HMTL_CONFIG_FAIL):
-            raise HMTLConfigException("Configuration command failed")
-
-# Send a text command
-def send_command(command):
-    print("send_command: %s" % (command))
-    #    data = bytes(command, 'utf-8')
-    #    send_and_confirm(data)
-    send_and_confirm(command, True)
-
-# Send a binary config update
-def send_config(type, config):
-    print("send_config:  %-10s %s" % (type, hexlify(config)))
-    send_and_confirm(config, True)
 
 # Send the entire configuration
 def send_configuration(config_data):
@@ -178,46 +118,30 @@ def main():
 
     if (options.dryrun == False):
         # Open the serial connection and wait for 
-        ser = serial.Serial(options.device, 9600, timeout=10)
-        if (waitForReady() == False):
-            exit(1)
+        ser = HMTLSerial(options.device, 
+                         verbose=options.verbose, 
+                         dryrun=options.dryrun)
 
     if (options.printconfig == True):
         # Only read and print the configuration
-        send_command(HMTLprotocol.HMTL_CONFIG_READ)
+        ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
         options.verbose = True
-        send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+        ser.send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
         exit(0)
-
-    if (options.testmode):
-        output = 0
-        while True:
-            print("Turning output %d on" % (output))
-            #send_config("test", HMTLprotocol.get_test_struct(output, 255))
-            send_and_confirm(HMTLprotocol.get_test_struct(output, 255), False)
-            #ser.write(HMTLprotocol.get_test_struct(output, 255))
-            time.sleep(1)
-
-            print("Turning output %d off" % (output))
-            #send_config("test", HMTLprotocol.get_test_struct(output, 0))
-            send_and_confirm(HMTLprotocol.get_test_struct(output, 0), False)
-           #ser.write(HMTLprotocol.get_test_struct(output, 0))
-            output += 1
-
 
     if (config_data != None):
         # Send the configuration
-        send_configuration(config_data)
+        ser.send_configuration(config_data)
     elif (options.address != None):
         # Send the address update
-        send_address(options.address)
+        ser.send_address(options.address)
 
     if (options.verbose):
         # Have the module output its entire configuration
-        send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+        ser.send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
 
     if (options.writeconfig == True):
         # Write out the module's config to EEPROM
-        send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
+        ser.send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
 
 main()

@@ -890,7 +890,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     if (offset == 0) {
       /* Wait for the start code at the beginning of the message */
       if (val != HMTL_MSG_START) {
-        DEBUG_HEXVALLN(DEBUG_ERROR, "hmtl_serial_update: not start code: ",
+        DEBUG_HEXVALLN(DEBUG_ERROR, "hmtl_serial_getmsg: not start code: ",
 		      val);
         continue;
       }
@@ -905,14 +905,14 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
       /* We have the entire message header */
 
       if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-	DEBUG_ERR("hmtl_serial_update: msg length is too short");
+	DEBUG_ERR("hmtl_serial_getmsg: msg length is too short");
 	offset = 0;
 	continue;
       }
 
       if (offset == msg_hdr->length) {
         /* This is a complete message */
-	DEBUG_PRINT(DEBUG_HIGH, "Received command");
+	DEBUG_PRINTLN(DEBUG_HIGH, "hmtl_serial_getmsg: Received complete command");
         complete = true;
         break;
       }
