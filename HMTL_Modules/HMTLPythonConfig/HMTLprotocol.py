@@ -232,3 +232,12 @@ def get_address_struct(address):
                                  address)
     
     return packed_start + packed_address
+
+def get_test_struct(output, value):
+    FMT = "<BBBBH" + "BB" + "H"
+    packed = struct.pack(FMT,
+                         0xFC, 0, 1, 10, 1,
+                         CONFIG_TYPES["value"], output % 4,
+                         value);
+    return packed
+                        

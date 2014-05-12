@@ -4,7 +4,7 @@
 
 #include <Arduino.h>
 
-#define DEBUG_LEVEL DEBUG_HIGH
+#define DEBUG_LEVEL DEBUG_LOW
 #include "Debug.h"
 
 #include "EEPromUtils.h"
@@ -240,6 +240,8 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
 #else
 	// On an non-PWM pin this outputs HIGH if value >= 128
 	analogWrite(out->pin, out->value);
+	DEBUG_VALUE(DEBUG_HIGH, "hmtl_update_output: val pin=", out->pin);
+	DEBUG_VALUELN(DEBUG_HIGH, " val=", out->value);
 #endif
         break;
       }
@@ -736,7 +738,7 @@ int
 hmtl_handle_msg(msg_hdr_t *msg_hdr,
                 config_hdr_t *config_hdr, output_hdr_t *outputs[])
 {
-  output_hdr_t *msg = (output_hdr_t *)(msg_hdr++);
+  output_hdr_t *msg = (output_hdr_t *)(++msg_hdr);
   DEBUG_VALUE(DEBUG_HIGH, "hmtl_handle_msg: type=", msg->type);
   DEBUG_VALUE(DEBUG_HIGH, " out=", msg->output);
 
@@ -824,6 +826,35 @@ hmtl_transmit_msg(msg_hdr_t *msg_hdr)
   return -1;
 }
 
+/* Check for HMTL formatted msg over the RS485 interface */
+msg_hdr_t *
+hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
+  const byte *data = rs485->getMsg(address, msglen);
+  if (data != NULL) {
+    if (*msglen < sizeof (msg_hdr_t)) {
+      msg_hdr_t *msg_hdr = (msg_hdr_t *)data;
+      
+      if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+	DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
+	goto ERROR_OUT;
+      }
+
+      if (msg_hdr->length != *msglen) {
+	DEBUG_ERR("hmtl_rs485_getmsg: msg->length != msglen");
+	goto ERROR_OUT;
+      }
+
+      // XXX: Check the CRC!  Check the version!
+
+      return msg_hdr;
+    }
+  }
+
+ ERROR_OUT:
+  *msglen = 0;
+  return NULL;
+}
+
 /*
  * Read in a message structure from the serial interface
  */
@@ -832,7 +863,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
 {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)&msg[0];
   byte offset = *offset_ptr;
-  boolean complete;
+  boolean complete = false;
 
   while (Serial.available()) {
     if (offset > msg_len) {
@@ -842,11 +873,14 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     }
 
     byte val = Serial.read();
+    //    DEBUG_VALUE(DEBUG_HIGH, " ", offset);
+    //    DEBUG_HEXVAL(DEBUG_HIGH, "-", val);
 
     if (offset == 0) {
       /* Wait for the start code at the beginning of the message */
       if (val != HMTL_MSG_START) {
-        DEBUG_ERR("hmtl_serial_update: not start code");
+        DEBUG_HEXVALLN(DEBUG_ERROR, "hmtl_serial_update: not start code: ",
+		      val);
         continue;
       }
 
@@ -856,17 +890,18 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     msg[offset] = val;
     offset++;
 
-    if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-      DEBUG_ERR("hmtl_serial_update: msg lenghth is too short");
-      offset = 0;
-      continue;
-    }
-
     if (offset >= sizeof (msg_hdr_t)) {
       /* We have the entire message header */
 
+      if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+	DEBUG_ERR("hmtl_serial_update: msg length is too short");
+	offset = 0;
+	continue;
+      }
+
       if (offset == msg_hdr->length) {
         /* This is a complete message */
+	DEBUG_PRINT(DEBUG_HIGH, "Received command");
         complete = true;
         break;
       }

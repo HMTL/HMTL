@@ -9,6 +9,7 @@ import json
 from pprint import pprint
 import serial
 from binascii import hexlify
+import time
 
 import portscan
 import HMTLprotocol
@@ -44,13 +45,19 @@ def handle_args():
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
 
+    parser.add_option("-t", "--test", dest="testmode", action="store_true",
+                      help="Test Mode", default=False)
+
+
+
     (options, args) = parser.parse_args()
     # print("options:" + str(options) + " args:" + str(args))
 
     # Required args
     if ((options.filename == None) and
         (options.printconfig == False) and
-        (options.address == None)):
+        (options.address == None) and
+        (options.testmode == None)):
         parser.print_help()
         exit("Must specify mode")
 
@@ -188,6 +195,20 @@ def main():
         options.verbose = True
         send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
         exit(0)
+
+    if (options.testmode):
+        output = 0
+        while True:
+            print("Turning output %d on" % (output))
+            send_config("test", HMTLprotocol.get_test_struct(output, 255))
+            #ser.write(HMTLprotocol.get_test_struct(output, 255))
+            time.sleep(1)
+
+            print("Turning output %d off" % (output))
+            send_config("test", HMTLprotocol.get_test_struct(output, 0))
+            #ser.write(HMTLprotocol.get_test_struct(output, 0))
+            output += 1
+
 
     if (config_data != None):
 

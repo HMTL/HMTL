@@ -64,9 +64,7 @@ void loop() {
 
   if (data != NULL) {
     DEBUG_PRINT(DEBUG_HIGH, " Recv:");
-    for (int i = 0; i < msglen; i++) {
-      DEBUG_HEXVAL(DEBUG_HIGH, " ", data[i]);
-    }
+    DEBUG_COMMAND(DEBUG_HIGH, print_hex_string(data, msglen));
     DEBUG_PRINTLN(DEBUG_HIGH, "");
     
     if (has_rgb) {

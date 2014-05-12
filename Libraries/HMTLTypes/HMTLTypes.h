@@ -19,15 +19,27 @@ typedef struct {
   byte value;
 } msg_output_value_t; // XXX Ditch me
 
+/*
+ * Message format is:
+ *
+ *   msg_hdr_t + outout_hdr_t + command
+ *
+ * 6B:  |startcode |   crc    | version  | length   |      address       |
+ * 2B:  |   type   |  output  | ...
+ */
+
+
 #define HMTL_MAX_MSG_LEN 128
 
-#define HMTL_MSG_START 'K'
+#define HMTL_MSG_START 0xFC
 
+#define HMTL_MSG_VERSION 1
 typedef struct {
   byte startcode;
   byte crc;
+  byte version;
   byte length;
-  byte address;
+  uint16_t address;
 } msg_hdr_t;
 
 typedef struct {
@@ -156,7 +168,14 @@ int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
+int
+hmtl_handle_msg(msg_hdr_t *msg_hdr,
+                config_hdr_t *config_hdr, output_hdr_t *outputs[]);
+boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
+
+msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
+			     uint16_t address);
 
 /* Configuration validation */
 boolean hmtl_validate_header(config_hdr_t *config_hdr);
