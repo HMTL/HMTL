@@ -1,0 +1,41 @@
+{
+    "header": {
+	"protocol_version": 2,
+	"hardware_version": 3,
+	"address": 1,
+	"flags": 0
+    },
+    "outputs": [
+	{
+	    "type": "value",
+	    "pin": 2,
+	    "value": 0
+	},
+	{
+	    "type": "value",
+	    "pin": 3,
+	    "value": 0
+	},
+	{
+	    "type": "value",
+	    "pin": 6,
+	    "value": 0
+	},
+	{
+	    "type": "value",
+	    "pin": 9,
+	    "value": 0
+	},
+	{
+	    "type": "rgb",
+	    "pins": [ 10, 11, 13],
+	    "values": [ 0, 0, 0 ]
+	},
+	{
+	    "type": "rs485",
+	    "recvpin": 4,
+	    "xmitpin": 7,
+	    "enablepin": 5
+	}
+    ]
+}
