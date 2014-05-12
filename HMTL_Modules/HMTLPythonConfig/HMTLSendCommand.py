@@ -6,6 +6,7 @@
 from optparse import OptionParser
 import serial
 import time
+from binascii import hexlify
 
 import portscan
 import HMTLprotocol
@@ -43,11 +44,16 @@ def main():
     output = 0
     while True:
         print("Turning output %d on" % (output))
-        ser.send_and_confirm(HMTLprotocol.get_test_struct(output, 255), False)
+
+        command = HMTLprotocol.get_value_msg(output, HMTLprotocol.BROADCAST, 255)
+        print("  sending: %s" % (hexlify(command)))
+        ser.send_and_confirm(command, False)
         time.sleep(1)
 
         print("Turning output %d off" % (output))
-        ser.send_and_confirm(HMTLprotocol.get_test_struct(output, 0), False)
-        output += 1
+        command = HMTLprotocol.get_value_msg(output, HMTLprotocol.BROADCAST, 0)
+        print("  sending: %s" % (hexlify(command)))
+        ser.send_and_confirm(command, False)
+        output = (output + 1) % 4
 
 main()

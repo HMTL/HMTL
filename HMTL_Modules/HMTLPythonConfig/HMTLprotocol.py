@@ -54,6 +54,18 @@ OUTPUT_RS485_FMT = '<BBB'
 
 UPDATE_ADDRESS_FMT = '<H'
 
+# HMTL Message formats
+MSG_HDR_FMT = "<BBBBH"
+MSG_VALUE_FMT = "<H"
+MSG_RGB_FMT = "BBB"
+
+MSG_BASE_LEN = 6 + 2
+MSG_VALUE_LEN = MSG_BASE_LEN + 2
+MSG_RGB_LEN = MSG_BASE_LEN + 3
+
+
+BROADCAST = 65535
+
 #
 # Configuration validation
 #
@@ -220,9 +232,9 @@ def get_output_struct(output):
                 output["useinterrupt"]] + [x for x in output["threshold"]]
         packed_output = struct.pack(*args)
     else:
-        packed_output = b"" # XXX
+        raise Exception("Unknown type %s" % (type))
 
-    return packed_start + packed_hdr + packed_output;
+    return packed_start + packed_hdr + packed_output
 
 def get_address_struct(address):
     print("get_address_struct: address %d" % (address))
@@ -233,17 +245,37 @@ def get_address_struct(address):
     
     return packed_start + packed_address
 
-def get_test_struct(output, value):
-    FMT = "<BBBBH" + "BB" + "H"
-    packed = struct.pack(FMT,
+
+#
+# HMTL Message types
+#
+
+def get_msg_hdr(msglen, address):
+    packed = struct.pack(MSG_HDR_FMT,
                          0xFC, # Startcode
                          0,    # CRC - XXX: TODO!
                          1,    # Protocol version
-                         10,   # Message length
-                         65535,  # Destination address 65535 is "Any"
-
-                         CONFIG_TYPES["value"], # Message type 
-                         output % 4,            # Output number
-                         value)                 # Value to set
+                         msglen,   # Message length
+                         address)  # Destination address 65535 is "Any"
     return packed
-                        
+
+def get_output_hdr(type, output):
+    packed = struct.pack(OUTPUT_HDR_FMT,
+                         CONFIG_TYPES["value"], # Message type 
+                         output % 4)            # Output number
+    return packed
+
+def get_value_msg(output, address, value):
+    packed_hdr = get_msg_hdr(MSG_VALUE_LEN, address)
+    packed_out = get_output_hdr("value", output)
+    packed = struct.pack(MSG_VALUE_FMT,
+                         value)                 # Value to set
+
+    return packed_hdr + packed_out + packed                        
+
+def get_rgb_msg(output, address, r, g, b):
+    packed_hdr = get_msg_hdr(MSG_RGB_LEN, address)
+    packed_out = get_output_hdr("rgb", output)
+    packed = struct.pack(MSG_RGB_FMT, r, g, b)
+
+    return packed_hdr + packed_out + packed
