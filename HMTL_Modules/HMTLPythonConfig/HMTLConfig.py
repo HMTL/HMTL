@@ -14,10 +14,6 @@ import time
 import portscan
 import HMTLprotocol
 
-# XXX: The serial device for the Arduino.  This should be determined via
-# scanning
-device = '/dev/tty.usbserial-AM01SJJQ'
-
 class HMTLConfigException(Exception):
     pass
 
@@ -98,14 +94,15 @@ def waitForReady():
             return True
 
 # Send terminated data and wait for (N)ACK
-def send_and_confirm(data):
+def send_and_confirm(data, terminated):
     """Send a command and wait for the ACK"""
 
     if (options.dryrun):
         return True
 
     ser.write(data)
-    ser.write(HMTLprotocol.HMTL_TERMINATOR)
+    if (terminated):
+        ser.write(HMTLprotocol.HMTL_TERMINATOR)
 
     while True:
         ack = get_line()
@@ -119,12 +116,12 @@ def send_command(command):
     print("send_command: %s" % (command))
     #    data = bytes(command, 'utf-8')
     #    send_and_confirm(data)
-    send_and_confirm(command)
+    send_and_confirm(command, True)
 
 # Send a binary config update
 def send_config(type, config):
     print("send_config:  %-10s %s" % (type, hexlify(config)))
-    send_and_confirm(config)
+    send_and_confirm(config, True)
 
 # Send the entire configuration
 def send_configuration(config_data):
@@ -155,7 +152,6 @@ def send_address(address):
     send_command(HMTLprotocol.HMTL_CONFIG_END)
 
 def main():
-    global device
     global ser
 
     handle_args()
@@ -180,12 +176,9 @@ def main():
             print("ERROR: Exiting due to invalid configuration file")
             exit(1)
 
-    if (options.device != None):
-        device = options.device
-
     if (options.dryrun == False):
         # Open the serial connection and wait for 
-        ser = serial.Serial(device, 9600, timeout=10)
+        ser = serial.Serial(options.device, 9600, timeout=10)
         if (waitForReady() == False):
             exit(1)
 
@@ -200,18 +193,20 @@ def main():
         output = 0
         while True:
             print("Turning output %d on" % (output))
-            send_config("test", HMTLprotocol.get_test_struct(output, 255))
+            #send_config("test", HMTLprotocol.get_test_struct(output, 255))
+            send_and_confirm(HMTLprotocol.get_test_struct(output, 255), False)
             #ser.write(HMTLprotocol.get_test_struct(output, 255))
             time.sleep(1)
 
             print("Turning output %d off" % (output))
-            send_config("test", HMTLprotocol.get_test_struct(output, 0))
-            #ser.write(HMTLprotocol.get_test_struct(output, 0))
+            #send_config("test", HMTLprotocol.get_test_struct(output, 0))
+            send_and_confirm(HMTLprotocol.get_test_struct(output, 0), False)
+           #ser.write(HMTLprotocol.get_test_struct(output, 0))
             output += 1
 
 
     if (config_data != None):
-
+        # Send the configuration
         send_configuration(config_data)
     elif (options.address != None):
         # Send the address update
