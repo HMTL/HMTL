@@ -5,6 +5,7 @@
 
 #include "HMTLprotocol.h"
 #include "HMTLTypes.h"
+#include "GeneralUtils.h"
 
 // XXX: Some portion of these may be required, sometimes...
 #include "EEPROM.h"

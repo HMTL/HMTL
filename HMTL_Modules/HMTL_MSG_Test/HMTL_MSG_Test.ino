@@ -64,13 +64,13 @@ void loop() {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)msg;
   if (hmtl_serial_getmsg(msg, MSG_MAX_SZ, &offset)) {
     /* Received a complete message */
-    DEBUG_VALUELN(DEBUG_HIGH, "Received msg len=", offset);
+    DEBUG_VALUE(DEBUG_HIGH, "Received msg len=", offset);
+    DEBUG_PRINT(DEBUG_HIGH, " ");
     DEBUG_COMMAND(DEBUG_HIGH, 
 		  print_hex_string(msg, offset)
 		  );
     DEBUG_PRINTLN(DEBUG_HIGH, "");
     DEBUG_PRINTLN(DEBUG_HIGH, "ok");
-    offset = 0;
 
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
@@ -82,15 +82,20 @@ void loop() {
 
     if ((msg_hdr->address != config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
-      rs485.sendMsgTo(msg_hdr->address, msg, offset);
+      DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
+      memcpy(send_buffer, msg, offset);
+      rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
     }
+
+    offset = 0;
   }
 
   /* Check for message over RS485 */
   unsigned int msglen;
   msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, RS485_ADDR_ANY);
   if (msg_hdr != NULL) {
-    DEBUG_VALUELN(DEBUG_HIGH, "Received msg len=", msglen);
+    DEBUG_VALUE(DEBUG_HIGH, "Received msg len=", msglen);
+    DEBUG_PRINT(DEBUG_HIGH, " ");
     DEBUG_COMMAND(DEBUG_HIGH, 
 		  print_hex_string((byte *)&msg, msglen)
 		  );

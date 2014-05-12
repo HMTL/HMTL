@@ -236,8 +236,14 @@ def get_address_struct(address):
 def get_test_struct(output, value):
     FMT = "<BBBBH" + "BB" + "H"
     packed = struct.pack(FMT,
-                         0xFC, 0, 1, 10, 1,
-                         CONFIG_TYPES["value"], output % 4,
-                         value);
+                         0xFC, # Startcode
+                         0,    # CRC - XXX: TODO!
+                         1,    # Protocol version
+                         10,   # Message length
+                         255,  # Destination address 255 is "Any"
+
+                         CONFIG_TYPES["value"], # Message type 
+                         output % 4,            # Output number
+                         value)                 # Value to set
     return packed
                         

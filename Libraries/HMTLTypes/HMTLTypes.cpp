@@ -4,9 +4,10 @@
 
 #include <Arduino.h>
 
-#define DEBUG_LEVEL DEBUG_LOW
+#define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
+#include "GeneralUtils.h"
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
 #include "PixelUtil.h"
@@ -260,8 +261,10 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
       }
       case HMTL_OUTPUT_PIXELS:
       {
-        PixelUtil *pixels = (PixelUtil *)data;
-        pixels->update();
+	if (data) {
+	  PixelUtil *pixels = (PixelUtil *)data;
+	  pixels->update();
+	}
         break;
       }
       case HMTL_OUTPUT_MPR121:
@@ -831,23 +834,31 @@ msg_hdr_t *
 hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
   const byte *data = rs485->getMsg(address, msglen);
   if (data != NULL) {
-    if (*msglen < sizeof (msg_hdr_t)) {
-      msg_hdr_t *msg_hdr = (msg_hdr_t *)data;
+    msg_hdr_t *msg_hdr = (msg_hdr_t *)data;
       
-      if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-	DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
-	goto ERROR_OUT;
-      }
-
-      if (msg_hdr->length != *msglen) {
-	DEBUG_ERR("hmtl_rs485_getmsg: msg->length != msglen");
-	goto ERROR_OUT;
-      }
-
-      // XXX: Check the CRC!  Check the version!
-
-      return msg_hdr;
+    if (*msglen < sizeof (msg_hdr_t)) {
+      DEBUG_VALUE(DEBUG_ERROR, "hmtl_rs485_getmsg: msg length ", *msglen);
+      DEBUG_VALUELN(DEBUG_ERROR, " short for header ", sizeof (msg_hdr_t));
+      goto ERROR_OUT;
     }
+
+    if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+      DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
+      goto ERROR_OUT;
+    }
+
+    if (msg_hdr->length != *msglen) {
+      DEBUG_VALUE(DEBUG_ERROR, "hmtl_rs485_getmsg: msg->length ", msg_hdr->length);
+      DEBUG_VALUE(DEBUG_ERROR, " != msglen ", *msglen);
+      DEBUG_COMMAND(DEBUG_ERROR,
+		    print_hex_string(data, *msglen)
+		    );
+      goto ERROR_OUT;
+    }
+
+    // XXX: Check the CRC!  Check the version!
+
+    return msg_hdr;
   }
 
  ERROR_OUT:
@@ -1015,7 +1026,7 @@ int32_t hmtl_setup(config_hdr_t *config,
     outputs[i] = (output_hdr_t *)&readoutputs[i];
   }
 
-  DEBUG_COMMAND(DEBUG_HIGH, hmtl_print_config(config, outputs));
+  DEBUG_COMMAND(DEBUG_LOW, hmtl_print_config(config, outputs));
 
   /* Initialize the outputs */
   for (int i = 0; i < config->num_outputs; i++) {

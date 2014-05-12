@@ -8,18 +8,6 @@
     },
     "outputs": [
 	{
-	    "type": "rgb",
-	    "pins": [ 11,  10, 13 ],
-	    "values": [ 0, 0, 0 ],
-	    "info": "On-board RGB LED"
-	},
-	{
-	    "type": "rs485",
-	    "recvpin": 4,
-	    "xmitpin": 7,
-	    "enablepin": 2
-	},
-	{
 	    "type": "value",
 	    "pin": 9,
 	    "value": 0,
@@ -42,6 +30,18 @@
 	    "pin": 3,
 	    "value": 0,
 	    "info": "PWM Output 4"
+	},
+	{
+	    "type": "rgb",
+	    "pins": [ 11, 10, 13 ],
+	    "values": [ 0, 0, 0 ],
+	    "info": "On-board RGB LED"
+	},
+	{
+	    "type": "rs485",
+	    "recvpin": 4,
+	    "xmitpin": 7,
+	    "enablepin": 2
 	},
 	{
 	    "type": "pixels",
