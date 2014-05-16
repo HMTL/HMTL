@@ -1,5 +1,9 @@
 import serial
 import HMTLprotocol
+from binascii import hexlify
+
+class HMTLConfigException(Exception):
+    pass
 
 class HMTLSerial():
     ser = None

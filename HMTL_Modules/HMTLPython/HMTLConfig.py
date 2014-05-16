@@ -15,8 +15,6 @@ import portscan
 import HMTLprotocol
 from HMTLSerial import *
 
-class HMTLConfigException(Exception):
-    pass
 
 def handle_args():
     global options
@@ -67,18 +65,18 @@ def handle_args():
 def send_configuration(config_data):
     print("***** Sending configuration *****");
 
-    if (send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
+    if (ser.send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
         print("Failed to get ack from start message")
         exit(1)
 
     header_struct = HMTLprotocol.get_header_struct(config_data)
-    send_config('header', header_struct)
+    ser.send_config('header', header_struct)
 
     for output in config_data["outputs"]:
         output_struct = HMTLprotocol.get_output_struct(output)
-        send_config(output["type"], output_struct)
+        ser.send_config(output["type"], output_struct)
 
-    if (send_command(HMTLprotocol.HMTL_CONFIG_END) == False):
+    if (ser.send_command(HMTLprotocol.HMTL_CONFIG_END) == False):
         print("Failed to get ack from end message")
         exit(1)
 
@@ -131,7 +129,7 @@ def main():
 
     if (config_data != None):
         # Send the configuration
-        ser.send_configuration(config_data)
+        send_configuration(config_data)
     elif (options.address != None):
         # Send the address update
         ser.send_address(options.address)

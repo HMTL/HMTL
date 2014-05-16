@@ -1,9 +1,9 @@
 {
-    "info": "This config is the default for the first HMTL PCB"
+    "info": "This config is the default for the first HMTL PCB",
     "header": {
 	"protocol_version": 2,
 	"hardware_version": 1,
-	"address": 0,
+	"address": 10,
 	"flags": 0
     },
     "outputs": [
@@ -21,7 +21,7 @@
 	    "type": "pixels",
 	    "clockpin": 8,
 	    "datapin": 12,
-	    "numpixels": 50,
+	    "numpixels": 5,
 	    "rgbtype": 0
 	},
 	{

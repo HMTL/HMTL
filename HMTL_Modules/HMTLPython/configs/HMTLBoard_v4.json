@@ -16,7 +16,7 @@
 	    "type": "pixels",
 	    "clockpin": 8,
 	    "datapin": 12,
-	    "numpixels": 5,
+	    "numpixels": 50,
 	    "rgbtype": 0
 	},
 	{
