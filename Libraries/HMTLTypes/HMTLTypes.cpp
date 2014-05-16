@@ -77,17 +77,23 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
     return -2;
   }
 
+  if (hdr->protocol_version != HMTL_CONFIG_VERSION) {
+    DEBUG_ERR("hmtl_read_config: hdr has wrong protocol version");
+    return -3;
+  }
+
   if ((hdr->num_outputs > 0) && (max_outputs != 0)) {
     /* Read in the outputs if any were indicated and a buffer was provided */
     if (max_outputs < hdr->num_outputs) {
       DEBUG_ERR("hmtl_read_config: not enough outputs");
-      return -3;
+      return -4;
     }
     for (int i = 0; i < hdr->num_outputs; i++) {
       addr = EEPROM_safe_read(addr,
                               (uint8_t *)&outputs[i], sizeof (config_max_t));
       if (addr <= 0) {
         DEBUG_ERR("hmtl_read_config: error reading outputs");
+	return -5;
       }
     }
   }
