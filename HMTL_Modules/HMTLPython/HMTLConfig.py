@@ -5,14 +5,13 @@
 # connection to a HMTL module
 
 from optparse import OptionParser
-import json
-from pprint import pprint
 import serial
 from binascii import hexlify
 import time
 
 import portscan
 import HMTLprotocol
+import HMTLjson
 from HMTLSerial import *
 
 
@@ -96,29 +95,21 @@ def main():
 
     config_data = None
     if (options.filename != None):
-        # Parse the JSON configuration file
-        json_file = open(options.filename)
-        config_data = json.load(json_file)
-        json_file.close()
-
-        if (options.address != None):
-            print("* Setting address to %d" % options.address)
-
-            # Set the address in the read config
-            config_data["header"]["address"] = options.address
-
-        print("****** Config read from '" + options.filename + "':")
-        pprint(config_data);
-
-        if (not HMTLprotocol.validate_config(config_data)):
+        config_data = HMTLjson.load_json(options.filename)
+        if (config_data == None):
             print("ERROR: Exiting due to invalid configuration file")
             exit(1)
 
-    if (options.dryrun == False):
-        # Open the serial connection and wait for 
-        ser = HMTLSerial(options.device, 
-                         verbose=options.verbose, 
-                         dryrun=options.dryrun)
+        if (options.address != None):
+            # Set the address in the read config
+            print("* Setting address to %d" % options.address)
+            config_data["header"]["address"] = options.address
+
+
+    # Open the serial connection and wait for connection
+    ser = HMTLSerial(options.device, 
+                     verbose=options.verbose, 
+                     dryrun=options.dryrun)
 
     if (options.printconfig == True):
         # Only read and print the configuration

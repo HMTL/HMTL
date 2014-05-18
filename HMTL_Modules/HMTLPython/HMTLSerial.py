@@ -1,3 +1,7 @@
+#
+# Class for handling the serial communications with an HMTL device
+#
+
 import serial
 import HMTLprotocol
 from binascii import hexlify
@@ -18,6 +22,8 @@ class HMTLSerial():
             self.ser = serial.Serial(device, 9600, timeout=timeout)
             if (self.wait_for_ready() == False):
                 exit(1)
+        else:
+            print("HMTLSerial: initialized in dry-run mode")
 
     def vprint(self, str):
         if (self.verbose):
