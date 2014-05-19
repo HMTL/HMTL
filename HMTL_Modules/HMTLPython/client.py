@@ -64,7 +64,7 @@ class HMTLClient():
         except KeyboardInterrupt:
             print("Exiting")
 
-        self.conn.send(server.SERVER_EXIT)
+#        self.conn.send(server.SERVER_EXIT)
 
     def wait(self):
         self.conn.close()
