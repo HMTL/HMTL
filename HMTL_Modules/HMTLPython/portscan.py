@@ -25,7 +25,7 @@ def serial_ports():
 # List and choose a port from all available ports
 def choose_port():
     ports = list(serial_ports())
-    default = 0
+    default = 1
     print("Available ports:")
     for (i, port) in enumerate(ports):
         print("  %d. %s" % (i + 1, port))
@@ -47,7 +47,7 @@ def choose_port():
             if (default and (len(val) == 0)):
                 useport = default
         except:
-            print("FAIL")
+            return None
 
     port = ports[useport - 1]
     print("Selected %d: %s" % (useport, port))

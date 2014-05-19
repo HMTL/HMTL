@@ -21,6 +21,15 @@ def handle_args():
                       help="Run as a server", default=False)
     parser.add_option("-d", "--device", dest="device",
                       help="Arduino USB device")
+    parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
+                      help="Perform dryrun only", default=False)
+
+    # Client options
+    parser.add_option("-r", "--rgb", dest="setrgb", action="store_true",
+                      help="Set RGB value", default=False)
+    parser.add_option("-P", "--period", dest="period", type="float",
+                      help="Sleep period between changes")
+
 
     # General options
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
@@ -36,7 +45,7 @@ def handle_args():
 
 
 
-    if (options.device == None):
+    if (options.servermode and (options.device == None) and (not options.dryrun)):
         options.device = portscan.choose_port()
 
     # Required args
@@ -60,10 +69,8 @@ def main():
         client.start()
         client.wait()
 
-
     print("Done.")
     exit(0)
 
-    
-
 main()
+
