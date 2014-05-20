@@ -29,12 +29,13 @@ def handle_args():
                       help="Set RGB value", default=False)
     parser.add_option("-P", "--period", dest="period", type="float",
                       help="Sleep period between changes")
-
+    parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
+                      help="Address to which messages are sent")
 
     # General options
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
-    parser.add_option("-p", "--port", dest="port",
+    parser.add_option("-p", "--port", dest="port", type="int",
                       help="Port to bind to", default=6000)
     parser.add_option("-a", "--address", dest="address",
                       help="Address to bind to", default="localhost")

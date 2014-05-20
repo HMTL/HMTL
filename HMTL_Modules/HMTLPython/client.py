@@ -13,12 +13,15 @@ import server
 class HMTLClient():
     setrgb = False
     period = 1.0
+    address = HMTLprotocol.BROADCAST
 
     def __init__(self, options):
         if (options.setrgb):
             self.setrgb = True
         if (options.period):
             self.period = options.period
+        if (options.hmtladdress != None):
+            self.address = options.hmtladdress
 
         address = ('localhost', 6000)
         try:
@@ -35,14 +38,14 @@ class HMTLClient():
                     print("Turning output %d on" % (output))
 
                     command = HMTLprotocol.get_value_msg(output, 
-                                                         HMTLprotocol.BROADCAST, 255)
+                                                         self.address, 255)
                     print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     time.sleep(self.period)
 
                     print("Turning output %d off" % (output))
                     command = HMTLprotocol.get_value_msg(output, 
-                                                         HMTLprotocol.BROADCAST, 0)
+                                                         self.address, 0)
                     print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     output = (output + 1) % 4
@@ -52,14 +55,14 @@ class HMTLClient():
                 blue = 0
                 while True:
                     print("Setting RGB output to %d,%d,%d" % (red, green, blue))
-                    command = HMTLprotocol.get_rgb_msg(4, HMTLprotocol.BROADCAST,
+                    command = HMTLprotocol.get_rgb_msg(4, self.address,
                                                        red, green, blue)
                     self.send_and_ack(command)
                     time.sleep(self.period)
 
-                    red = random.randrange(255)
-                    green = random.randrange(255)
-                    blue = random.randrange(255)
+                    red = random.randrange(0,2)*255
+                    green = random.randrange(0,2)*255
+                    blue = random.randrange(0,2)*255
 
         except KeyboardInterrupt:
             print("Exiting")

@@ -59,7 +59,7 @@ class HMTLServer():
                 self.handle_msg(msg)
                 print("[%.2f] Acked '%s'" % (time.time() - self.starttime, hexlify(msg)))
 
-            except EOFError:
+            except EOFError, IOError:
                 # Attempt to reconnect
                 print("Lost connection")
                 self.listener.close()

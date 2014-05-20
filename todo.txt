@@ -1,20 +1,11 @@
 HMTL TODO LIST
 --------------
 
-Immediate
+* Get hmtl_handle_msg to take arguments for relevant objects (pixels)
 
-- Verify initialization of pixel strands still works correctly in ModuleConfigTest
 
+--Old--
 General
-
-- UtilSlave
-  * Test?  Fake change generator?
-
-- UtilMaster
-  * In-memory config
-  * Write data to connections
-
-- Finish configuration reading and writing
 
 - Convert pixel code to a class
   - Convert routines to timed/async rather than blocking
@@ -22,8 +13,6 @@ General
 - Make a fade from x to y in ms function
 
 - Add class around outputs, to allow for more state
-
-- Add transport mechanism (ie RS485) to the config
 
 
 Real todo

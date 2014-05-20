@@ -26,10 +26,6 @@ def handle_args():
     parser.add_option("-a", "--address", dest="address", type="int",
                       help="Set address");
 
-    parser.add_option("-c", "--chooseport", dest="chooseport", action="store_true",
-                      help="Choose port from list of available ports", default=False)
-
-
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)
     parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
@@ -51,12 +47,15 @@ def handle_args():
         parser.print_help()
         exit("Must specify mode")
 
-    if (options.chooseport):
+    if (options.device == None):
         options.device = portscan.choose_port()
 
     if ((options.dryrun == False) and (options.device == None)):
         parser.print_help()
         exit("Must specify device if not in dry-run mode");
+
+    if (options.printconfig):
+        options.verbose = True
 
     return (options, args)
 
@@ -83,10 +82,10 @@ def send_configuration(config_data):
 def send_address(address):
     print("***** Setting address to %d *****" % (address))
 
-    send_command(HMTLprotocol.HMTL_CONFIG_READ)
-    send_command(HMTLprotocol.HMTL_CONFIG_START)
-    send_config("address", HMTLprotocol.get_address_struct(address))
-    send_command(HMTLprotocol.HMTL_CONFIG_END)
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
+    ser.send_config("address", HMTLprotocol.get_address_struct(address))
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
 
 def main():
     global ser
@@ -123,7 +122,7 @@ def main():
         send_configuration(config_data)
     elif (options.address != None):
         # Send the address update
-        ser.send_address(options.address)
+        send_address(options.address)
 
     if (options.verbose):
         # Have the module output its entire configuration
