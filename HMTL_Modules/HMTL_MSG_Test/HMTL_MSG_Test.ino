@@ -72,19 +72,20 @@ void loop() {
     DEBUG_PRINTLN(DEBUG_HIGH, "");
     DEBUG_PRINTLN(DEBUG_HIGH, "ok");
 
+    if ((msg_hdr->address != config.address) ||
+	(msg_hdr->address == RS485_ADDR_ANY)) {
+      /* Forward the message over the rs485 interface */
+      DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
+      memcpy(send_buffer, msg, offset);
+      rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
+    }
+
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
       hmtl_handle_msg((msg_hdr_t *)&msg, &config, outputs);
       for (int i = 0; i < config.num_outputs; i++) {
 	hmtl_update_output(outputs[i], NULL);
       }
-    }
-
-    if ((msg_hdr->address != config.address) ||
-	(msg_hdr->address == RS485_ADDR_ANY)) {
-      DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
-      memcpy(send_buffer, msg, offset);
-      rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
     }
 
     offset = 0;
