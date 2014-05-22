@@ -46,7 +46,7 @@ class HMTLServer():
             self.conn.send(SERVER_ACK)
 
 
-    def start(self):
+    def listen(self):
         print("Server started")
         self.get_connection()
 
@@ -65,5 +65,5 @@ class HMTLServer():
                 self.listener.close()
                 self.get_connection()
 
-    def wait(self):
+    def close(self):
         self.listener.close()

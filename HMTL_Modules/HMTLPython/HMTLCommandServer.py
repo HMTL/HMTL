@@ -62,12 +62,12 @@ def main():
 
     if (options.servermode):
         server = HMTLServer(options)
-        server.start()
-        server.wait()
+        server.listen()
+        server.close()
     else:
         client = HMTLClient(options)
-        client.start()
-        client.wait()
+        client.test()
+        client.close()
 
     print("Done.")
     exit(0)

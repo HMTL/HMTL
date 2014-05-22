@@ -30,7 +30,7 @@ class HMTLClient():
             raise Exception("Failed to connect to '%s'" % (str(address)))
         random.seed()
 
-    def start(self):
+    def test(self):
         output = 0
         try:
             if (not self.setrgb):
@@ -69,7 +69,7 @@ class HMTLClient():
 
 #        self.conn.send(server.SERVER_EXIT)
 
-    def wait(self):
+    def close(self):
         self.conn.close()
 
     def send_and_ack(self, msg):
