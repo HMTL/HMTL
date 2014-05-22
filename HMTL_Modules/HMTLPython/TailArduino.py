@@ -2,6 +2,8 @@
 #
 # This script reads from serial and prints the output
 #
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
 from optparse import OptionParser
 import serial

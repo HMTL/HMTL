@@ -161,7 +161,7 @@ def get_output_hdr(type, output):
                          output)             # Output number
     return packed
 
-def get_value_msg(output, address, value):
+def get_value_msg(address, output, value):
     packed_hdr = get_msg_hdr(MSG_VALUE_LEN, address)
     packed_out = get_output_hdr("value", output)
     packed = struct.pack(MSG_VALUE_FMT,
@@ -169,7 +169,7 @@ def get_value_msg(output, address, value):
 
     return packed_hdr + packed_out + packed                        
 
-def get_rgb_msg(output, address, r, g, b):
+def get_rgb_msg(address, output, r, g, b):
     packed_hdr = get_msg_hdr(MSG_RGB_LEN, address)
     packed_out = get_output_hdr("rgb", output)
     packed = struct.pack(MSG_RGB_FMT, r, g, b)

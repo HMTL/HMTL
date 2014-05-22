@@ -1,10 +1,9 @@
 #!/usr/bin/python
-##!/usr/local/bin/python3
 #
 # Launch a client/server HMTL command system
 
-import sys
-sys.path.append("/Users/amp/Dropbox/Arduino/HMTL/HMTL_Modules/HMTLPython")
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
 from optparse import OptionParser
 from server import *

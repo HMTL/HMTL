@@ -3,6 +3,9 @@
 # This script sends HMTL formatted commands to the serial device
 #
 
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+
 from optparse import OptionParser
 import serial
 import time
@@ -45,13 +48,13 @@ def main():
     while True:
         print("Turning output %d on" % (output))
 
-        command = HMTLprotocol.get_value_msg(output, HMTLprotocol.BROADCAST, 255)
+        command = HMTLprotocol.get_value_msg(HMTLprotocol.BROADCAST, output, 255)
         print("  sending: %s" % (hexlify(command)))
         ser.send_and_confirm(command, False)
         time.sleep(1)
 
         print("Turning output %d off" % (output))
-        command = HMTLprotocol.get_value_msg(output, HMTLprotocol.BROADCAST, 0)
+        command = HMTLprotocol.get_value_msg(HMTLprotocol.BROADCAST, output, 0)
         print("  sending: %s" % (hexlify(command)))
         ser.send_and_confirm(command, False)
         output = (output + 1) % 4

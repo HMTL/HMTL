@@ -25,7 +25,7 @@ class HMTLClient():
 
         address = ('localhost', 6000)
         try:
-            self.conn = Client(address, authkey='secret password')
+            self.conn = Client(address, authkey=b'secret password')
         except Exception as e:
             raise Exception("Failed to connect to '%s'" % (str(address)))
         random.seed()
@@ -37,15 +37,15 @@ class HMTLClient():
                 while True:
                     print("Turning output %d on" % (output))
 
-                    command = HMTLprotocol.get_value_msg(output, 
-                                                         self.address, 255)
+                    command = HMTLprotocol.get_value_msg(self.address, output, 
+                                                         255)
                     print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     time.sleep(self.period)
 
                     print("Turning output %d off" % (output))
-                    command = HMTLprotocol.get_value_msg(output, 
-                                                         self.address, 0)
+                    command = HMTLprotocol.get_value_msg(self.address, output, 
+                                                         0)
                     print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     output = (output + 1) % 4
@@ -55,7 +55,7 @@ class HMTLClient():
                 blue = 0
                 while True:
                     print("Setting RGB output to %d,%d,%d" % (red, green, blue))
-                    command = HMTLprotocol.get_rgb_msg(4, self.address,
+                    command = HMTLprotocol.get_rgb_msg(self.address, 4,
                                                        red, green, blue)
                     self.send_and_ack(command)
                     time.sleep(self.period)

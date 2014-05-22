@@ -18,7 +18,7 @@ class HMTLServer():
         # Connect to serial connection
         self.ser = HMTLSerial(options.device, verbose=options.verbose,
                               dryrun=options.dryrun)
-        print("HMTLSerial: connected to %s" % (options.device))
+        print("HMTLServer: connected to %s" % (options.device))
 
         self.address = (options.address, options.port)
         self.terminate = False
@@ -59,7 +59,7 @@ class HMTLServer():
                 self.handle_msg(msg)
                 print("[%.2f] Acked '%s'" % (time.time() - self.starttime, hexlify(msg)))
 
-            except EOFError, IOError:
+            except (EOFError, IOError):
                 # Attempt to reconnect
                 print("Lost connection")
                 self.listener.close()

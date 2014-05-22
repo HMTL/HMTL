@@ -1,8 +1,10 @@
 #!/usr/bin/python
-##!/usr/local/bin/python3
 #
 # This reads a HMTL configuration in JSON format and sends it over the serial
 # connection to a HMTL module
+
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
 from optparse import OptionParser
 import serial
