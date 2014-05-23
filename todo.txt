@@ -1,7 +1,10 @@
 HMTL TODO LIST
 --------------
 
-* Get hmtl_handle_msg to take arguments for relevant objects (pixels)
+Test:
+  * Get hmtl_handle_msg to take arguments for relevant objects (pixels)
+
+* Combine HMTLPythonConfig into general libraries to HMTL_MSG_test and the like can use it
 
 
 --Old--

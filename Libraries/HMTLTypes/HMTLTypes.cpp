@@ -745,7 +745,8 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 /* Process an incoming message for this module */
 int
 hmtl_handle_msg(msg_hdr_t *msg_hdr,
-                config_hdr_t *config_hdr, output_hdr_t *outputs[])
+                config_hdr_t *config_hdr, output_hdr_t *outputs[],
+		void *objects[])
 {
   output_hdr_t *msg = (output_hdr_t *)(++msg_hdr);
   DEBUG_VALUE(DEBUG_HIGH, "hmtl_handle_msg: type=", msg->type);
@@ -757,6 +758,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
   }
 
   output_hdr_t *out = outputs[msg->output];
+  void *data = (objects != NULL ? objects[msg->output] : NULL);
 
   switch (msg->type) {
       case HMTL_OUTPUT_VALUE:
@@ -770,6 +772,14 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
               DEBUG_VALUELN(DEBUG_HIGH, " val=", msg2->value);
               break;
             }
+            case HMTL_OUTPUT_PIXELS:
+	    {
+	      if (data) {
+		PixelUtil *pixels = (PixelUtil *)data;;
+		pixels->setAllRGB(msg2->value, msg2->value, msg2->value);
+	      }
+	      break;
+	    }
             default:
             {
               DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for value output.  msg=", msg->type);
@@ -794,6 +804,16 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
               DEBUG_PRINT(DEBUG_HIGH, ".");
               break;
             }
+            case HMTL_OUTPUT_PIXELS:
+	    {
+	      if (data) {
+		PixelUtil *pixels = (PixelUtil *)data;
+		pixels->setAllRGB(msg2->values[0],
+				  msg2->values[1],
+				  msg2->values[2]);
+	      }
+	      break;
+	    }
 
 //            XXX - Add handling of fade or other programs
 
@@ -1002,7 +1022,10 @@ hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[])
  * Read in the EEProm config and initialize ouputs
  */
 int32_t hmtl_setup(config_hdr_t *config, 
-		   config_max_t readoutputs[], output_hdr_t *outputs[], 
+		   config_max_t readoutputs[], 
+
+		   output_hdr_t *outputs[], 
+		   void *objects[],
 		   byte num_outputs,
 		   
 		   RS485Socket *rs485,
@@ -1024,6 +1047,8 @@ int32_t hmtl_setup(config_hdr_t *config,
   if (configOffset) *configOffset = offset;
 
   DEBUG_VALUELN(DEBUG_LOW, "Read config.  offset=", offset);
+
+  /* Setup the output pointers array */
   for (int i = 0; i < config->num_outputs; i++) {
     if (i >= num_outputs) {
       DEBUG_VALUELN(DEBUG_ERROR, "Too many outputs:", config->num_outputs);
@@ -1060,6 +1085,9 @@ int32_t hmtl_setup(config_hdr_t *config,
       break;
     }
     }
+
+    if (objects) objects[i] = data;
+
     hmtl_setup_output((output_hdr_t *)outputs[i], data);
     outputs_found |= (1 << type);
   }

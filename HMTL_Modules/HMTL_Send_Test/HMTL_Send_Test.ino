@@ -35,9 +35,10 @@ byte *send_buffer;
 void setup() {
   Serial.begin(9600);
 
-  int32_t outputs_found = hmtl_setup(&config, readoutputs, outputs, MAX_OUTPUTS,
-			     &rs485, NULL, &rgb_output, &value_output,
-			     NULL);
+  int32_t outputs_found = hmtl_setup(&config, readoutputs, 
+				     outputs, NULL, MAX_OUTPUTS,
+				     &rs485, NULL, &rgb_output, &value_output,
+				     NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
     DEBUG_ERR("No RS485 config found");

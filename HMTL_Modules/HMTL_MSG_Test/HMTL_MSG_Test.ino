@@ -23,10 +23,12 @@ RS485Socket rs485;
 config_rgb_t rgb_output;
 config_value_t value_output;
 
-#define MAX_OUTPUTS 8
 config_hdr_t config;
-output_hdr_t *outputs[MAX_OUTPUTS];
-config_max_t readoutputs[MAX_OUTPUTS];
+output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
+config_max_t readoutputs[HMTL_MAX_OUTPUTS];
+void *objects[HMTL_MAX_OUTPUTS];
+
+PixelUtil pixels;
 
 #define SEND_BUFFER_SIZE (sizeof (rs485_socket_hdr_t) + 64)
 byte databuffer[SEND_BUFFER_SIZE];
@@ -35,8 +37,9 @@ byte *send_buffer;
 void setup() {
   Serial.begin(9600);
 
-  int32_t outputs_found = hmtl_setup(&config, readoutputs, outputs, MAX_OUTPUTS,
-			     &rs485, NULL, &rgb_output, &value_output,
+  int32_t outputs_found = hmtl_setup(&config, readoutputs, 
+				     outputs, objects, HMTL_MAX_OUTPUTS,
+			     &rs485, &pixels, &rgb_output, &value_output,
 			     NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
@@ -82,7 +85,7 @@ void loop() {
 
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
-      hmtl_handle_msg((msg_hdr_t *)&msg, &config, outputs);
+      hmtl_handle_msg((msg_hdr_t *)&msg, &config, outputs, objects);
       for (int i = 0; i < config.num_outputs; i++) {
 	hmtl_update_output(outputs[i], NULL);
       }
@@ -105,7 +108,7 @@ void loop() {
 
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
-      hmtl_handle_msg(msg_hdr, &config, outputs);
+      hmtl_handle_msg(msg_hdr, &config, outputs, objects);
       for (int i = 0; i < config.num_outputs; i++) {
 	hmtl_update_output(outputs[i], NULL);
       }

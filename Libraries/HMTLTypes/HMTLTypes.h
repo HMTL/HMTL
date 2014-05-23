@@ -155,8 +155,10 @@ uint16_t hmtl_msg_size(output_hdr_t *output);
 
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
+
 int32_t hmtl_setup(config_hdr_t *config, 
 		   config_max_t readoutputs[], output_hdr_t *outputs[], 
+		   void *objects[],
 		   byte num_outputs, RS485Socket *rs485, PixelUtil *pixels,
 		   config_rgb_t *rgb_output, config_value_t *value_output,
 		   int *configOffset);
@@ -168,9 +170,9 @@ int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
-int
-hmtl_handle_msg(msg_hdr_t *msg_hdr,
-                config_hdr_t *config_hdr, output_hdr_t *outputs[]);
+int hmtl_handle_msg(msg_hdr_t *msg_hdr,
+		    config_hdr_t *config_hdr, output_hdr_t *outputs[],
+		    void *objects[] = NULL);
 boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
 
