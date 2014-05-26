@@ -2,6 +2,9 @@
 # Basic HMTL client
 #
 
+from __future__ import print_function
+#from __future__ import unicode_literals
+
 from multiprocessing.connection import Client
 import time
 import random
@@ -14,6 +17,7 @@ class HMTLClient():
     setrgb = False
     period = 1.0
     address = HMTLprotocol.BROADCAST
+    verbose = False
 
     def __init__(self, options):
         if (options.setrgb):
@@ -22,6 +26,8 @@ class HMTLClient():
             self.period = options.period
         if (options.hmtladdress != None):
             self.address = options.hmtladdress
+        if (options.verbose):
+            self.verbose = True
 
         address = ('localhost', 6000)
         try:
@@ -39,14 +45,12 @@ class HMTLClient():
 
                     command = HMTLprotocol.get_value_msg(self.address, output, 
                                                          255)
-                    print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     time.sleep(self.period)
 
                     print("Turning output %d off" % (output))
                     command = HMTLprotocol.get_value_msg(self.address, output, 
                                                          0)
-                    print("  sending: %s" % (hexlify(command)))
                     self.send_and_ack(command)
                     output = (output + 1) % 4
             else:
@@ -73,11 +77,15 @@ class HMTLClient():
         self.conn.close()
 
     def send_and_ack(self, msg):
+        if (self.verbose):
+            print(" - Sending %s" % (hexlify(msg)))
+
         self.conn.send(msg)
 
         # Wait for message acknowledgement
         while True:
             msg = self.conn.recv()
-            print("Received: '%s' '%s'" % (msg, hexlify(msg)))
+            if (self.verbose):
+                print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
             if (msg == server.SERVER_ACK):
                 break

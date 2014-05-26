@@ -25,10 +25,11 @@ class HMTLServer():
 
     def get_connection(self):
         try:
-            print("Waiting for connection")
+            print("[%.3f] Waiting for connection" % (time.time() - self.starttime))
             self.listener = Listener(self.address, authkey='secret password')
             self.conn = self.listener.accept()
-            print("* Connection accepted from", self.listener.last_accepted)
+            print("[%.3f]  Connection accepted from %s" % 
+                  ((time.time() - self.starttime), self.listener.last_accepted))
         except KeyboardInterrupt:
             print("Exiting")
             self.terminate = True
@@ -46,22 +47,23 @@ class HMTLServer():
             self.conn.send(SERVER_ACK)
 
 
+    # Wait for and handle incoming connections
     def listen(self):
-        print("Server started")
-        self.get_connection()
-
         self.starttime = time.time()
+
+        print("[%.3f] Server started" % (time.time() - self.starttime))
+        self.get_connection()
 
         while (not self.terminate):
             try:
                 msg = self.conn.recv()
-                print("[%.2f] Received '%s'" % (time.time() - self.starttime, hexlify(msg)))
+                print("[%.3f] Received '%s'" % (time.time() - self.starttime, hexlify(msg)))
                 self.handle_msg(msg)
-                print("[%.2f] Acked '%s'" % (time.time() - self.starttime, hexlify(msg)))
+                print("[%.3f] Acked '%s'" % (time.time() - self.starttime, hexlify(msg)))
 
             except (EOFError, IOError):
                 # Attempt to reconnect
-                print("Lost connection")
+                print("[%.3f] Lost connection" % (time.time() - self.starttime))
                 self.listener.close()
                 self.get_connection()
 
