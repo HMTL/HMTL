@@ -780,6 +780,19 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
 	      }
 	      break;
 	    }
+	    case HMTL_OUTPUT_RGB:
+	    {
+	      config_rgb_t *rgb = (config_rgb_t *)out;
+              DEBUG_PRINT(DEBUG_HIGH, " rgb=");
+              for (int i = 0; i < 3; i++) {
+                rgb->values[i] = msg2->value;
+                DEBUG_VALUE(DEBUG_HIGH, " ", msg2->value);
+              }
+              DEBUG_PRINT(DEBUG_HIGH, ".");
+              break;
+
+	      break;
+	    }
             default:
             {
               DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for value output.  msg=", msg->type);
