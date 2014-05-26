@@ -4,6 +4,10 @@ HMTL TODO LIST
 Test:
   * Get hmtl_handle_msg to take arguments for relevant objects (pixels)
 
+* Create a strobe program
+* Create a fade program
+* Move HMTL_MSG_test into something generic
+
 * Combine HMTLPythonConfig into general libraries to HMTL_MSG_test and the like can use it
 
 
