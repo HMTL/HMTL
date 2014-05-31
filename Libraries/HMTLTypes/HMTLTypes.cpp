@@ -65,6 +65,11 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
 {
   int addr;
 
+  /* Zero the outputs */
+  for (int i = 0; i < max_outputs; i++) {
+    outputs[i].hdr.type = HMTL_OUTPUT_NONE;
+  }
+
   addr = EEPROM_safe_read(HMTL_CONFIG_ADDR,
                           (uint8_t *)hdr, sizeof (config_hdr_t));
   if (addr < 0) {
@@ -245,7 +250,7 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
 	  digitalWrite(out->pin, (out->value != 0));
 	}
 #else
-	// On an non-PWM pin this outputs HIGH if value >= 128
+	// On a non-PWM pin this outputs HIGH if value >= 128
 	analogWrite(out->pin, out->value);
 	DEBUG_VALUE(DEBUG_HIGH, "hmtl_update_output: val pin=", out->pin);
 	DEBUG_VALUELN(DEBUG_HIGH, " val=", out->value);
@@ -1067,7 +1072,11 @@ int32_t hmtl_setup(config_hdr_t *config,
       DEBUG_VALUELN(DEBUG_ERROR, "Too many outputs:", config->num_outputs);
       DEBUG_ERR_STATE(13);
     }
-    outputs[i] = (output_hdr_t *)&readoutputs[i];
+    if (readoutputs[i].hdr.type == HMTL_OUTPUT_NONE) {
+      outputs[i] = NULL;
+    } else {
+      outputs[i] = (output_hdr_t *)&readoutputs[i];
+    }
   }
 
   DEBUG_COMMAND(DEBUG_LOW, hmtl_print_config(config, outputs));

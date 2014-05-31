@@ -60,7 +60,7 @@ typedef struct {
 #define MAX_PROGRAM_VAL 12
 typedef struct {
   output_hdr_t hdr;
-  byte val[3];
+  uint8_t type;
   byte values[MAX_PROGRAM_VAL];
 } msg_program_t;
 
@@ -98,6 +98,7 @@ typedef config_hdr_v2_t config_hdr_t;
 
 #define HMTL_NO_ADDRESS (uint16_t)-1
 
+#define HMTL_OUTPUT_NONE    (uint8_t)-1
 #define HMTL_OUTPUT_VALUE   0x1
 #define HMTL_OUTPUT_RGB     0x2
 #define HMTL_OUTPUT_PROGRAM 0x3
