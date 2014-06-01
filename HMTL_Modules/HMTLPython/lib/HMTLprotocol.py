@@ -55,16 +55,23 @@ OUTPUT_RS485_FMT = '<BBB'
 UPDATE_ADDRESS_FMT = '<H'
 
 # HMTL Message formats
-MSG_HDR_FMT = "<BBBBH"
-MSG_VALUE_FMT = "<H"
+MSG_HDR_FMT = "<BBBBH" # All HMTL messages start with this
+MSG_VALUE_FMT = "H"
 MSG_RGB_FMT = "BBB"
+MSG_PROGRAM_FMT = "B"
 
 MSG_BASE_LEN = 6 + 2
 MSG_VALUE_LEN = MSG_BASE_LEN + 2
 MSG_RGB_LEN = MSG_BASE_LEN + 3
 
+MSG_PROGRAM_VALUE_LEN = 12
+MSG_PROGRAM_LEN = MSG_BASE_LEN + 1 + MSG_PROGRAM_VALUE_LEN
 
 BROADCAST = 65535
+
+# Specific program formats
+MSG_PROGRAM_BLINK_TYPE = 1
+MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 
 
 #
@@ -175,3 +182,24 @@ def get_rgb_msg(address, output, r, g, b):
     packed = struct.pack(MSG_RGB_FMT, r, g, b)
 
     return packed_hdr + packed_out + packed
+
+def get_program_msg(address, output, program_type, program_data):
+    if (len(program_data) != MSG_PROGRAM_VALUE_LEN):
+        raise Exception("Program data must be %d bytes" % (MSG_PROGRAM_VALUE_LEN))
+
+    packed_hdr = get_msg_hdr(MSG_PROGRAM_LEN, address)
+    packed_out = get_output_hdr("program", output)
+    packed = struct.pack(MSG_PROGRAM_FMT, program_type)
+
+    return packed_hdr + packed_out + packed + program_data
+
+def get_blink_msg(address, output, 
+                  on_period, on_values, off_period, off_values):
+    blink = struct.pack(MSG_PROGRAM_BLINK_FMT,
+                        on_period, on_values[0], on_values[1], on_values[2],
+                        off_period, off_values[0], off_values[1], off_values[2],
+                        0, 0)
+    return get_program_msg(address, output, MSG_PROGRAM_BLINK_TYPE, blink)
+    
+    
+    

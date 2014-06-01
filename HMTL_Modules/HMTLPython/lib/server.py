@@ -26,6 +26,8 @@ class HMTLServer():
     def get_connection(self):
         try:
             print("[%.3f] Waiting for connection" % (time.time() - self.starttime))
+            # XXX - We need to perform some form of background flush of the
+            # XXX - serial connection?  May be behind lockups.
             self.listener = Listener(self.address, authkey='secret password')
             self.conn = self.listener.accept()
             print("[%.3f]  Connection accepted from %s" % 

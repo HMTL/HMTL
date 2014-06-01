@@ -40,12 +40,10 @@ typedef struct {
 hmtl_program_t program_functions[] = {
   { PROGRAM_BLINK, program_blink, program_blink_init }
 };
-#define NUM_PROGRAMS (sizeof (program_functions))
+#define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
 /* Track the currently active programs */
 program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
-
-
 
 
 RS485Socket rs485;
@@ -65,6 +63,10 @@ byte *send_buffer;
 
 void setup() {
   Serial.begin(9600);
+
+  for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
+    active_programs[i] = NULL;
+  }
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs, 
 				     outputs, objects, HMTL_MAX_OUTPUTS,
@@ -92,17 +94,19 @@ byte offset = 0;
 
 void loop() {
   boolean update = false;
+  boolean serial = false;
   
   /* Check for messages on the serial interface */
   msg_hdr_t *msg_hdr = (msg_hdr_t *)msg;
   if (hmtl_serial_getmsg(msg, MSG_MAX_SZ, &offset)) {
+    serial = true;
     /* Received a complete message */
     DEBUG_VALUE(DEBUG_HIGH, "Received msg len=", offset);
     DEBUG_PRINT(DEBUG_HIGH, " ");
     DEBUG_COMMAND(DEBUG_HIGH, 
 		  print_hex_string(msg, offset)
 		  );
-    DEBUG_PRINTLN(DEBUG_HIGH, "");
+    DEBUG_PRINT_END();
     DEBUG_PRINTLN(DEBUG_HIGH, "ok");
 
     if ((msg_hdr->address != config.address) ||
@@ -119,6 +123,7 @@ void loop() {
       output_hdr_t *out_hdr = (output_hdr_t *)(++msg_hdr);
       if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
 	// XXX: This stuff should be moved into the framework somehow
+	DEBUG_PRINTLN(DEBUG_HIGH, "Received program command"); // XXX
 	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
       } else {
 	hmtl_handle_msg((msg_hdr_t *)&msg, &config, outputs, objects);
@@ -138,8 +143,7 @@ void loop() {
     DEBUG_COMMAND(DEBUG_HIGH, 
 		  print_hex_string((byte *)&msg, msglen)
 		  );
-    DEBUG_PRINTLN(DEBUG_HIGH, "");
-    DEBUG_PRINTLN(DEBUG_HIGH, "ok");
+    DEBUG_PRINT_END();
 
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
@@ -170,6 +174,9 @@ boolean setup_program(output_hdr_t *outputs[],
 		      program_tracker_t *trackers[],
 		      msg_program_t *msg) {
 
+  DEBUG_VALUE(DEBUG_HIGH, "setup_program: program=", msg->type);
+  DEBUG_VALUELN(DEBUG_HIGH, " output=", msg->hdr.output);
+
   /* Find the program to be executed */ 
   hmtl_program_t *program = NULL;
   for (byte i = 0; i < NUM_PROGRAMS; i++) {
@@ -195,14 +202,19 @@ boolean setup_program(output_hdr_t *outputs[],
 		  msg->hdr.output);
     return false;
   }
-  
+
   program_tracker_t *tracker = trackers[msg->hdr.output];
   if (tracker != NULL) {
-    if (tracker->state) free(tracker->state);
+    DEBUG_PRINTLN(DEBUG_HIGH, "setup_program: reusing old tracker");
+    if (tracker->state) {
+      DEBUG_PRINTLN(DEBUG_HIGH, "setup_program: deleting old state");
+      free(tracker->state);
+    }
   } else {
     tracker = (program_tracker_t *)malloc(sizeof (program_tracker_t));
     trackers[msg->hdr.output] = tracker;
   }
+
   tracker->program = program;
   tracker->program->setup(msg, tracker);
 
@@ -230,18 +242,30 @@ boolean run_programs(output_hdr_t *outputs[],
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
+  DEBUG_PRINT(DEBUG_HIGH, "Initializing blink program state");
+
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));  
-  memcpy(&state->msg, msg->values, sizeof (program_blink_t));
+  memcpy(&state->msg, msg->values, MAX_PROGRAM_VAL);
   state->on = false;
-  state->next_change = 0;
+  state->next_change = millis();
 
   tracker->state = state;
+
+  DEBUG_VALUE(DEBUG_HIGH, " on_period:", state->msg.on_period);
+  DEBUG_VALUELN(DEBUG_HIGH, " off_period:", state->msg.off_period);
+
   return true;
 }
 
 boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
+  boolean changed = false;
   unsigned long now = millis();
   state_blink_t *state = (state_blink_t *)tracker->state;
+
+  DEBUG_PRINT(DEBUG_TRACE, "Blink");
+  DEBUG_VALUE(DEBUG_TRACE, " now:", now);
+  DEBUG_VALUE(DEBUG_TRACE, " next:", state->next_change);
+  DEBUG_VALUE(DEBUG_TRACE, " on: ", state->on);
 
   if (now >= state->next_change) {
     if (state->on) {
@@ -250,9 +274,12 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
       case HMTL_OUTPUT_VALUE:{
 	config_value_t *val = (config_value_t *)output;
 	val->value = state->msg.off_value[0];
+	DEBUG_VALUE(DEBUG_TRACE, " Turned off:", val->value);
 	break;
       }
       }
+      
+      state->on = false;
       state->next_change += state->msg.off_period;
     } else {
       // Turn on the output
@@ -260,13 +287,19 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
       case HMTL_OUTPUT_VALUE:{
 	config_value_t *val = (config_value_t *)output;
 	val->value = state->msg.on_value[0];
+	DEBUG_VALUE(DEBUG_TRACE, " Turned on:", val->value);
 	break;
       }
       }
+
+      state->on = true;
       state->next_change += state->msg.on_period;
     }
-    return true;
+
+    changed = true;
   }
 
-  return false;
+  DEBUG_PRINT_END();
+
+  return changed;
 }

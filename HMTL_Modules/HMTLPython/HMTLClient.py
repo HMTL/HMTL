@@ -40,9 +40,9 @@ def handle_args():
     parser.add_option("-R", "--rgb", action="store_const",
                       dest="commandtype", const="rgb",
                       help="Send rgb command")
-    parser.add_option("-F", "--flash", action="store_const",
-                      dest="commandtype", const="flash",
-                      help="Send flash command")
+    parser.add_option("-B", "--blink", action="store_const",
+                      dest="commandtype", const="blink",
+                      help="Send blink command")
 
     # Command options
     parser.add_option("-P", "--period", dest="period", type="float",
@@ -90,6 +90,16 @@ def main():
             msg = HMTLprotocol.get_rgb_msg(options.hmtladdress,
                                            options.output,
                                            int(r), int(g), int(b))
+        
+        if (options.commandtype == "blink"):
+            (a,b,c,d, e,f,g,h) = options.commandvalue.split(",")
+            print("Sending BLINK message. Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.output, int(a), [int(b),int(c),int(d)],
+                                             int(e), [int(f),int(g),int(h)]))
+            msg = HMTLprotocol.get_blink_msg(options.hmtladdress,
+                                             options.output,
+                                             int(a), [int(b),int(c),int(d)],
+                                             int(e), [int(f),int(g),int(h)])
+
         if (msg != None):
             starttime = time.time()
             client.send_and_ack(msg)
