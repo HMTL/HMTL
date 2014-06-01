@@ -89,3 +89,6 @@ class HMTLClient():
                 print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
             if (msg == server.SERVER_ACK):
                 break
+
+    def send_exit(self):
+        self.send_and_ack(server.SERVER_EXIT)

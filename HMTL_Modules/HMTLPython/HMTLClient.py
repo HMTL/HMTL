@@ -21,6 +21,8 @@ def handle_args():
                       help="Port to bind to", default=6000)
     parser.add_option("-a", "--address", dest="address",
                       help="Address to bind to", default="localhost")
+    parser.add_option("-k", "--killserver", dest="killserver", action="store_true",
+                      help="Send a kill command to the server", default=False)
 
     # General options
     parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
@@ -105,6 +107,11 @@ def main():
             client.send_and_ack(msg)
             endtime = time.time()
             print("Sent and acked in %.6fs" % (endtime - starttime))
+
+    if (options.killserver):
+        # Send an exit message to the server
+        print("Sending EXIT message to server")
+        client.send_exit()
 
     client.close()
 

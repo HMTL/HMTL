@@ -39,6 +39,7 @@ class HMTLServer():
     def handle_msg(self, msg):
         if msg == SERVER_EXIT:
             print("* Received exit signal *")
+            self.conn.send(SERVER_ACK)
             self.conn.close()
             self.terminate = True
         else:
