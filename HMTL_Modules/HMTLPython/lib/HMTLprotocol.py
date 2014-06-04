@@ -70,6 +70,9 @@ MSG_PROGRAM_LEN = MSG_BASE_LEN + 1 + MSG_PROGRAM_VALUE_LEN
 BROADCAST = 65535
 
 # Specific program formats
+MSG_PROGRAM_NONE_TYPE = 0
+MSG_PROGRAM_NONE_FMT = 'B'*MSG_PROGRAM_VALUE_LEN
+
 MSG_PROGRAM_BLINK_TYPE = 1
 MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 
@@ -193,13 +196,15 @@ def get_program_msg(address, output, program_type, program_data):
 
     return packed_hdr + packed_out + packed + program_data
 
-def get_blink_msg(address, output, 
-                  on_period, on_values, off_period, off_values):
+def get_program_blink_msg(address, output, 
+                          on_period, on_values, off_period, off_values):
     blink = struct.pack(MSG_PROGRAM_BLINK_FMT,
                         on_period, on_values[0], on_values[1], on_values[2],
                         off_period, off_values[0], off_values[1], off_values[2],
                         0, 0)
     return get_program_msg(address, output, MSG_PROGRAM_BLINK_TYPE, blink)
     
-    
-    
+def get_program_none_msg(address, output):
+    args = [MSG_PROGRAM_NONE_FMT] + [0 for x in range(0, MSG_PROGRAM_VALUE_LEN)]
+    msg = struct.pack(*args)
+    return get_program_msg(address, output, MSG_PROGRAM_NONE_TYPE, msg)

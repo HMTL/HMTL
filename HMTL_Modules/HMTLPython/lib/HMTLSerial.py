@@ -81,3 +81,9 @@ class HMTLSerial():
     def send_config(self, type, config):
         print("send_config:  %-10s %s" % (type, hexlify(config)))
         self.send_and_confirm(config, True)
+
+    # Flush the receive buffer
+    def recv_flush(self):
+        if (self.ser.inWaiting()):
+            return self.get_line()
+        return None

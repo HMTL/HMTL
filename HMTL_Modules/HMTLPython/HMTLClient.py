@@ -45,6 +45,10 @@ def handle_args():
     parser.add_option("-B", "--blink", action="store_const",
                       dest="commandtype", const="blink",
                       help="Send blink command")
+    parser.add_option("-N", "--none", action="store_const",
+                      dest="commandtype", const="none",
+                      help="Send program reset command")
+
 
     # Command options
     parser.add_option("-P", "--period", dest="period", type="float",
@@ -85,7 +89,7 @@ def main():
             msg = HMTLprotocol.get_value_msg(options.hmtladdress,
                                              options.output,
                                              int(options.commandvalue))
-        if (options.commandtype == "rgb"):
+        elif (options.commandtype == "rgb"):
             (r,g,b) = options.commandvalue.split(",")
             print("Sending RGB message.  Output=%d Value=%d,%d,%d" %
                   (options.output, int(r), int(g), int(b)))
@@ -93,14 +97,19 @@ def main():
                                            options.output,
                                            int(r), int(g), int(b))
         
-        if (options.commandtype == "blink"):
+        elif (options.commandtype == "blink"):
             (a,b,c,d, e,f,g,h) = options.commandvalue.split(",")
             print("Sending BLINK message. Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.output, int(a), [int(b),int(c),int(d)],
                                              int(e), [int(f),int(g),int(h)]))
-            msg = HMTLprotocol.get_blink_msg(options.hmtladdress,
+            msg = HMTLprotocol.get_program_blink_msg(options.hmtladdress,
                                              options.output,
                                              int(a), [int(b),int(c),int(d)],
                                              int(e), [int(f),int(g),int(h)])
+        elif (options.commandtype == "none"):
+            print("Sending NONE message.  Output=%d" % (options.output))
+            msg = HMTLprotocol.get_program_none_msg(options.hmtladdress,
+                                                    options.output)
+        
 
         if (msg != None):
             starttime = time.time()

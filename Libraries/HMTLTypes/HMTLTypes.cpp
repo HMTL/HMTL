@@ -243,18 +243,11 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
       case HMTL_OUTPUT_VALUE: 
       {
         config_value_t *out = (config_value_t *)hdr;
-#if 0
-	if (pin_is_PWM(out->pin)) {
-	  analogWrite(out->pin, out->value);
-	} else {
-	  digitalWrite(out->pin, (out->value != 0));
-	}
-#else
+
 	// On a non-PWM pin this outputs HIGH if value >= 128
 	analogWrite(out->pin, out->value);
-	DEBUG_VALUE(DEBUG_HIGH, "hmtl_update_output: val pin=", out->pin);
-	DEBUG_VALUELN(DEBUG_HIGH, " val=", out->value);
-#endif
+	DEBUG_VALUE(DEBUG_TRACE, "hmtl_update_output: val pin=", out->pin);
+	DEBUG_VALUELN(DEBUG_TRACE, " val=", out->value);
         break;
       }
       case HMTL_OUTPUT_RGB:

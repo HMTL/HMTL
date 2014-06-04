@@ -5,6 +5,8 @@ from multiprocessing.connection import Listener
 import time
 from binascii import hexlify
 import serial
+import threading
+
 import HMTLprotocol
 from HMTLSerial import *
 
@@ -16,12 +18,18 @@ class HMTLServer():
 
     def __init__(self, options):
         # Connect to serial connection
-        self.ser = HMTLSerial(options.device, verbose=options.verbose,
+        self.ser = HMTLSerial(options.device,
+                              timeout=5,
+                              verbose=options.verbose,
                               dryrun=options.dryrun)
         print("HMTLServer: connected to %s" % (options.device))
 
         self.address = (options.address, options.port)
         self.terminate = False
+        self.serial_cv = threading.Condition()
+
+        self.idle_thread = threading.Thread(target=self.serial_flush_idle, args=(0.1,'a'))
+        self.idle_thread.start()
 
     def get_connection(self):
         try:
@@ -44,7 +52,9 @@ class HMTLServer():
             self.terminate = True
         else:
             # Forward the message to the device
+            self.serial_cv.acquire()
             self.ser.send_and_confirm(msg, False)
+            self.serial_cv.release()
 
             # Reply with acknowledgement
             self.conn.send(SERVER_ACK)
@@ -72,3 +82,23 @@ class HMTLServer():
 
     def close(self):
         self.listener.close()
+
+    # Read in all pending data on the serial device as a separate thread
+    # XXX: Without this it seems to crash my Mac as the arduino continues to
+    # stream data
+    def serial_flush_idle(self, delay, test):
+        print("XXX: Flush delay set to %f" % (delay))
+        while (not self.terminate):
+            # Read until the buffer appears to be empty
+            while True:
+                self.serial_cv.acquire()
+                #            line = self.ser.get_line()
+                readdata = self.ser.recv_flush()
+                self.serial_cv.release()
+                if (readdata):
+                    print("[%.3f] received while idle" % (time.time() - self.starttime))
+                else:
+                    break
+
+            # Delay before next check
+            time.sleep(delay)

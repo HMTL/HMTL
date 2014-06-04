@@ -23,6 +23,7 @@
 
 
 /* message body and state for basic blink program */
+#define PROGRAM_NONE  0x0
 #define PROGRAM_BLINK 0x1
 typedef struct {
   uint16_t on_period;
@@ -38,6 +39,7 @@ typedef struct {
 
 /* List of available programs */
 hmtl_program_t program_functions[] = {
+  { PROGRAM_NONE, NULL, NULL},
   { PROGRAM_BLINK, program_blink, program_blink_init }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
@@ -204,6 +206,18 @@ boolean setup_program(output_hdr_t *outputs[],
   }
 
   program_tracker_t *tracker = trackers[msg->hdr.output];
+
+  if (program->type == PROGRAM_NONE) {
+    if (tracker != NULL) {
+      DEBUG_VALUELN(DEBUG_HIGH, "setup_progam: clearing program for", 
+		    msg->hdr.output);
+      if (tracker->state) free(tracker->state);
+      free(tracker);
+    }
+    trackers[msg->hdr.output] = NULL;
+    return true;
+  }
+
   if (tracker != NULL) {
     DEBUG_PRINTLN(DEBUG_HIGH, "setup_program: reusing old tracker");
     if (tracker->state) {
