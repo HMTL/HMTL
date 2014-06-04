@@ -14,7 +14,10 @@
 
 #include "GeneralUtils.h"
 #include "EEPromUtils.h"
+
 #include "HMTLTypes.h"
+#include "HMTLMessaging.h"
+
 #include "PixelUtil.h"
 #include "RS485Utils.h"
 #include "MPR121.h"
@@ -143,7 +146,7 @@ void loop() {
     DEBUG_VALUE(DEBUG_HIGH, "Received rs485 msg len=", msglen);
     DEBUG_PRINT(DEBUG_HIGH, " ");
     DEBUG_COMMAND(DEBUG_HIGH, 
-		  print_hex_string((byte *)&msg, msglen)
+		  print_hex_string((byte *)msg_hdr, msglen)
 		  );
     DEBUG_PRINT_END();
 

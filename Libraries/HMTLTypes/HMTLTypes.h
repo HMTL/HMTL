@@ -7,64 +7,6 @@
 #include "PixelUtil.h"
 #include "RS485Utils.h"
 
-/******************************************************************************
- * Transport-agnostic message types
- */
-
-/*
- * Generic message to set a given output to the indicated value
- */
-typedef struct {
-  byte output;
-  byte value;
-} msg_output_value_t; // XXX Ditch me
-
-/*
- * Message format is:
- *
- *   msg_hdr_t + outout_hdr_t + command
- *
- * 6B:  |startcode |   crc    | version  | length   |      address       |
- * 2B:  |   type   |  output  | ...
- */
-
-
-#define HMTL_MAX_MSG_LEN 128
-
-#define HMTL_MSG_START 0xFC
-
-#define HMTL_MSG_VERSION 1
-typedef struct {
-  byte startcode;
-  byte crc;
-  byte version;
-  byte length;
-  uint16_t address;
-} msg_hdr_t;
-
-typedef struct {
-  byte type;
-  byte output;
-} output_hdr_t;
-
-typedef struct {
-  output_hdr_t hdr;
-  int value;
-} msg_value_t;
-
-typedef struct {
-  output_hdr_t hdr;
-  byte values[3];
-} msg_rgb_t;
-
-#define MAX_PROGRAM_VAL 12
-typedef struct {
-  output_hdr_t hdr;
-  uint8_t type;
-  byte values[MAX_PROGRAM_VAL];
-} msg_program_t;
-
-typedef msg_program_t msg_max_t;
 
 /******************************************************************************
  * Module configuration
@@ -110,6 +52,11 @@ typedef config_hdr_v2_t config_hdr_t;
 #define HMTL_FLAG_SERIAL 0x2
 
 typedef struct {
+  byte type;
+  byte output;
+} output_hdr_t;
+
+typedef struct {
   output_hdr_t hdr;
   byte pin;
   int value; // XXX - Make this byte?  PWM only goes to 2552
@@ -121,10 +68,11 @@ typedef struct {
   byte values[3];
 } config_rgb_t;
 
+#define MAX_PROGRAM_VAL 12
 typedef struct {
   output_hdr_t hdr;
   int values[MAX_PROGRAM_VAL];
-} config_program_t;
+} config_program_t; // XXX: Is this necessary?  Possibly for autodiscovery?
 
 typedef struct {
   output_hdr_t hdr;
@@ -152,8 +100,6 @@ typedef struct {
 
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
-uint16_t hmtl_msg_size(output_hdr_t *output);
-
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 
@@ -170,15 +116,6 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);
-
-int hmtl_handle_msg(msg_hdr_t *msg_hdr,
-		    config_hdr_t *config_hdr, output_hdr_t *outputs[],
-		    void *objects[] = NULL);
-boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
-int hmtl_serial_update(config_hdr_t *config_hdr, output_hdr_t *outputs[]);
-
-msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
-			     uint16_t address);
 
 /* Configuration validation */
 boolean hmtl_validate_header(config_hdr_t *config_hdr);
