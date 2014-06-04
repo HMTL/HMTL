@@ -252,3 +252,40 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
   *offset_ptr = offset;
   return complete;
 }
+
+/******************************************************************************
+ * Individual message formatting
+ */
+
+/* Initialize the message header */
+void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length) {
+  msg_hdr->startcode = HMTL_MSG_START;
+  msg_hdr->crc = 0;
+  msg_hdr->version = HMTL_MSG_VERSION;
+  msg_hdr->length = HMTL_MSG_VALUE_LEN;
+  msg_hdr->address = address;
+#ifdef HMTL_USE_CRC
+  /* Complute the CRC with the crc value == 0 */
+  msg_hdr->crc = EEPROM_crc(buffer, HMTL_MSG_VALUE_LEN);
+#endif
+}
+
+/* Format a value message */
+uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
+		    uint16_t address, uint8_t output, int value) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_value_t *msg_value = (msg_value_t *)(msg_hdr + 1);
+
+  if (buffsize < HMTL_MSG_VALUE_LEN) {
+    DEBUG_ERR("hmtl_msg_value: too small size");
+    DEBUG_ERR_STATE(1);
+  }
+
+  msg_value->hdr.type = HMTL_OUTPUT_VALUE;
+  msg_value->hdr.output = output;
+  msg_value->value = value;
+
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_VALUE_LEN);
+  return HMTL_MSG_VALUE_LEN;
+}
+
