@@ -41,10 +41,12 @@ def main():
     
     ser = serial.Serial(device, 9600, timeout=10)
     while True:
-        data = ser.readline().strip()
-        try:
-            print("%s" % (data.decode()))
-        except UnicodeDecodeError:
-            print("'%s'" % (data))
+        data = ser.readline()
+        if (data and len(data) > 0):
+            data = data.strip()
+            try:
+                print("%s" % (data.decode()))
+            except UnicodeDecodeError:
+                print("'%s'" % (data))
 
 main()
