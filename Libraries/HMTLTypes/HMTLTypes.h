@@ -6,7 +6,7 @@
 
 #include "PixelUtil.h"
 #include "RS485Utils.h"
-
+#include "MPR121.h"
 
 /******************************************************************************
  * Module configuration
@@ -104,11 +104,11 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 
 int32_t hmtl_setup(config_hdr_t *config, 
-		   config_max_t readoutputs[], output_hdr_t *outputs[], 
-		   void *objects[],
-		   byte num_outputs, RS485Socket *rs485, PixelUtil *pixels,
-		   config_rgb_t *rgb_output, config_value_t *value_output,
-		   int *configOffset);
+		     config_max_t readoutputs[], output_hdr_t *outputs[], 
+		     void *objects[], byte num_outputs, 
+		     RS485Socket *rs485, PixelUtil *pixels, MPR121 *mpr121,
+		     config_rgb_t *rgb_output, config_value_t *value_output,
+		     int *configOffset);
 
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);

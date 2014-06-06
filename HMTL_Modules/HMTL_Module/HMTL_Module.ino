@@ -75,8 +75,9 @@ void setup() {
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs, 
 				     outputs, objects, HMTL_MAX_OUTPUTS,
-			     &rs485, &pixels, &rgb_output, &value_output,
-			     NULL);
+				     &rs485, &pixels, NULL,
+				     &rgb_output, &value_output,
+				     NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
     DEBUG_ERR("No RS485 config found");
@@ -125,13 +126,13 @@ void loop() {
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
 
-      output_hdr_t *out_hdr = (output_hdr_t *)(++msg_hdr);
+      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
       if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
 	// XXX: This stuff should be moved into the framework somehow
 	DEBUG_PRINTLN(DEBUG_HIGH, "Received program command"); // XXX
 	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
       } else {
-	hmtl_handle_msg((msg_hdr_t *)&msg, &config, outputs, objects);
+	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
       }
       update = true;
     }
@@ -152,7 +153,15 @@ void loop() {
 
     if ((msg_hdr->address == config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
-      hmtl_handle_msg(msg_hdr, &config, outputs, objects);
+
+      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
+      if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
+	// XXX: This stuff should be moved into the framework somehow
+	DEBUG_PRINTLN(DEBUG_HIGH, "Received program command"); // XXX
+	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
+      } else {
+	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
+      }
       update = true;
     }
   }
@@ -196,7 +205,7 @@ boolean setup_program(output_hdr_t *outputs[],
     return false;
   }
 
-  /* Setup the tracker */
+   /* Setup the tracker */
   if (msg->hdr.output > HMTL_MAX_OUTPUTS) {
     DEBUG_VALUELN(DEBUG_ERROR, "setup_program: invalid output: ",
 		  msg->hdr.output);

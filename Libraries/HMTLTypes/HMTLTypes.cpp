@@ -733,6 +733,7 @@ int32_t hmtl_setup(config_hdr_t *config,
 		   
 		   RS485Socket *rs485,
 		   PixelUtil *pixels,
+		   MPR121 *mpr121,
 		   config_rgb_t *rgb_output,
 		   config_value_t *value_output,
 		   
@@ -789,6 +790,11 @@ int32_t hmtl_setup(config_hdr_t *config,
     case HMTL_OUTPUT_VALUE: {
       if (value_output == NULL) continue;
       memcpy(value_output, outputs[i], sizeof (config_value_t));
+      break;
+    }
+    case HMTL_OUTPUT_MPR121: {
+      if (mpr121 == NULL) continue;
+      data = mpr121;
       break;
     }
     }

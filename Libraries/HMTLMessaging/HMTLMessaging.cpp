@@ -47,7 +47,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
                 config_hdr_t *config_hdr, output_hdr_t *outputs[],
 		void *objects[])
 {
-  output_hdr_t *msg = (output_hdr_t *)(++msg_hdr);
+  output_hdr_t *msg = (output_hdr_t *)(msg_hdr + 1);
   DEBUG_VALUE(DEBUG_HIGH, "hmtl_handle_msg: type=", msg->type);
   DEBUG_VALUE(DEBUG_HIGH, " out=", msg->output);
 
@@ -62,7 +62,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
   switch (msg->type) {
       case HMTL_OUTPUT_VALUE:
       {
-        msg_value_t *msg2 = (msg_value_t *)msg_hdr;
+        msg_value_t *msg2 = (msg_value_t *)msg;
         switch (out->type) {
             case HMTL_OUTPUT_VALUE:
             {
@@ -103,7 +103,7 @@ hmtl_handle_msg(msg_hdr_t *msg_hdr,
 
       case HMTL_OUTPUT_RGB:
       {
-        msg_rgb_t *msg2 = (msg_rgb_t *)msg_hdr;
+        msg_rgb_t *msg2 = (msg_rgb_t *)msg;
         switch (out->type) {
             case HMTL_OUTPUT_RGB:
             {
@@ -262,11 +262,11 @@ void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length) {
   msg_hdr->startcode = HMTL_MSG_START;
   msg_hdr->crc = 0;
   msg_hdr->version = HMTL_MSG_VERSION;
-  msg_hdr->length = HMTL_MSG_VALUE_LEN;
+  msg_hdr->length = length;
   msg_hdr->address = address;
 #ifdef HMTL_USE_CRC
   /* Complute the CRC with the crc value == 0 */
-  msg_hdr->crc = EEPROM_crc(buffer, HMTL_MSG_VALUE_LEN);
+  msg_hdr->crc = EEPROM_crc(buffer, length);
 #endif
 }
 
@@ -277,7 +277,7 @@ uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
   msg_value_t *msg_value = (msg_value_t *)(msg_hdr + 1);
 
   if (buffsize < HMTL_MSG_VALUE_LEN) {
-    DEBUG_ERR("hmtl_msg_value: too small size");
+    DEBUG_ERR("hmtl_value_fmt: too small size");
     DEBUG_ERR_STATE(1);
   }
 
@@ -289,3 +289,35 @@ uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
   return HMTL_MSG_VALUE_LEN;
 }
 
+/* Format a blink program message */
+uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
+				uint16_t address, uint8_t output,
+				uint16_t on_period,
+				uint32_t on_color,
+				uint16_t off_period,
+				uint32_t off_color) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  if (buffsize < HMTL_MSG_PROGRAM_LEN) {
+    DEBUG_ERR("hmtl_program_blink_fmt: too small size");
+    DEBUG_ERR_STATE(1);
+  }
+
+  msg_program->hdr.type = HMTL_OUTPUT_PROGRAM;
+  msg_program->hdr.output = output;
+  msg_program->type = HMTL_PROGRAM_BLINK;
+
+  hmtl_program_blink_t *blink = (hmtl_program_blink_t *)msg_program->values;
+  blink->on_period = on_period;
+  blink->off_period = off_period;
+  blink->on_value[0] = pixel_red(on_color);
+  blink->on_value[1] = pixel_green(on_color);
+  blink->on_value[2] = pixel_blue(on_color);
+  blink->off_value[0] = pixel_red(off_color);
+  blink->off_value[1] = pixel_green(off_color);
+  blink->off_value[2] = pixel_blue(off_color);
+  
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
+  return HMTL_MSG_PROGRAM_LEN;
+}
