@@ -64,8 +64,11 @@ typedef msg_program_t msg_max_t;
  * HMTL Programs
  */
 
-#define HMTL_PROGRAM_NONE  0x0
-#define HMTL_PROGRAM_BLINK 0x1
+#define HMTL_PROGRAM_NONE         0x0
+#define HMTL_PROGRAM_BLINK        0x1
+#define HMTL_PROGRAM_TIMED_CHANGE 0x2
+
+/* Program to blink between two colors */
 typedef struct {
   uint16_t on_period;
   uint8_t on_value[3];
@@ -78,6 +81,13 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
 				uint32_t on_color,
 				uint16_t off_period,
 				uint32_t off_color);
+
+/* Program which sets a color, waits, and sets another color */
+typedef struct {
+  uint32_t change_period;
+  uint8_t start_value[3];
+  uint8_t stop_value[3];
+} hmtl_program_timed_change_t;
 
 /*
  * Utility functions

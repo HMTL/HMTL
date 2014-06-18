@@ -18,6 +18,7 @@ typedef struct {
 struct program_tracker {
   hmtl_program_t *program;
   void *state;
+  boolean done;
 };
 
 

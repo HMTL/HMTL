@@ -76,6 +76,9 @@ MSG_PROGRAM_NONE_FMT = 'B'*MSG_PROGRAM_VALUE_LEN
 MSG_PROGRAM_BLINK_TYPE = 1
 MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 
+MSG_PROGRAM_TIMED_CHANGE_TYPE = 2
+MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
+
 
 #
 # Configuration formatting
@@ -208,3 +211,12 @@ def get_program_none_msg(address, output):
     args = [MSG_PROGRAM_NONE_FMT] + [0 for x in range(0, MSG_PROGRAM_VALUE_LEN)]
     msg = struct.pack(*args)
     return get_program_msg(address, output, MSG_PROGRAM_NONE_TYPE, msg)
+
+def get_program_timed_change_msg(address, output,
+                                 change_period, start_values, stop_values):
+    msg = struct.pack(MSG_PROGRAM_TIMED_CHANGE_FMT,
+                      change_period,
+                      start_values[0], start_values[1], start_values[2],
+                      stop_values[0], stop_values[1],stop_values[2],
+                      0, 0)
+    return get_program_msg(address, output, MSG_PROGRAM_TIMED_CHANGE_TYPE, msg)

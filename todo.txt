@@ -4,6 +4,8 @@ HMTL TODO LIST
 Test:
   * Get hmtl_handle_msg to take arguments for relevant objects (pixels)
 
+* Create a sync program message
+
 * Add a HMTLModule class that fully sets up a module, contains pixels,rs485,etc
 
 * Create a strobe program

@@ -5,7 +5,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 from client import *
 
 import HMTLprotocol
@@ -36,27 +36,34 @@ def handle_args():
                       help="Set RGB value", default=False)
 
     # Command types
-    parser.add_option("-V", "--value", action="store_const",
+    group = OptionGroup(parser, "Command Types")
+    group.add_option("-V", "--value", action="store_const",
                       dest="commandtype", const="value",
                       help="Send value command", default=None)
-    parser.add_option("-R", "--rgb", action="store_const",
+    group.add_option("-R", "--rgb", action="store_const",
                       dest="commandtype", const="rgb",
                       help="Send rgb command")
-    parser.add_option("-B", "--blink", action="store_const",
+    group.add_option("-B", "--blink", action="store_const",
                       dest="commandtype", const="blink",
-                      help="Send blink command")
-    parser.add_option("-N", "--none", action="store_const",
+                      help="Send blink program")
+    group.add_option("-T", "--timedchange", action="store_const",
+                      dest="commandtype", const="timedchange",
+                      help="Send timed change program")
+    group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
                       help="Send program reset command")
+    parser.add_option_group(group)
 
 
     # Command options
-    parser.add_option("-P", "--period", dest="period", type="float",
+    group = OptionGroup(parser, "Command Options")
+    group.add_option("-P", "--period", dest="period", type="float",
                       help="Sleep period between changes")
-    parser.add_option("-O", "--output", dest="output", type="int",
+    group.add_option("-O", "--output", dest="output", type="int",
                       help="Number of the output to be set", default=None)
-    parser.add_option("-C", "--command", dest="commandvalue", action="store",
+    group.add_option("-C", "--command", dest="commandvalue", action="store",
                       default = None)
+    parser.add_option_group(group)
 
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
@@ -105,6 +112,17 @@ def main():
                                              options.output,
                                              int(a), [int(b),int(c),int(d)],
                                              int(e), [int(f),int(g),int(h)])
+        elif (options.commandtype == "timedchange"):
+            (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
+            print("Sending TIMED CHANGE message. Output=%d change_period=%d start_value=%s stop_values=%s" % (options.output, int(a), [int(b),int(c),int(d)],
+                                                                                                              [int(e),int(f),int(g)]))
+            msg = HMTLprotocol.get_program_timed_change_msg(options.hmtladdress,
+                                            options.output,
+                                            int(a),
+                                            [int(b),int(c),int(d)],
+                                            [int(e),int(f),int(g)])
+
+
         elif (options.commandtype == "none"):
             print("Sending NONE message.  Output=%d" % (options.output))
             msg = HMTLprotocol.get_program_none_msg(options.hmtladdress,

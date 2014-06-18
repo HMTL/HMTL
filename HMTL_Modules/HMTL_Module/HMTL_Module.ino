@@ -25,25 +25,23 @@
 #include "HMTL_Module.h"
 
 
-/* message body and state for basic blink program */
-#define PROGRAM_NONE  0x0
-#define PROGRAM_BLINK 0x1
+/* Program states */
 typedef struct {
-  uint16_t on_period;
-  uint8_t on_value[3];
-  uint16_t off_period;
-  uint8_t off_value[3];
-} program_blink_t;
-typedef struct {
-  program_blink_t msg;
+  hmtl_program_blink_t msg;
   boolean on;
   unsigned long next_change;
 } state_blink_t;
 
+typedef struct {
+  hmtl_program_timed_change_t msg;
+  unsigned long change_time;
+} state_timed_change_t;
+
 /* List of available programs */
 hmtl_program_t program_functions[] = {
-  { PROGRAM_NONE, NULL, NULL},
-  { PROGRAM_BLINK, program_blink, program_blink_init }
+  { HMTL_PROGRAM_NONE, NULL, NULL},
+  { HMTL_PROGRAM_BLINK, program_blink, program_blink_init },
+  { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -219,14 +217,8 @@ boolean setup_program(output_hdr_t *outputs[],
 
   program_tracker_t *tracker = trackers[msg->hdr.output];
 
-  if (program->type == PROGRAM_NONE) {
-    if (tracker != NULL) {
-      DEBUG_VALUELN(DEBUG_HIGH, "setup_progam: clearing program for", 
-		    msg->hdr.output);
-      if (tracker->state) free(tracker->state);
-      free(tracker);
-    }
-    trackers[msg->hdr.output] = NULL;
+  if (program->type == HMTL_PROGRAM_NONE) {
+    free_tracker(trackers, msg->hdr.output);
     return true;
   }
 
@@ -242,9 +234,22 @@ boolean setup_program(output_hdr_t *outputs[],
   }
 
   tracker->program = program;
+  tracker->done = false;
   tracker->program->setup(msg, tracker);
 
   return true;
+}
+
+/* Free a single program tracker */
+void free_tracker(program_tracker_t *trackers[], int index) {
+  program_tracker_t *tracker = trackers[index];
+  if (tracker != NULL) {
+      DEBUG_VALUELN(DEBUG_HIGH, "free_tracker: clearing program for", 
+		    index);
+      if (tracker->state) free(tracker->state);
+      free(tracker);
+    }
+    trackers[index] = NULL;
 }
 
 /* Execute all active programs */
@@ -255,6 +260,11 @@ boolean run_programs(output_hdr_t *outputs[],
   for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
     program_tracker_t *tracker = trackers[i];
     if (tracker != NULL) {
+      if (tracker->done) {
+	free_tracker(trackers, i);
+	continue;
+      }
+
       if (tracker->program->program(outputs[i], tracker)) {
 	updated = true;
       }
@@ -271,7 +281,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
   DEBUG_PRINT(DEBUG_HIGH, "Initializing blink program state");
 
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));  
-  memcpy(&state->msg, msg->values, MAX_PROGRAM_VAL);
+  memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->on = false;
   state->next_change = millis();
 
@@ -296,27 +306,13 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
   if (now >= state->next_change) {
     if (state->on) {
       // Turn off the output
-      switch (output->type) {
-      case HMTL_OUTPUT_VALUE:{
-	config_value_t *val = (config_value_t *)output;
-	val->value = state->msg.off_value[0];
-	DEBUG_VALUE(DEBUG_TRACE, " Turned off:", val->value);
-	break;
-      }
-      }
+      hmtl_set_output(output, state->msg.off_value);
       
       state->on = false;
       state->next_change += state->msg.off_period;
     } else {
       // Turn on the output
-      switch (output->type) {
-      case HMTL_OUTPUT_VALUE:{
-	config_value_t *val = (config_value_t *)output;
-	val->value = state->msg.on_value[0];
-	DEBUG_VALUE(DEBUG_TRACE, " Turned on:", val->value);
-	break;
-      }
-      }
+      hmtl_set_output(output, state->msg.on_value);
 
       state->on = true;
       state->next_change += state->msg.on_period;
@@ -328,4 +324,61 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
   DEBUG_PRINT_END();
 
   return changed;
+}
+
+
+/*
+ * Program which sets a value and waits for a period setting another value
+ */
+boolean program_timed_change_init(msg_program_t *msg,
+				  program_tracker_t *tracker) {
+  DEBUG_PRINT(DEBUG_HIGH, "Initializing timed change program");
+
+  state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));  
+
+  DEBUG_VALUE(DEBUG_HIGH, " msgsz=", sizeof (state->msg));
+
+  memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
+  state->change_time = 0;
+
+  tracker->state = state;
+
+  DEBUG_VALUELN(DEBUG_HIGH, " change_period:", state->msg.change_period);
+
+  return true;
+}
+
+boolean program_timed_change(output_hdr_t *output, program_tracker_t *tracker) {
+  boolean changed = false;
+  unsigned long now = millis();
+  state_timed_change_t *state = (state_timed_change_t *)tracker->state;
+
+  if (state->change_time == 0) {
+    // Set the initial color
+    hmtl_set_output(output, state->msg.start_value);
+    state->change_time = now + state->msg.change_period;
+    changed = true;
+  }
+
+  if (now > state->change_time) {
+    // Set the final color
+    hmtl_set_output(output, state->msg.stop_value);
+    
+    // Disable the program
+    tracker->done = true;
+    changed = true;
+  }
+
+  return changed;
+}
+
+/* Set the indicated output to a 3 byte value */
+void hmtl_set_output(output_hdr_t *output, uint8_t value[3]) {
+  switch (output->type) {
+  case HMTL_OUTPUT_VALUE:{
+    config_value_t *val = (config_value_t *)output;
+    val->value = value[0];
+    break;
+  }
+  }
 }

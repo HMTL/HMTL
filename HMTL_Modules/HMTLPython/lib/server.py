@@ -87,7 +87,7 @@ class HMTLServer():
     # XXX: Without this it seems to crash my Mac as the arduino continues to
     # stream data
     def serial_flush_idle(self, delay, test):
-        print("XXX: Flush delay set to %f" % (delay))
+        print("Flush delay set to %f" % (delay))
         while (not self.terminate):
             # Read until the buffer appears to be empty
             while True:
