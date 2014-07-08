@@ -15,6 +15,9 @@ def handle_args():
     parser = OptionParser()
     parser.add_option("-d", "--device", dest="device",
                       help="Arduino USB device")
+    parser.add_option("-b", "--baud", dest="baud", type="int",
+                      help="Serial port baud ([9600], 19200, 57600, 115200)",
+                      default=9600)
 
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
@@ -38,8 +41,10 @@ def main():
 
     if (options.device != None):
         device = options.device
+
+    print("Opening connection to '%s' at %d baud." % (device, options.baud))
     
-    ser = serial.Serial(device, 9600, timeout=10)
+    ser = serial.Serial(device, options.baud, timeout=10)
     while True:
         data = ser.readline()
         if (data and len(data) > 0):
