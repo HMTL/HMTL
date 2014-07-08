@@ -1,0 +1,14 @@
+Assigned HMTL addresses:
+
+Cube Lights
+*16 - 0x10 - Parents
+*17 - 0x11 - Seth
+*18 - 0x12 - D
+*19 - 0x13 - Adam
+20 - 0x14 - #5
+
+64 - 0x40 - HMTL Triggerv2 (stereo terminals, 12V plug, bluetooth)
+65 - 0x41 - HMTL Triggerv2 (stereo terminals)
+
+
+(*) Not yet set

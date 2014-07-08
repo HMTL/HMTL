@@ -65,7 +65,7 @@ byte databuffer[SEND_BUFFER_SIZE];
 byte *send_buffer;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
     active_programs[i] = NULL;
@@ -105,9 +105,9 @@ void loop() {
   if (hmtl_serial_getmsg(msg, MSG_MAX_SZ, &offset)) {
     serial = true;
     /* Received a complete message */
-    DEBUG_VALUE(DEBUG_HIGH, "Received msg len=", offset);
-    DEBUG_PRINT(DEBUG_HIGH, " ");
-    DEBUG_COMMAND(DEBUG_HIGH, 
+    DEBUG_VALUE(DEBUG_TRACE, "Received msg len=", offset);
+    DEBUG_PRINT(DEBUG_TRACE, " ");
+    DEBUG_COMMAND(DEBUG_TRACE, 
 		  print_hex_string(msg, offset)
 		  );
     DEBUG_PRINT_END();
@@ -127,7 +127,6 @@ void loop() {
       output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
       if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
 	// XXX: This stuff should be moved into the framework somehow
-	DEBUG_PRINTLN(DEBUG_HIGH, "Received program command"); // XXX
 	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
       } else {
 	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
@@ -142,9 +141,9 @@ void loop() {
   unsigned int msglen;
   msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, RS485_ADDR_ANY);
   if (msg_hdr != NULL) {
-    DEBUG_VALUE(DEBUG_HIGH, "Received rs485 msg len=", msglen);
-    DEBUG_PRINT(DEBUG_HIGH, " ");
-    DEBUG_COMMAND(DEBUG_HIGH, 
+    DEBUG_VALUE(DEBUG_TRACE, "Received rs485 msg len=", msglen);
+    DEBUG_PRINT(DEBUG_TRACE, " ");
+    DEBUG_COMMAND(DEBUG_TRACE, 
 		  print_hex_string((byte *)msg_hdr, msglen)
 		  );
     DEBUG_PRINT_END();
@@ -155,7 +154,6 @@ void loop() {
       output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
       if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
 	// XXX: This stuff should be moved into the framework somehow
-	DEBUG_PRINTLN(DEBUG_HIGH, "Received program command"); // XXX
 	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
       } else {
 	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
@@ -223,9 +221,9 @@ boolean setup_program(output_hdr_t *outputs[],
   }
 
   if (tracker != NULL) {
-    DEBUG_PRINTLN(DEBUG_HIGH, "setup_program: reusing old tracker");
+    DEBUG_PRINTLN(DEBUG_TRACE, "setup_program: reusing old tracker");
     if (tracker->state) {
-      DEBUG_PRINTLN(DEBUG_HIGH, "setup_program: deleting old state");
+      DEBUG_PRINTLN(DEBUG_TRACE, "setup_program: deleting old state");
       free(tracker->state);
     }
   } else {
@@ -244,7 +242,7 @@ boolean setup_program(output_hdr_t *outputs[],
 void free_tracker(program_tracker_t *trackers[], int index) {
   program_tracker_t *tracker = trackers[index];
   if (tracker != NULL) {
-      DEBUG_VALUELN(DEBUG_HIGH, "free_tracker: clearing program for", 
+      DEBUG_VALUELN(DEBUG_HIGH, "free_tracker: clearing program for ", 
 		    index);
       if (tracker->state) free(tracker->state);
       free(tracker);
