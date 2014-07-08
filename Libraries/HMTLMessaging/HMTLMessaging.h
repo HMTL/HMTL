@@ -61,6 +61,33 @@ typedef struct {
 typedef msg_program_t msg_max_t;
 
 /*
+ * Utility functions
+ */
+uint16_t hmtl_msg_size(output_hdr_t *output);
+
+/* Process a HMTL formatted message */
+int hmtl_handle_msg(msg_hdr_t *msg_hdr,
+		    config_hdr_t *config_hdr, output_hdr_t *outputs[],
+		    void *objects[] = NULL);
+
+
+/* Receive a message over the serial interface */
+boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
+
+/* Receive a message over the rs485 interface */
+msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
+			     uint16_t address);
+
+
+/*
+ * Formatting for individual messages
+ */
+uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsz,
+		    uint16_t address, uint8_t output, int value);
+
+
+
+/*******************************************************************************
  * HMTL Programs
  */
 
@@ -88,31 +115,11 @@ typedef struct {
   uint8_t start_value[3];
   uint8_t stop_value[3];
 } hmtl_program_timed_change_t;
-
-/*
- * Utility functions
- */
-uint16_t hmtl_msg_size(output_hdr_t *output);
-
-/* Process a HMTL formatted message */
-int hmtl_handle_msg(msg_hdr_t *msg_hdr,
-		    config_hdr_t *config_hdr, output_hdr_t *outputs[],
-		    void *objects[] = NULL);
-
-
-/* Receive a message over the serial interface */
-boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
-
-/* Receive a message over the rs485 interface */
-msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
-			     uint16_t address);
-
-
-/*
- * Formatting for individual messages
- */
-uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsz,
-		    uint16_t address, uint8_t output, int value);
+uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
+				       uint16_t address, uint8_t output,
+				       uint16_t change_period,
+				       uint32_t start_color,
+				       uint32_t stop_color);
 
 
 #endif

@@ -264,10 +264,25 @@ void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length) {
   msg_hdr->version = HMTL_MSG_VERSION;
   msg_hdr->length = length;
   msg_hdr->address = address;
+
 #ifdef HMTL_USE_CRC
   /* Complute the CRC with the crc value == 0 */
   msg_hdr->crc = EEPROM_crc(buffer, length);
 #endif
+}
+
+void hmtl_program_fmt(msg_program_t *msg_program, uint8_t output, 
+		      uint8_t program, uint16_t buffsize) {
+  DEBUG_COMMAND(DEBUG_ERROR,
+		if (buffsize < HMTL_MSG_PROGRAM_LEN) {
+		  DEBUG_ERR("hmtl_program_fmt: too small size");
+		  DEBUG_ERR_STATE(1);
+		}
+		);
+
+  msg_program->hdr.type = HMTL_OUTPUT_PROGRAM;
+  msg_program->hdr.output = output;
+  msg_program->type = program;
 }
 
 /* Format a value message */
@@ -299,14 +314,7 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
   msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
 
-  if (buffsize < HMTL_MSG_PROGRAM_LEN) {
-    DEBUG_ERR("hmtl_program_blink_fmt: too small size");
-    DEBUG_ERR_STATE(1);
-  }
-
-  msg_program->hdr.type = HMTL_OUTPUT_PROGRAM;
-  msg_program->hdr.output = output;
-  msg_program->type = HMTL_PROGRAM_BLINK;
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_BLINK, buffsize);
 
   hmtl_program_blink_t *blink = (hmtl_program_blink_t *)msg_program->values;
   blink->on_period = on_period;
@@ -318,6 +326,31 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
   blink->off_value[1] = pixel_green(off_color);
   blink->off_value[2] = pixel_blue(off_color);
   
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
+  return HMTL_MSG_PROGRAM_LEN;
+}
+
+/* Format a timed change program message */
+uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
+				       uint16_t address, uint8_t output,
+				       uint16_t change_period,
+				       uint32_t start_color,
+				       uint32_t stop_color) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_TIMED_CHANGE, buffsize);
+
+  hmtl_program_timed_change_t *program = 
+    (hmtl_program_timed_change_t *)msg_program->values;
+  program->change_period = change_period;
+  program->start_value[0] = pixel_red(start_color);
+  program->start_value[1] = pixel_green(start_color);
+  program->start_value[2] = pixel_blue(start_color);
+  program->stop_value[0] = pixel_red(stop_color);
+  program->stop_value[1] = pixel_green(stop_color);
+  program->stop_value[2] = pixel_blue(stop_color);
+
   hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
   return HMTL_MSG_PROGRAM_LEN;
 }
