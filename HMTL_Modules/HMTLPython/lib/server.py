@@ -21,7 +21,8 @@ class HMTLServer():
         self.ser = HMTLSerial(options.device,
                               timeout=5,
                               verbose=options.verbose,
-                              dryrun=options.dryrun)
+                              dryrun=options.dryrun,
+                              baud=options.baud)
         print("HMTLServer: connected to %s" % (options.device))
 
         self.address = (options.address, options.port)

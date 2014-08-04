@@ -19,6 +19,9 @@ def handle_args():
                       help="Arduino USB device")
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)
+    parser.add_option("-b", "--baud", dest="baud", type="int",
+                      help="Serial port baud ([9600], 19200, 57600, 115200)",
+                      default=9600)
 
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)

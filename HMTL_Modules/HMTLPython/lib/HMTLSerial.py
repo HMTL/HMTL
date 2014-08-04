@@ -12,14 +12,15 @@ class HMTLConfigException(Exception):
 class HMTLSerial():
     ser = None
 
-    def __init__(self, device, timeout=10, verbose=False, dryrun=False):
+    def __init__(self, device, timeout=10, verbose=False, dryrun=False, baud = 9600):
         '''Open a serial connection and wait for the ready signal'''
         self.device = device
         self.verbose = verbose
         self.dryrun = dryrun
+        self.baud = baud
 
         if (not self.dryrun):
-            self.ser = serial.Serial(device, 9600, timeout=timeout)
+            self.ser = serial.Serial(device, baud, timeout=timeout)
             if (self.wait_for_ready() == False):
                 exit(1)
         else:
