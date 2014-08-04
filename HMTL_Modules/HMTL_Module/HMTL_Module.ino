@@ -65,7 +65,8 @@ byte databuffer[SEND_BUFFER_SIZE];
 byte *send_buffer;
 
 void setup() {
-  Serial.begin(115200);
+  //  Serial.begin(115200);
+  Serial.begin(57600);
 
   for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
     active_programs[i] = NULL;
@@ -139,7 +140,7 @@ void loop() {
 
   /* Check for message over RS485 */
   unsigned int msglen;
-  msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, RS485_ADDR_ANY);
+  msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
   if (msg_hdr != NULL) {
     DEBUG_VALUE(DEBUG_TRACE, "Received rs485 msg len=", msglen);
     DEBUG_PRINT(DEBUG_TRACE, " ");
