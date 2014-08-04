@@ -196,7 +196,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
           config_rs485_t *out = (config_rs485_t *)hdr;
 	  RS485Socket *rs485 = (RS485Socket *)data;
 	  rs485->init(out->recvPin, out->xmitPin, out->enablePin,
-		     false); // Set to true to enable debugging
+		      RS485_RECV_BUFFER, false); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
