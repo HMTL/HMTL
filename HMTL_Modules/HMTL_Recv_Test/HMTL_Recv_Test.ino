@@ -37,7 +37,8 @@ void setup() {
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
 				     outputs, NULL, MAX_OUTPUTS,
-				     &rs485, NULL, &rgb_output, &value_output,
+				     &rs485, NULL, NULL, 
+				     &rgb_output, &value_output,
 				     NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
