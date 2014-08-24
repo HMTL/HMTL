@@ -13,7 +13,11 @@ Assigned HMTL addresses:
 
 ==Trigger boards==
 64 - 0x40 - HMTL Triggerv2 (stereo terminals, 12V plug, bluetooth)
-65 - 0x41 - HMTL Triggerv2 (stereo terminals)
+65 - 0x41 - HMTL Triggerv2 (stereo terminals, XLR)
+
+65 - 0x42 - HMTL Triggerv2 (stereo terminals, XLR, KU)
+65 - 0x42 - HMTL Triggerv2 (stereo terminals, XLR, KU?)
+
 
 ==HMTL Fire Control===
 128 - 0x80 - HNTL Fire Control Module 1

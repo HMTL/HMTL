@@ -54,10 +54,21 @@ extern byte my_address;
 #define POOFER1_IGNITER  0x0
 #define POOFER1_POOF     0x1
 
-#define POOFER2_ADDRESS 0x41
+#define POOFER2_ADDRESS  0x41
 #define POOFER2_IGNITER  0x0
 #define POOFER2_POOF     0x1
 
+// Switches
+#define POOFER1_IGNITER_ENABLED 0x0
+#define POOFER1_POOF_ENABLED    0x2
+#define POOFER2_IGNITER_ENABLED 0x1
+#define POOFER2_POOF_ENABLED    0x3
+
+// Sensors
+#define POOFER1_IGNITER_SENSOR 0x3
+#define POOFER1_POOF_SENSOR    0x2
+#define POOFER2_IGNITER_SENSOR 0x1
+#define POOFER2_POOF_SENSOR    0x0
 
 void initialize_connect();
 
