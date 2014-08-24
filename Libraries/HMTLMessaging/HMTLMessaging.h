@@ -60,7 +60,7 @@ typedef struct {
 
 typedef msg_program_t msg_max_t;
 
-/*
+/*******************************************************************************
  * Utility functions
  */
 uint16_t hmtl_msg_size(output_hdr_t *output);
@@ -84,6 +84,7 @@ msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
  */
 uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsz,
 		    uint16_t address, uint8_t output, int value);
+
 
 
 
@@ -121,5 +122,19 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 				       uint32_t start_color,
 				       uint32_t stop_color);
 
+/*******************************************************************************
+ *Wrapper functions for sending HMTL Messages 
+ */
+void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
+		     uint16_t address, uint8_t output, int value);
+void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
+		     uint16_t address, uint8_t output,
+		     uint16_t on_period, uint32_t on_color,
+		     uint16_t off_period, uint32_t off_color);
+void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
+			    uint16_t address, uint8_t output,
+			    uint32_t change_period,
+			    uint32_t start_color,
+			    uint32_t stop_color);
 
 #endif

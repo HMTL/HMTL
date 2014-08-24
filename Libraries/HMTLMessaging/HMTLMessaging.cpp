@@ -169,7 +169,6 @@ hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
       DEBUG_VALUELN(DEBUG_ERROR, " short for header ", sizeof (msg_hdr_t));
       goto ERROR_OUT;
     }
-
     if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
       DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
       goto ERROR_OUT;
@@ -353,4 +352,52 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 
   hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
   return HMTL_MSG_PROGRAM_LEN;
+}
+
+
+/***** Wrapper functions for sending HMTL Messages ****************************/
+
+
+void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
+		     uint16_t address, uint8_t output, int value) {
+  DEBUG_VALUE(DEBUG_TRACE, "hmtl_send_value: addr:", address);
+  DEBUG_VALUE(DEBUG_TRACE, " out:", output);
+  DEBUG_VALUELN(DEBUG_TRACE, " value:", value);
+
+  uint16_t len = hmtl_value_fmt(buff, buff_len,
+				address, output, value);
+  rs485->sendMsgTo(address, buff, len);
+}
+
+void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
+		     uint16_t address, uint8_t output,
+		     uint16_t on_period, uint32_t on_color,
+		     uint16_t off_period, uint32_t off_color) {
+
+  DEBUG_VALUE(DEBUG_TRACE, "hmtl_send_blink: addr:", address);
+  DEBUG_VALUELN(DEBUG_TRACE, " out:", output);
+
+  uint16_t len = hmtl_program_blink_fmt(buff, buff_len,
+					address, output,
+					on_period, 
+					on_color,
+					off_period, 
+					off_color);
+  rs485->sendMsgTo(address, buff, len);
+}
+
+void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
+			    uint16_t address, uint8_t output,
+			    uint32_t change_period,
+			    uint32_t start_color,
+			    uint32_t stop_color) {
+  DEBUG_VALUE(DEBUG_TRACE, "hmtl_send_timed_change: addr:", address);
+  DEBUG_VALUELN(DEBUG_TRACE, " out:", output);
+
+  uint16_t len = hmtl_program_timed_change_fmt(buff, buff_len,
+					       address, output,
+					       change_period,
+					       start_color,
+					       stop_color);
+  rs485->sendMsgTo(address, buff, len);
 }
