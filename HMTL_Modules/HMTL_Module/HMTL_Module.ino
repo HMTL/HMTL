@@ -9,7 +9,7 @@
 #include "Adafruit_WS2801.h"
 #include "Wire.h"
 
-#define DEBUG_LEVEL DEBUG_HIGH
+#define DEBUG_LEVEL DEBUG_MID
 #include "Debug.h"
 
 #include "GeneralUtils.h"
@@ -243,7 +243,7 @@ boolean setup_program(output_hdr_t *outputs[],
 void free_tracker(program_tracker_t *trackers[], int index) {
   program_tracker_t *tracker = trackers[index];
   if (tracker != NULL) {
-      DEBUG_VALUELN(DEBUG_HIGH, "free_tracker: clearing program for ", 
+      DEBUG_VALUELN(DEBUG_MID, "free_tracker: clearing program for ", 
 		    index);
       if (tracker->state) free(tracker->state);
       free(tracker);
@@ -277,7 +277,7 @@ boolean run_programs(output_hdr_t *outputs[],
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
-  DEBUG_PRINT(DEBUG_HIGH, "Initializing blink program state");
+  DEBUG_PRINT(DEBUG_MID, "Initializing blink program state");
 
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));  
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
@@ -286,8 +286,8 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
 
   tracker->state = state;
 
-  DEBUG_VALUE(DEBUG_HIGH, " on_period:", state->msg.on_period);
-  DEBUG_VALUELN(DEBUG_HIGH, " off_period:", state->msg.off_period);
+  DEBUG_VALUE(DEBUG_MID, " on_period:", state->msg.on_period);
+  DEBUG_VALUELN(DEBUG_MID, " off_period:", state->msg.off_period);
 
   return true;
 }
@@ -331,18 +331,18 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
  */
 boolean program_timed_change_init(msg_program_t *msg,
 				  program_tracker_t *tracker) {
-  DEBUG_PRINT(DEBUG_HIGH, "Initializing timed change program");
+  DEBUG_PRINT(DEBUG_MID, "Initializing timed change program");
 
   state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));  
 
-  DEBUG_VALUE(DEBUG_HIGH, " msgsz=", sizeof (state->msg));
+  DEBUG_VALUE(DEBUG_MID, " msgsz=", sizeof (state->msg));
 
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->change_time = 0;
 
   tracker->state = state;
 
-  DEBUG_VALUELN(DEBUG_HIGH, " change_period:", state->msg.change_period);
+  DEBUG_VALUELN(DEBUG_MID, " change_period:", state->msg.change_period);
 
   return true;
 }
