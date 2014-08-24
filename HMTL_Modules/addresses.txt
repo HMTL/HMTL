@@ -1,14 +1,21 @@
 Assigned HMTL addresses:
 
-Cube Lights
-*16 - 0x10 - Parents
-*17 - 0x11 - Seth
-*18 - 0x12 - D
-*19 - 0x13 - Adam
-20 - 0x14 - #5
+==Cube Lights==
+*16 - 0x10 - Parents (Board v2)
+*17 - 0x11 - Seth (Board v2)
+*18 - 0x12 - D (Board v2)
+*19 - 0x13 - Adam (Board v2)
+20 - 0x14 - #5 (Board v2)
 
+==Triangle Lights==
+*32 - 0x20 - Taller stand (Board v4)
+*33 - 0x21 - Standless
+
+==Trigger boards==
 64 - 0x40 - HMTL Triggerv2 (stereo terminals, 12V plug, bluetooth)
 65 - 0x41 - HMTL Triggerv2 (stereo terminals)
 
+==HMTL Fire Control===
+128 - 0x80 - HNTL Fire Control Module 1
 
 (*) Not yet set
