@@ -28,8 +28,12 @@ class HMTLClient():
             self.address = options.hmtladdress
         if (options.verbose):
             self.verbose = True
+        if (options.port):
+            port = options.port
+        else:
+            port = 6000
 
-        address = ('localhost', 6000)
+        address = ('localhost', port)
         try:
             self.conn = Client(address, authkey=b'secret password')
         except Exception as e:
