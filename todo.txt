@@ -6,14 +6,21 @@ Test:
 
 * Create a sync program message
 
+* Store baud in EEPROM.  
+  - Initially run at 9600, read & print baud before switching
+  - Tail and the like can watch for baud message, then switch and reconnect
+
+*** Need ability to send response or ack to sender
+  - Need to get source address from message
+
 * Add a HMTLModule class that fully sets up a module, contains pixels,rs485,etc
 
-* Create a strobe program
 * Create a fade program
 * Move HMTL_MSG_test into something generic
 
 * Combine HMTLPythonConfig into general libraries to HMTL_MSG_test and the like can use it
 
+** Add a config file that allows the serial interfaces to be named
 
 --Old--
 General
