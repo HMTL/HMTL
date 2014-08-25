@@ -55,8 +55,8 @@ extern byte my_address;
 #define POOFER1_POOF     0x1
 
 #define POOFER2_ADDRESS  0x41
-#define POOFER2_IGNITER  0x0
-#define POOFER2_POOF     0x1
+#define POOFER2_IGNITER  0x2
+#define POOFER2_POOF     0x3
 
 // Switches
 #define POOFER1_IGNITER_ENABLED 0x0
