@@ -61,7 +61,9 @@ void setup()
   /* Initialize display */
   initialize_display();
 
-  lcd.setCursor(0, 0); lcd.print("hello, world!");
+  lcd.clear();
+  lcd.setCursor(0, 0); lcd.print("Hello Black");
+  lcd.setCursor(0,1);  lcd.print("Rock City!");
  
   readHMTLConfiguration();
 
@@ -89,6 +91,8 @@ void loop()
   handle_sensors();
 
   // XXX: Do stuff here
+
+  update_poofers();
 
   update_lcd();
 }

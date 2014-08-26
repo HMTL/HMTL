@@ -24,6 +24,9 @@ void initialize_display();
 // Pixels used for under lighting
 extern PixelUtil pixels;
 
+/***** Poofer bullshit ********************************************************/
+void update_poofers();
+
 /***** Sensor info ************************************************************/
 
 /* All sensor info is recorded in a bit mask */
@@ -67,8 +70,8 @@ extern byte my_address;
 // Sensors
 #define POOFER1_QUICK_POOF_SENSOR   3
 #define POOFER1_LONG_POOF_SENSOR    2
-#define POOFER2_QUICK_POOF_SENSOR   1
-#define POOFER2_LONG_POOF_SENSOR    0
+#define POOFER2_QUICK_POOF_SENSOR   0
+#define POOFER2_LONG_POOF_SENSOR    1
 
 #define SENSOR_EXTERNAL_1           4
 #define SENSOR_EXTERNAL_2           5

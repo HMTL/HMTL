@@ -67,10 +67,10 @@ void sensor_cap(void)
 
 /******* Handle Sensors *******************************************************/
 
-Poofer poof1(POOFER1_ADDRESS,
+Poofer poof1(1, POOFER1_ADDRESS,
 	     POOFER1_IGNITER_ENABLED, POOFER1_IGNITER,
 	     POOFER1_POOF_ENABLED, POOFER1_POOF);
-Poofer poof2(POOFER2_ADDRESS,
+Poofer poof2(2, POOFER2_ADDRESS,
 	     POOFER2_IGNITER_ENABLED, POOFER2_IGNITER,
 	     POOFER2_POOF_ENABLED, POOFER2_POOF);
 
@@ -123,7 +123,7 @@ void handle_sensors(void) {
 
   if (poof1.igniter_enabled && poof1.poof_enabled && 
       touch_sensor.touched(POOFER1_LONG_POOF_SENSOR)) {
-    poof1.poof(100);
+    poof1.poof(250);
   }
 
   if (poof2.igniter_enabled && poof2.poof_enabled && 
@@ -134,7 +134,7 @@ void handle_sensors(void) {
 
   if (poof2.igniter_enabled && poof2.poof_enabled && 
       touch_sensor.touched(POOFER2_LONG_POOF_SENSOR)) {
-    poof2.poof(100);
+    poof2.poof(250);
   }
 
   /* Change display mode */
@@ -155,8 +155,11 @@ void initialize_display() {
 
 
 void update_lcd() {
+  uint32_t now = millis();
+  static uint32_t last_update = 0;
+
   switch (display_mode) {
-  case 0: {
+  case 1: {
     if (data_changed) {
       lcd.setCursor(0, 0);
       lcd.print("C:");
@@ -174,35 +177,66 @@ void update_lcd() {
     }
     break;
   }
-  case 1: {
-    lcd.setCursor(0, 0);
-    lcd.print("FIRE 1:");
-    if (poof1.igniter_enabled) {
-      lcd.print(" I");
-    } else {
-      lcd.print(" X");
+  case 0: {
+    boolean updated = poof1.changed || poof2.changed 
+      || ((now - last_update) > 1000);
+
+    if (updated) {
+      last_update = now;
+
+      lcd.setCursor(0, 0);
+      lcd.print("FIRE 1:");
+      if (poof1.igniter_on) {
+	lcd.print(" I");
+	uint32_t remaining = poof1.ignite_remaining() / 1000;
+	lcd.print(remaining);
+      } else if (poof1.igniter_enabled) {
+	lcd.print(" E");
+      } else {
+	lcd.print(" -");
+      }
+
+      if (poof1.poof_on) {
+	lcd.print(" P");
+      } else if (poof1.poof_enabled) {
+	lcd.print(" E");
+      } else {
+	lcd.print(" -");
+      }
+      lcd.print("     ");
+      poof1.changed = false;
     }
 
-    if (poof1.poof_enabled) {
-      lcd.print(" P");
-    } else {
-      lcd.print(" X");
+    if (updated) {
+      lcd.setCursor(0, 1);
+      lcd.print("FIRE 2:");
+      if (poof2.igniter_on) {
+	lcd.print(" I");\
+	uint32_t remaining = poof2.ignite_remaining() / 1000;
+	lcd.print(remaining);
+      } else if (poof2.igniter_enabled) {
+	lcd.print(" E");
+      } else {
+	lcd.print(" -");
+      }
+
+      if (poof2.poof_on) {
+	lcd.print(" P");
+      } else if (poof2.poof_enabled) {
+	lcd.print(" E");
+      } else {
+	lcd.print(" -");
+      }
+      lcd.print("     ");
+      poof2.changed = false;
     }
 
-    lcd.setCursor(0, 1);
-    lcd.print("FIRE 2:");
-    if (poof2.igniter_enabled) {
-      lcd.print(" I");
-    } else {
-      lcd.print(" X");
-    }
-
-    if (poof2.poof_enabled) {
-      lcd.print(" P");
-    } else {
-      lcd.print(" X");
-    }
     break;
   }
   }
+}
+
+void update_poofers() {
+  poof1.update();
+  poof2.update();
 }
