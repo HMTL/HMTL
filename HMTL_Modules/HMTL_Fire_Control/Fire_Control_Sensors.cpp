@@ -13,6 +13,7 @@
 #include "MPR121.h"
 
 #include "HMTL_Fire_Control.h"
+#include "Poofer.h"
 
 boolean data_changed = true;
 
@@ -66,82 +67,6 @@ void sensor_cap(void)
 
 /******* Handle Sensors *******************************************************/
 
-class Poofer {
-public:
-  uint16_t address;
-
-  boolean igniter_enabled;
-  boolean igniter_on;
-  byte igniter_switch;
-  byte igniter_output;
-
-  boolean poof_enabled;
-  boolean poof_on;
-  byte poof_switch;
-  byte poof_output;
-
-  Poofer(uint16_t _address, 
-	 byte _igniter_switch, byte _igniter_output,
-	 byte _poof_switch, byte _poof_output);
-
-  void enableIgniter();
-  void disableIgniter();
-  void ignite(boolean value);
-
-  void enablePoof();
-  void disablePoof();
-  void poof(boolean value);
-};
-
-Poofer::Poofer(uint16_t _address, 
-	       byte _igniter_switch, byte _igniter_output,
-	       byte _poof_switch, byte _poof_output) {
-  address = _address;
-  igniter_switch = _igniter_switch;
-  poof_switch = _poof_switch;
-
-  igniter_output = _igniter_output;
-  poof_output = _poof_output;
-
-  igniter_enabled = false;
-  igniter_on = false;
-  poof_enabled = false;
-  poof_on = false;
-}
-
-void Poofer::enableIgniter() {
-  igniter_enabled = true;
-}
-
-void Poofer::disableIgniter() {
-  igniter_enabled = false;
-}
-
-
-void Poofer::enablePoof() {
-  poof_enabled = true;
-}
-
-void Poofer::disablePoof() {
-  poof_enabled = false;
-}
-
-void Poofer::ignite(boolean value) {
-  if (value) {
-    sendHMTLValue(address, igniter_output, 255);
-  } else {
-    sendHMTLValue(address, igniter_output, 0);
-  }
-}
-
-void Poofer::poof(boolean value) {
-  if (value) {
-    sendHMTLValue(address, poof_output, 255);
-  } else {
-    sendHMTLValue(address, poof_output, 0);
-  }
-}
-
 Poofer poof1(POOFER1_ADDRESS,
 	     POOFER1_IGNITER_ENABLED, POOFER1_IGNITER,
 	     POOFER1_POOF_ENABLED, POOFER1_POOF);
@@ -149,22 +74,18 @@ Poofer poof2(POOFER2_ADDRESS,
 	     POOFER2_IGNITER_ENABLED, POOFER2_IGNITER,
 	     POOFER2_POOF_ENABLED, POOFER2_POOF);
 
+byte display_mode = 0;
+#define NUM_DISPLAY_MODES 2
+
 void handle_sensors(void) {
   static unsigned long last_send = millis();
 
+  /* Igniter switches */
   if (switch_changed[poof1.igniter_switch]) {
     if (switch_states[poof1.igniter_switch]) {
       poof1.enableIgniter();
     } else {
       poof1.disableIgniter();
-    }
-  }
-
-  if (switch_changed[poof2.igniter_switch]) {
-    if (switch_states[poof2.igniter_switch]) {
-      poof2.enableIgniter();
-    } else {
-      poof2.disableIgniter();
     }
   }
 
@@ -176,6 +97,15 @@ void handle_sensors(void) {
     }
   }
 
+  /* Poof switches */
+  if (switch_changed[poof2.igniter_switch]) {
+    if (switch_states[poof2.igniter_switch]) {
+      poof2.enableIgniter();
+    } else {
+      poof2.disableIgniter();
+    }
+  }
+
   if (switch_changed[poof2.poof_switch]) {
     if (switch_states[poof2.poof_switch]) {
       poof2.enablePoof();
@@ -184,25 +114,34 @@ void handle_sensors(void) {
     }
   }
 
-  if (poof1.igniter_enabled && 
-      touch_sensor.changed(POOFER1_IGNITER_SENSOR)) {
-    poof1.ignite(touch_sensor.touched(POOFER1_IGNITER_SENSOR));
+  /* Poofer controls */
+  if (poof1.igniter_enabled && poof1.poof_enabled && 
+      touch_sensor.changed(POOFER1_QUICK_POOF_SENSOR) &&
+      touch_sensor.touched(POOFER1_QUICK_POOF_SENSOR)) {
+    poof1.poof(50);
   }
 
-  if (poof1.poof_enabled && 
-      touch_sensor.changed(POOFER1_POOF_SENSOR)) {
-    poof1.poof(touch_sensor.touched(POOFER1_POOF_SENSOR));
+  if (poof1.igniter_enabled && poof1.poof_enabled && 
+      touch_sensor.touched(POOFER1_LONG_POOF_SENSOR)) {
+    poof1.poof(100);
   }
 
-
-  if (poof2.igniter_enabled && 
-      touch_sensor.changed(POOFER2_IGNITER_SENSOR)) {
-    poof2.ignite(touch_sensor.touched(POOFER2_IGNITER_SENSOR));
+  if (poof2.igniter_enabled && poof2.poof_enabled && 
+      touch_sensor.changed(POOFER2_QUICK_POOF_SENSOR) &&
+      touch_sensor.touched(POOFER2_QUICK_POOF_SENSOR)) {
+    poof2.poof(50);
   }
 
-  if (poof2.poof_enabled && 
-      touch_sensor.changed(POOFER2_POOF_SENSOR)) {
-    poof2.poof(touch_sensor.touched(POOFER2_POOF_SENSOR));
+  if (poof2.igniter_enabled && poof2.poof_enabled && 
+      touch_sensor.touched(POOFER2_LONG_POOF_SENSOR)) {
+    poof2.poof(100);
+  }
+
+  /* Change display mode */
+  if (touch_sensor.changed(SENSOR_LCD_LEFT) &&
+      touch_sensor.touched(SENSOR_LCD_LEFT)) {
+    lcd.clear();
+    display_mode = (display_mode + 1) % NUM_DISPLAY_MODES;
   }
 }
 
@@ -216,21 +155,54 @@ void initialize_display() {
 
 
 void update_lcd() {
-  if (data_changed) {
-    //    lcd.clear();
+  switch (display_mode) {
+  case 0: {
+    if (data_changed) {
+      lcd.setCursor(0, 0);
+      lcd.print("C:");
+      for (byte i = 0; i < MPR121::MAX_SENSORS; i++) {
+	lcd.print(touch_sensor.touched(i));
+      }
 
+      lcd.setCursor(0, 1);
+      lcd.print("S:");
+      for (byte i = 0; i < NUM_SWITCHES; i++) {
+	lcd.print(switch_states[i]);
+      }
+    
+      data_changed = false;
+    }
+    break;
+  }
+  case 1: {
     lcd.setCursor(0, 0);
-    lcd.print("C:");
-    for (byte i = 0; i < MPR121::MAX_SENSORS; i++) {
-      lcd.print(touch_sensor.touched(i));
+    lcd.print("FIRE 1:");
+    if (poof1.igniter_enabled) {
+      lcd.print(" I");
+    } else {
+      lcd.print(" X");
+    }
+
+    if (poof1.poof_enabled) {
+      lcd.print(" P");
+    } else {
+      lcd.print(" X");
     }
 
     lcd.setCursor(0, 1);
-    lcd.print("S:");
-    for (byte i = 0; i < NUM_SWITCHES; i++) {
-      lcd.print(switch_states[i]);
+    lcd.print("FIRE 2:");
+    if (poof2.igniter_enabled) {
+      lcd.print(" I");
+    } else {
+      lcd.print(" X");
     }
-    
-    data_changed = false;
+
+    if (poof2.poof_enabled) {
+      lcd.print(" P");
+    } else {
+      lcd.print(" X");
+    }
+    break;
+  }
   }
 }

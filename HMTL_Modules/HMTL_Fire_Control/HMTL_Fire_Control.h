@@ -59,19 +59,32 @@ extern byte my_address;
 #define POOFER2_POOF     0x3
 
 // Switches
-#define POOFER1_IGNITER_ENABLED 0x0
-#define POOFER1_POOF_ENABLED    0x2
-#define POOFER2_IGNITER_ENABLED 0x1
-#define POOFER2_POOF_ENABLED    0x3
+#define POOFER1_IGNITER_ENABLED 0
+#define POOFER1_POOF_ENABLED    2
+#define POOFER2_IGNITER_ENABLED 1
+#define POOFER2_POOF_ENABLED    3
 
 // Sensors
-#define POOFER1_IGNITER_SENSOR 0x3
-#define POOFER1_POOF_SENSOR    0x2
-#define POOFER2_IGNITER_SENSOR 0x1
-#define POOFER2_POOF_SENSOR    0x0
+#define POOFER1_QUICK_POOF_SENSOR   3
+#define POOFER1_LONG_POOF_SENSOR    2
+#define POOFER2_QUICK_POOF_SENSOR   1
+#define POOFER2_LONG_POOF_SENSOR    0
+
+#define SENSOR_EXTERNAL_1           4
+#define SENSOR_EXTERNAL_2           5
+#define SENSOR_EXTERNAL_3           6
+#define SENSOR_EXTERNAL_4           7
+
+#define SENSOR_LCD_LEFT             9
+#define SENSOR_LCD_UP               8
+#define SENSOR_LCD_DOWN            10
+#define SENSOR_BOTTOM              11
 
 void initialize_connect();
 
 void sendHMTLValue(uint16_t address, uint8_t output, int value);
-
+void sendHMTLTimedChange(uint16_t address, uint8_t output,
+			 uint32_t change_period,
+			 uint32_t start_color,
+			 uint32_t stop_color);
 #endif
