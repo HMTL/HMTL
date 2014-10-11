@@ -72,7 +72,7 @@ void setup() {
     active_programs[i] = NULL;
   }
 
-  int32_t outputs_found = hmtl_setup(&config, readoutputs, 
+  int32_t outputs_found = hmtl_setup(&config, readoutputs,
 				     outputs, objects, HMTL_MAX_OUTPUTS,
 				     &rs485, &pixels, NULL,
 				     &rgb_output, &value_output,
@@ -112,7 +112,7 @@ void loop() {
 		  print_hex_string(msg, offset)
 		  );
     DEBUG_PRINT_END();
-    DEBUG_PRINTLN(DEBUG_HIGH, "ok");
+    Serial.println(F("ok")); // XXX: This should come from HMTLprotocol.h
 
     if ((msg_hdr->address != config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
