@@ -32,13 +32,16 @@ config_pixels_t pixel_output;
 config_value_t value_output;
 config_rs485_t rs485_output;
 boolean has_value = false;
-
+boolean has_pixels = false;
 
 int configOffset = -1;
+
 PixelUtil pixels;
 
 void setup() {
   Serial.begin(9600);
+
+  DEBUG_PRINTLN(DEBUG_LOW, "***** HMTL Bringup *****");
 
   // XXX Update this to hmtl_setup()
   readconfig.address = -1;
@@ -68,7 +71,11 @@ void setup() {
   for (int i = 0; i < config.num_outputs; i++) {
     void *data = NULL;
     switch (((output_hdr_t *)outputs[i])->type) {
-    case HMTL_OUTPUT_PIXELS: data = &pixels; break;
+    case HMTL_OUTPUT_PIXELS: {
+      data = &pixels; 
+      has_pixels = true;
+      break;
+    }
     case HMTL_OUTPUT_RGB: {
       memcpy(&rgb_output, outputs[i], sizeof (rgb_output));
       break;
@@ -82,46 +89,56 @@ void setup() {
     hmtl_setup_output((output_hdr_t *)outputs[i], data);
   }
 
-  for (unsigned int i = 0; i < pixels.numPixels(); i++) {
-    pixels.setPixelRGB(i, 0, 0, 0);
+  if (has_pixels) {
+    for (unsigned int i = 0; i < pixels.numPixels(); i++) {
+      pixels.setPixelRGB(i, 0, 0, 0);
+    }
+    pixels.update();
   }
-  pixels.update();
 }
 
 void loop() {
 
   DEBUG_PRINTLN(0, "White");
   if (has_value) digitalWrite(value_output.pin, HIGH);
-  for (unsigned int i=0; i < pixels.numPixels(); i++) 
-    pixels.setPixelRGB(i, 255, 255, 255);  
-  pixels.update();
+  if (has_pixels) {
+    for (unsigned int i=0; i < pixels.numPixels(); i++) 
+      pixels.setPixelRGB(i, 255, 255, 255);  
+    pixels.update();
+  }
 
   delay(1000);
 
   DEBUG_PRINTLN(0, "Red");
   if (has_value) digitalWrite(value_output.pin, LOW);
   digitalWrite(rgb_output.pins[0], HIGH);
-  for (unsigned int i=0; i < pixels.numPixels(); i++) 
-    pixels.setPixelRGB(i, 255, 0, 0);  
-  pixels.update();
+  if (has_pixels) {
+    for (unsigned int i=0; i < pixels.numPixels(); i++) 
+      pixels.setPixelRGB(i, 255, 0, 0);  
+    pixels.update();
+  }
 
   delay(1000);
 
   DEBUG_PRINTLN(0, "Green");
   digitalWrite(rgb_output.pins[0], LOW);
   digitalWrite(rgb_output.pins[1], HIGH);
-  for (unsigned int i=0; i < pixels.numPixels(); i++) 
-    pixels.setPixelRGB(i, 0, 255, 0);  
-  pixels.update();
+  if (has_pixels) {
+    for (unsigned int i=0; i < pixels.numPixels(); i++) 
+      pixels.setPixelRGB(i, 0, 255, 0);  
+    pixels.update();
+  }
 
   delay(1000);
 
   DEBUG_PRINTLN(0, "Blue");
   digitalWrite(rgb_output.pins[1], LOW);
   digitalWrite(rgb_output.pins[2], HIGH);
-  for (unsigned int i=0; i < pixels.numPixels(); i++) 
-    pixels.setPixelRGB(i, 0, 0, 255);  
-  pixels.update();
+  if (has_pixels) {
+    for (unsigned int i=0; i < pixels.numPixels(); i++) 
+      pixels.setPixelRGB(i, 0, 0, 255);  
+    pixels.update();
+  }
 
   delay(1000);
 
