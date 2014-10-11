@@ -133,5 +133,7 @@ def main():
     if (options.writeconfig == True):
         # Write out the module's config to EEPROM
         ser.send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
+    else:
+        print("Did not write config")
 
 main()

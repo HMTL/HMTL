@@ -31,9 +31,9 @@ def choose_port():
     print("Available ports:")
     for (i, port) in enumerate(ports):
         print("  %d. %s" % (i + 1, port))
-        if (re.search("(.*usbserial.*)", port) != None):
+        if ((re.search("(.*usbserial.*)", port) != None) or
+            (re.search("(.*usbmodem.*)", port) != None)):
             default = i + 1
-            
 
     useport = -1
     while (useport < 0):

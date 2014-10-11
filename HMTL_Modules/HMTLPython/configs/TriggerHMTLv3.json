@@ -1,5 +1,6 @@
 {
-    "header": {
+    "info": "This config is for using a HMTL Control Module with a simple trigger board",
+   "header": {
 	"protocol_version": 2,
 	"hardware_version": 3,
 	"address": 1,
