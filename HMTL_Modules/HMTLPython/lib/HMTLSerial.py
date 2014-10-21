@@ -28,7 +28,7 @@ class HMTLSerial():
 
     def vprint(self, str):
         if (self.verbose):
-            print(str)
+            print('\033[91m' + str + '\033[97m')
 
     def get_line(self):
         data = self.ser.readline().strip()
