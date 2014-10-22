@@ -2,3 +2,5 @@
 Icon?
 cscope.*
 *.pyc
+*~
+\#*
