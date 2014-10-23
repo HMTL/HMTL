@@ -27,6 +27,10 @@ def handle_args():
                       help="Arduino USB device")
     parser.add_option("-a", "--address", dest="address", type="int",
                       help="Set address");
+    parser.add_option("-i", "--device_id", dest="device_id", type="int",
+                      help="Set device_id");
+    parser.add_option("-b", "--baud", dest="baud", type="int",
+                      help="Set baud");
 
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)
@@ -45,9 +49,14 @@ def handle_args():
     # Required args
     if ((options.filename == None) and
         (options.printconfig == False) and
-        (options.address == None)):
+        (options.address == None) and
+        (options.device_id == None) and
+        (options.baud == None)):
         parser.print_help()
         exit("Must specify mode")
+
+    if ((options.baud != None) and (options.baud % 1200 != 0)):
+        exit("Baud must be a multiple of 1200");
 
     if (options.device == None):
         options.device = portscan.choose_port()
@@ -84,9 +93,24 @@ def send_configuration(config_data):
 def send_address(address):
     print("***** Setting address to %d *****" % (address))
 
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
     ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
     ser.send_config("address", HMTLprotocol.get_address_struct(address))
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
+
+# Just send commands to read the existing configuration and set the device_id
+def send_device_id(device_id):
+    print("***** Setting device_id to %d *****" % (device_id))
+
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
+    ser.send_config("device_id", HMTLprotocol.get_device_id_struct(device_id))
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
+
+# Just send commands to read the existing configuration and set the baud
+def send_baud(baud):
+    print("***** Setting baud to %d *****" % (baud))
+
+    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
+    ser.send_config("baud", HMTLprotocol.get_baud_struct(baud))
     ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
 
 def main():
@@ -105,7 +129,14 @@ def main():
             # Set the address in the read config
             print("* Setting address to %d" % options.address)
             config_data["header"]["address"] = options.address
-
+        if (options.device_id != None):
+            # Set the device_id in the read config
+            print("* Setting device_id to %d" % options.device_id)
+            config_data["header"]["device_id"] = options.device_id
+        if (options.baud != None):
+            # Set the baud in the read config
+            print("* Setting baud to %d" % options.baud)
+            config_data["header"]["baud"] = options.baud
 
     # Open the serial connection and wait for connection
     ser = HMTLSerial(options.device, 
@@ -122,9 +153,21 @@ def main():
     if (config_data != None):
         # Send the configuration
         send_configuration(config_data)
-    elif (options.address != None):
-        # Send the address update
-        send_address(options.address)
+    else:
+
+        # If not sending the entire configuration, first read the existing
+        # configuration before modifying it.
+        ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
+
+        if (options.address != None):
+            # Send the address update
+            send_address(options.address)
+        if (options.device_id != None):
+            # Send the device_id update
+            send_device_id(options.device_id)
+        if (options.baud != None):
+            # Send the baud update
+            send_baud(options.baud)
 
     if (options.verbose):
         # Have the module output its entire configuration

@@ -106,6 +106,12 @@ def validate_config(data):
     if (not "address" in config):
         print("No address in config")
         return False
+    if (not "device_id" in config):
+        print("No device_id in config")
+        return False
+    if (not "baud" in config):
+        print("No baud in config")
+        return False
     if (not "flags" in config):
         config['flags'] = 0
 

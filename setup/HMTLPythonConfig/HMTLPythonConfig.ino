@@ -309,6 +309,39 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
 
+    case HMTL_COMMAND_DEVICE_ID: {
+      if (config_length != sizeof(uint16_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for device_id:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof(uint16_t));
+	goto FAIL;
+      }
+      uint16_t device_id = *(uint16_t *)config_start;
+      DEBUG_VALUELN(DEBUG_MID, "Received device_id: ", device_id);
+
+      config_hdr.device_id = device_id;
+
+      break;
+    }
+
+    case HMTL_COMMAND_BAUD: {
+      if (config_length != sizeof(uint8_t)) {
+	DEBUG_VALUE(DEBUG_ERROR,
+		    "Received config message with wrong len for baud:",
+		    config_length);
+	DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof(uint8_t));
+	goto FAIL;
+      }
+      uint8_t baud = *(uint8_t *)config_start;
+      DEBUG_VALUE(DEBUG_MID, "Received baud byte: ", baud);
+      DEBUG_VALUELN(DEBUG_MID, " baud: ", BYTE_TO_BAUD(baud));
+
+      config_hdr.baud = baud;
+
+      break;
+    }
+
     default: {
       DEBUG_VALUELN(DEBUG_ERROR, "Received unknown configuration type:",
 		    type);

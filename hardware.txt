@@ -1,0 +1,4 @@
+Hardware versions
+
+Version	 Description
+5	 Trigger board - Arduino mini and 4-channel opto-isolator

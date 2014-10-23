@@ -16,7 +16,7 @@
 
 #define HMTL_CONFIG_ADDR  0x0E
 #define HMTL_CONFIG_MAGIC 0x5C
-#define HMTL_CONFIG_VERSION 2
+#define HMTL_CONFIG_VERSION 3
 typedef struct {
   uint8_t     magic;
   uint8_t     version;
@@ -36,9 +36,35 @@ typedef struct {
   uint8_t     flags;
 } config_hdr_v2_t;
 
-typedef config_hdr_v2_t config_hdr_t;
+typedef struct {
+  // Fixed portion, must not change between versions
+  uint8_t     magic;
+  uint8_t     protocol_version;
+  // End of fixed portion
+  
+  uint8_t     hardware_version;
+  uint8_t     baud;
+
+  uint8_t     num_outputs;
+  uint8_t     flags;
+
+  uint16_t    device_id;
+  uint16_t    address;
+} config_hdr_v3_t;
+
+#if HMTL_CONFIG_VERSION == 3
+  typedef config_hdr_v3_t config_hdr_t;
+#elif HMTL_CONFIG_VERSION == 2
+  typedef config_hdr_v2_t config_hdr_t;
+#elif HMTL_CONFIG_VERSION == 1
+  typedef config_hdr_v1_t config_hdr_t;
+#endif
 
 #define HMTL_NO_ADDRESS (uint16_t)-1
+
+// Convert a 8bit baud value to actual baud
+#define BYTE_TO_BAUD(val) ((uint32_t)val * 1200)
+#define BAUD_TO_BYTE(val) (val / 1200)
 
 #define HMTL_OUTPUT_NONE    (uint8_t)-1
 #define HMTL_OUTPUT_VALUE   0x1

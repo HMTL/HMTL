@@ -470,6 +470,12 @@ boolean hmtl_validate_header(config_hdr_t *hdr) {
     if (hdr_v2->num_outputs > HMTL_MAX_OUTPUTS) return false;
     break;
   }
+  case 3: {
+    config_hdr_v3_t *hdr_v3 = (config_hdr_v3_t *)hdr;
+    if (hdr_v3->num_outputs > HMTL_MAX_OUTPUTS) return false;
+    break;
+  }
+
   default: return false;
   }
 
@@ -613,6 +619,8 @@ void hmtl_print_header(config_hdr_t *hdr) {
   DEBUG_VALUE(DEBUG_LOW, "  header: mag: ", hdr->magic);
   DEBUG_VALUE(DEBUG_LOW, " protocol_version: ", hdr->protocol_version);
   DEBUG_VALUE(DEBUG_LOW, " hardware_version: ", hdr->hardware_version);
+  DEBUG_VALUE(DEBUG_LOW, " baud: ", BYTE_TO_BAUD(hdr->baud));
+  DEBUG_VALUE(DEBUG_LOW, " device_id: ", hdr->device_id);
   DEBUG_VALUE(DEBUG_LOW, " address: ", hdr->address);
   DEBUG_VALUE(DEBUG_LOW, " outputs: ", hdr->num_outputs);
   DEBUG_VALUELN(DEBUG_LOW, " flags: ", hdr->flags);

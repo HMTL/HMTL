@@ -87,7 +87,7 @@ void setup() {
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
 
-  DEBUG_PRINTLN(DEBUG_LOW, "HMTL MSG Test initialized");
+  DEBUG_PRINTLN(DEBUG_LOW, "HMTL Module initialized");
   DEBUG_PRINTLN(DEBUG_LOW, "ready")
 }
 

@@ -38,11 +38,13 @@ CONFIG_TYPES = {
     "rs485"   : 0x6,
     
     # The following values are for special commands
-    "address" : 0xE0,
-}
+    "address"   : 0xE0,
+    "device_id" : 0xE1,
+    "baud"      : 0xE2,
+    }
 
 # Individial object formats
-HEADER_FMT = '<BBBHBBB'
+HEADER_FMT = '<BBBBBBHH'
 HEADER_MAGIC = 0x5C
 
 OUTPUT_HDR_FMT   = '<BB'
@@ -53,6 +55,8 @@ OUTPUT_MPR121_FMT = '<BB' + 'B'*12
 OUTPUT_RS485_FMT = '<BBB'
 
 UPDATE_ADDRESS_FMT = '<H'
+UPDATE_DEVICE_ID_FMT = '<H'
+UPDATE_BAUD_FMT = '<B'
 
 # HMTL Message formats
 MSG_HDR_FMT = "<BBBBH" # All HMTL messages start with this
@@ -79,6 +83,11 @@ MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 MSG_PROGRAM_TIMED_CHANGE_TYPE = 2
 MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
 
+#
+# Utility
+#
+def baud_to_byte(baud):
+    return (baud / 1200)
 
 #
 # Configuration formatting
@@ -99,10 +108,12 @@ def get_header_struct(data):
                          HEADER_MAGIC,
                          config['protocol_version'],
                          config['hardware_version'],
-                         config['address'],
-                         0,
+                         baud_to_byte(config['baud']),
                          len(data['outputs']),
-                         config['flags'])
+                         config['flags'],
+                         config['device_id'],
+                         config['address'])
+
     return packed_start + packed
 
 def get_output_struct(output):
@@ -153,6 +164,24 @@ def get_address_struct(address):
                                  address)
     
     return packed_start + packed_address
+
+def get_device_id_struct(device_id):
+    print("get_device_id_struct: device_id %d" % (device_id))
+
+    packed_start = get_config_start("device_id")
+    packed_device_id = struct.pack(UPDATE_DEVICE_ID_FMT,
+                                 device_id)
+    
+    return packed_start + packed_device_id
+
+def get_baud_struct(baud):
+    print("get_baud_struct: baud %d" % (baud))
+
+    packed_start = get_config_start("baud")
+    packed_baud = struct.pack(UPDATE_BAUD_FMT,
+                              baud_to_byte(baud))
+    
+    return packed_start + packed_baud
 
 
 #

@@ -1,10 +1,10 @@
 HMTL TODO LIST
 --------------
 
-Test:
-  * Get hmtl_handle_msg to take arguments for relevant objects (pixels)
+* Put protocol stuff for python in library rather than with python config code
+* Address setting message
 
-* Create a sync program message
+* Create a sync program message (synchronize timing)
 
 * Store baud in EEPROM.  
   - Initially run at 9600, read & print baud before switching

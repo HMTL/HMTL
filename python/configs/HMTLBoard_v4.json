@@ -1,8 +1,10 @@
 {
     "info": "This config is the default for the 4th revision HMTL PCB",
     "header": {
-	"protocol_version": 2,
+	"protocol_version": 3,
 	"hardware_version": 4,
+	"baud": 9600,
+	"device_id": 27,
 	"address": 27,
 	"flags": 0
     },
