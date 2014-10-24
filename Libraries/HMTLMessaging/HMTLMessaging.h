@@ -22,7 +22,8 @@
  *
  *   msg_hdr_t + outout_hdr_t + command
  *
- * 6B:  |startcode |   crc    | version  | length   |      address       |
+ * 8B:  |startcode |   crc    | version  | length   |
+ *      |  type    |  flags   |       address       |
  * 2B:  |   type   |  output  | ...
  */
 
@@ -30,14 +31,29 @@
 
 #define HMTL_MSG_START 0xFC
 
-#define HMTL_MSG_VERSION 1
+#define HMTL_MSG_VERSION 2
 typedef struct {
   uint8_t startcode;
   uint8_t crc;
   uint8_t version;
-  uint8_t length;
-  uint16_t address; // XXX: Is this redudant?  Or necessary for serial and such?
+  uint8_t length; // Length includes
+
+  uint8_t type;
+  uint8_t flags;
+
+  // This address is redundant with the address in the RS485 socket header,
+  // however it is necessary for messages received from other sources (such as
+  // serial).
+  uint16_t address;
+
 } msg_hdr_t;
+
+/* Message type codes */
+#define MSG_TYPE_OUTPUT 0x1
+#define MSG_TYPE_POLL   0x2
+
+/* Message flags */
+#define MSG_FLAG_ACK    0x1
 
 typedef struct {
   output_hdr_t hdr;
@@ -84,6 +100,9 @@ msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
  */
 uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsz,
 		    uint16_t address, uint8_t output, int value);
+uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsz,
+		      uint16_t address, uint8_t output, 
+		      uint8_t r, uint8_t g, uint8_t b);
 
 
 
@@ -123,10 +142,13 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 				       uint32_t stop_color);
 
 /*******************************************************************************
- *Wrapper functions for sending HMTL Messages 
+ * Wrapper functions for sending HMTL Messages 
  */
 void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
 		     uint16_t address, uint8_t output, int value);
+void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
+		   uint16_t address, uint8_t output, 
+		   uint8_t r, uint8_t g, uint8_t b);
 void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
 		     uint16_t address, uint8_t output,
 		     uint16_t on_period, uint32_t on_color,

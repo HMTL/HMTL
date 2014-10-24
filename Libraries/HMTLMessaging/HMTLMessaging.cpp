@@ -257,16 +257,19 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
  */
 
 /* Initialize the message header */
-void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length) {
+void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length, 
+		  uint8_t type) {
   msg_hdr->startcode = HMTL_MSG_START;
   msg_hdr->crc = 0;
   msg_hdr->version = HMTL_MSG_VERSION;
   msg_hdr->length = length;
+  msg_hdr->type = type;
+  msg_hdr->flags = 0;
   msg_hdr->address = address;
 
 #ifdef HMTL_USE_CRC
-  /* Complute the CRC with the crc value == 0 */
-  msg_hdr->crc = EEPROM_crc(buffer, length);
+  /* Compute the CRC with the crc value with the crc value == 0 */
+  msg_hdr->crc = EEPROM_crc(msg_hdr, length);
 #endif
 }
 
@@ -299,7 +302,29 @@ uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
   msg_value->hdr.output = output;
   msg_value->value = value;
 
-  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_VALUE_LEN);
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_VALUE_LEN, MSG_TYPE_OUTPUT);
+  return HMTL_MSG_VALUE_LEN;
+}
+
+/* Format an RGB message */
+uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
+		      uint16_t address, uint8_t output, 
+		      uint8_t r, uint8_t g, uint8_t b) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_rgb_t *msg_value = (msg_rgb_t *)(msg_hdr + 1);
+
+  if (buffsize < HMTL_MSG_RGB_LEN) {
+    DEBUG_ERR("hmtl_rgb_fmt: too small size");
+    DEBUG_ERR_STATE(1);
+  }
+
+  msg_value->hdr.type = HMTL_OUTPUT_RGB;
+  msg_value->hdr.output = output;
+  msg_value->values[0] = r;
+  msg_value->values[1] = g;
+  msg_value->values[2] = b;
+
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_RGB_LEN, MSG_TYPE_OUTPUT);
   return HMTL_MSG_VALUE_LEN;
 }
 
@@ -325,7 +350,7 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
   blink->off_value[1] = pixel_green(off_color);
   blink->off_value[2] = pixel_blue(off_color);
   
-  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
   return HMTL_MSG_PROGRAM_LEN;
 }
 
@@ -350,7 +375,7 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
   program->stop_value[1] = pixel_green(stop_color);
   program->stop_value[2] = pixel_blue(stop_color);
 
-  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN);
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
   return HMTL_MSG_PROGRAM_LEN;
 }
 
@@ -366,6 +391,20 @@ void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
 
   uint16_t len = hmtl_value_fmt(buff, buff_len,
 				address, output, value);
+  rs485->sendMsgTo(address, buff, len);
+}
+
+void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
+		   uint16_t address, uint8_t output, 
+		   uint8_t r, uint8_t g, uint8_t b) {
+  DEBUG_VALUE(DEBUG_TRACE, "hmtl_send_rgb: addr:", address);
+  DEBUG_VALUE(DEBUG_TRACE, " out:", output);
+  DEBUG_VALUE(DEBUG_TRACE, " rgb:", r);
+  DEBUG_VALUE(DEBUG_TRACE, ",", g);
+  DEBUG_VALUELN(DEBUG_TRACE, ",", b);
+
+  uint16_t len = hmtl_rgb_fmt(buff, buff_len,
+			      address, output, r, g, b);
   rs485->sendMsgTo(address, buff, len);
 }
 
