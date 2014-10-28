@@ -58,11 +58,12 @@ void loop()
 uint8_t hardware_version = 0;
 uint16_t address = 0;
 uint16_t device_id = 0;
-
+uint8_t baud = BAUD_TO_BYTE(9600);
 /*
  * a <address> - Set device address
  * h <version> - Set hardware version
  * d <id>      - Set device ID
+ * b <baud>    - Set baud rate
  * write - Write out the configuration
  */
 void cliHandler(char **tokens, byte numtokens) {
@@ -84,6 +85,17 @@ void cliHandler(char **tokens, byte numtokens) {
     if (numtokens < 2) return;
     hardware_version = atoi(tokens[1]);
     DEBUG_VALUELN(DEBUG_LOW, "Set hardware version:", hardware_version);
+    break;
+  }
+  case 'b': {
+    if (numtokens < 2) return;
+    uint16_t newBaud = atoi(tokens[1]);
+    if ((newBaud < 1200) || (newBaud > 115200)) {
+      DEBUG_VALUELN(DEBUG_ERROR, "Invalid baud:", newBaud);
+      return;
+    }
+    baud = BAUD_TO_BYTE(newBaud);
+    DEBUG_VALUELN(DEBUG_LOW, "Set baud:", BYTE_TO_BAUD(baud));
     break;
   }
 
@@ -142,7 +154,7 @@ void write_config() {
       config.hardware_version = old_hdr->hardware_version;
     }
 
-    config.baud = BAUD_TO_BYTE(9600);
+    config.baud = baud;
     
     config.num_outputs = old_hdr->num_outputs;
     config.flags = old_hdr->flags;

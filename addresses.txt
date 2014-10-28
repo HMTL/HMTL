@@ -8,11 +8,11 @@ NA	*17/0x11	Seth (Board v2)
 NA	*18/0x12	D (Board v2)
 NA	*19/0x13	Adam (Board v2)
 NA 	20/0x14		#5 (Board v2)
-NA	21/0x15		Big Cube
+21	21/0x15		Big Cube
 
 ==Triangle Lights==
 NA	*32/0x20	Taller stand (Board v4)
-NA	33/0x21		First XLR
+33	33/0x21		First XLR
 
 ==Trigger boards==
 64	64/0x40		Trigger Board v3 (stereo terminals, XLR)
