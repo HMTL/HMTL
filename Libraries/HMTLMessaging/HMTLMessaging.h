@@ -52,8 +52,9 @@ typedef struct {
 } msg_hdr_t;
 
 /* Message type codes */
-#define MSG_TYPE_OUTPUT 0x1
-#define MSG_TYPE_POLL   0x2
+#define MSG_TYPE_OUTPUT   0x1
+#define MSG_TYPE_POLL     0x2
+#define MSG_TYPE_SET_ADDR 0x3
 
 /* Message flags */
 #define MSG_FLAG_ACK    0x1
@@ -92,6 +93,16 @@ typedef struct {
   uint8_t data[0];
 } msg_poll_response_t;
 #define HMTL_MSG_POLL_MIN_LEN (sizeof (msg_hdr_t) + sizeof (msg_poll_response_t))
+
+/*******************************************************************************
+ * Message format for MSG_TYPE_SET_ADDR
+ */
+
+typedef struct {
+  uint16_t device_id;
+  uint16_t address;
+} msg_set_addr_t;
+#define HMTL_MSG_SET_ADDR_LEN (sizeof (msg_hdr_t) + sizeof (msg_set_addr_t))
 
 // This should be the largest individual message object
 typedef msg_program_t msg_max_t;

@@ -354,7 +354,26 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   // TODO: Add outputs
 
   hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_POLL);
+  msg_hdr->flags |= MSG_FLAG_ACK;
   return len;
+}
+
+/* Format an address setting message */
+uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+		       uint16_t device_id, uint16_t new_address) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_set_addr_t *msg_addr = (msg_set_addr_t *)(msg_hdr + 1);
+
+  if (buffsize < HMTL_MSG_SET_ADDR_LEN) {
+    DEBUG_ERR("too small size");
+    DEBUG_ERR_STATE(1);
+  }
+
+  msg_addr->device_id = device_id;
+  msg_addr->address = new_address;
+  
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_SET_ADDR_LEN, MSG_TYPE_SET_ADDR);
+  return HMTL_MSG_SET_ADDR_LEN;
 }
 
 

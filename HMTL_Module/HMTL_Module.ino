@@ -205,6 +205,17 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
 				   &config, outputs, recv_buffer_size);
       break;
     }
+
+    case MSG_TYPE_SET_ADDR: {
+      /* Handle an address change message */
+      msg_set_addr_t *set_addr = (msg_set_addr_t *)(msg_hdr + 1);
+      if ((set_addr->device_id == 0) ||
+	  (set_addr->device_id == config.device_id)) {
+	config.address = set_addr->address;
+	rs485->sourceAddress = set_addr->address;
+	DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
+      }
+    }
     }
   }
 
