@@ -50,7 +50,7 @@ typedef struct {
 
   uint16_t    device_id;
   uint16_t    address;
-} config_hdr_v3_t;
+} config_hdr_v3_t; // 10B
 
 #if HMTL_CONFIG_VERSION == 3
   typedef config_hdr_v3_t config_hdr_t;
@@ -122,6 +122,7 @@ typedef struct {
   byte recvPin;
   byte xmitPin;
   byte enablePin;
+  //  byte bufferSize; // TODO - Need to handle this
 } config_rs485_t;
 
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
@@ -138,7 +139,7 @@ int32_t hmtl_setup(config_hdr_t *config,
 
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
-int hmtl_setup_output(output_hdr_t *hdr, void *data);
+int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);

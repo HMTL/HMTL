@@ -1,6 +1,10 @@
-/*
+/*******************************************************************************
+ * Author: Adam Phelps
+ * License: Create Commons Attribution-Non-Commercial
+ * Copyright: 2014
+ *
  * Listen for HMTL formatted messages
- */
+ ******************************************************************************/
 
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
@@ -9,7 +13,7 @@
 #include "Adafruit_WS2801.h"
 #include "Wire.h"
 
-#define DEBUG_LEVEL DEBUG_MID
+#define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
 #include "GeneralUtils.h"
@@ -60,8 +64,8 @@ void *objects[HMTL_MAX_OUTPUTS];
 
 PixelUtil pixels;
 
-#define SEND_BUFFER_SIZE (sizeof (rs485_socket_hdr_t) + 64)
-byte databuffer[SEND_BUFFER_SIZE];
+#define SEND_BUFFER_SIZE 64
+byte databuffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 byte *send_buffer;
 
 void setup() {
@@ -117,21 +121,16 @@ void loop() {
     if ((msg_hdr->address != config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
       /* Forward the message over the rs485 interface */
-      DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
-      memcpy(send_buffer, msg, offset);
-      rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
+      if (offset > SEND_BUFFER_SIZE) {
+	DEBUG_ERR("Message larger than send buffer");
+      } else {
+	DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
+	memcpy(send_buffer, msg, offset);
+	rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
+      }
     }
 
-    if ((msg_hdr->address == config.address) ||
-	(msg_hdr->address == RS485_ADDR_ANY)) {
-
-      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
-      if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-	// XXX: This stuff should be moved into the framework somehow
-	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
-      } else {
-	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
-      }
+    if (process_msg(msg_hdr, NULL)) {
       update = true;
     }
 
@@ -149,16 +148,7 @@ void loop() {
 		  );
     DEBUG_PRINT_END();
 
-    if ((msg_hdr->address == config.address) ||
-	(msg_hdr->address == RS485_ADDR_ANY)) {
-
-      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
-      if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-	// XXX: This stuff should be moved into the framework somehow
-	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
-      } else {
-	hmtl_handle_msg(msg_hdr, &config, outputs, objects);
-      }
+    if (process_msg(msg_hdr, &rs485)) {
       update = true;
     }
   }
@@ -174,6 +164,51 @@ void loop() {
       hmtl_update_output(outputs[i], objects[i]);
     }
   }
+}
+
+/* Process a message if it is for this module */
+boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
+  if (msg_hdr->version != HMTL_MSG_VERSION) {
+    DEBUG_ERR("Invalid message version");
+    return false;
+  }
+
+  if ((msg_hdr->address == config.address) ||
+      (msg_hdr->address == RS485_ADDR_ANY)) {
+
+    switch (msg_hdr->type) {
+
+    case MSG_TYPE_OUTPUT: {
+      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
+      if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
+	// XXX: This program stuff should be moved into the framework
+	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
+      } else {
+	hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
+      }
+
+      return true;
+    }
+
+    case MSG_TYPE_POLL: {
+      uint16_t source_address = 0;
+      uint16_t recv_buffer_size = 0;
+      if (rs485 != NULL) {
+	// The response will be going over RS485, get the source address
+	source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
+	recv_buffer_size = rs485->recvLimit;
+      } else {
+	recv_buffer_size = MSG_MAX_SZ;
+      }
+      uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
+				   source_address,
+				   &config, outputs, recv_buffer_size);
+      break;
+    }
+    }
+  }
+
+  return false;
 }
 
 /*

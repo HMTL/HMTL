@@ -43,7 +43,7 @@ void setup() {
 
   DEBUG_PRINTLN(DEBUG_LOW, "***** HMTL Bringup *****");
 
-  // XXX Update this to hmtl_setup()
+  // XXX Update this to hmtl_setup() !!!
   readconfig.address = -1;
   configOffset = hmtl_read_config(&readconfig, 
 				  readoutputs, 
@@ -86,7 +86,7 @@ void setup() {
       break;
     }
     }
-    hmtl_setup_output((output_hdr_t *)outputs[i], data);
+    hmtl_setup_output(&config, (output_hdr_t *)outputs[i], data);
   }
 
   if (has_pixels) {

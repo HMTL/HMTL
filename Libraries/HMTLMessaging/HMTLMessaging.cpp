@@ -43,10 +43,15 @@ uint16_t hmtl_msg_size(output_hdr_t *output)
 
 /* Process an incoming message for this module */
 int
-hmtl_handle_msg(msg_hdr_t *msg_hdr,
-                config_hdr_t *config_hdr, output_hdr_t *outputs[],
-		void *objects[])
+hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
+		       config_hdr_t *config_hdr, output_hdr_t *outputs[],
+		       void *objects[])
 {
+  if (msg_hdr->type != MSG_TYPE_OUTPUT) {
+    DEBUG_ERR("hmtl_handle_msg: incorrect msg type");
+    return -1;
+  }
+
   output_hdr_t *msg = (output_hdr_t *)(msg_hdr + 1);
   DEBUG_VALUE(DEBUG_HIGH, "hmtl_handle_msg: type=", msg->type);
   DEBUG_VALUE(DEBUG_HIGH, " out=", msg->output);
@@ -311,22 +316,47 @@ uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 		      uint16_t address, uint8_t output, 
 		      uint8_t r, uint8_t g, uint8_t b) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
-  msg_rgb_t *msg_value = (msg_rgb_t *)(msg_hdr + 1);
+  msg_rgb_t *msg_rgb = (msg_rgb_t *)(msg_hdr + 1);
 
   if (buffsize < HMTL_MSG_RGB_LEN) {
     DEBUG_ERR("hmtl_rgb_fmt: too small size");
     DEBUG_ERR_STATE(1);
   }
 
-  msg_value->hdr.type = HMTL_OUTPUT_RGB;
-  msg_value->hdr.output = output;
-  msg_value->values[0] = r;
-  msg_value->values[1] = g;
-  msg_value->values[2] = b;
+  msg_rgb->hdr.type = HMTL_OUTPUT_RGB;
+  msg_rgb->hdr.output = output;
+  msg_rgb->values[0] = r;
+  msg_rgb->values[1] = g;
+  msg_rgb->values[2] = b;
 
   hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_RGB_LEN, MSG_TYPE_OUTPUT);
   return HMTL_MSG_VALUE_LEN;
 }
+
+/* Format a poll response message */
+uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+		       config_hdr_t *config, output_hdr_t *outputs[],
+		       uint16_t recv_buffer_size) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_poll_response_t *msg_poll = (msg_poll_response_t *)(msg_hdr + 1);
+
+  if (buffsize < HMTL_MSG_POLL_MIN_LEN) {
+    DEBUG_ERR("hmtl_poll_fmt: too small size");
+    DEBUG_ERR_STATE(1);
+  }
+
+  // Construct the primary data
+  uint16_t len = HMTL_MSG_POLL_MIN_LEN;
+  memcpy(&msg_poll->config, config, sizeof (config_hdr_t));
+  msg_poll->recv_buffer_size = recv_buffer_size;
+  msg_poll->msg_version = HMTL_MSG_VERSION;
+  
+  // TODO: Add outputs
+
+  hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_POLL);
+  return len;
+}
+
 
 /* Format a blink program message */
 uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,

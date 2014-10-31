@@ -124,7 +124,7 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 }
 
 /* Initialized the pins of an output */
-int hmtl_setup_output(output_hdr_t *hdr, void *data)
+int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
 {
   DEBUG_VALUE(DEBUG_HIGH, "hmtl_setup_output: type=", hdr->type);
   switch (hdr->type) {
@@ -196,6 +196,7 @@ int hmtl_setup_output(output_hdr_t *hdr, void *data)
           config_rs485_t *out = (config_rs485_t *)hdr;
 	  RS485Socket *rs485 = (RS485Socket *)data;
 	  rs485->init(out->recvPin, out->xmitPin, out->enablePin,
+		      config->address,
 		      RS485_RECV_BUFFER, false); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
@@ -809,7 +810,7 @@ int32_t hmtl_setup(config_hdr_t *config,
 
     if (objects) objects[i] = data;
 
-    hmtl_setup_output((output_hdr_t *)outputs[i], data);
+    hmtl_setup_output(config, (output_hdr_t *)outputs[i], data);
     outputs_found |= (1 << type);
   }
 

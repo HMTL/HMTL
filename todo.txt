@@ -11,7 +11,6 @@ HMTL TODO LIST
   - Tail and the like can watch for baud message, then switch and reconnect
 
 *** Need ability to send response or ack to sender
-  - Need to get source address from message
 
 * Add a HMTLModule class that fully sets up a module, contains pixels,rs485,etc
 
@@ -21,27 +20,3 @@ HMTL TODO LIST
 * Combine HMTLPythonConfig into general libraries to HMTL_MSG_test and the like can use it
 
 ** Add a config file that allows the serial interfaces to be named
-
---Old--
-General
-
-- Convert pixel code to a class
-  - Convert routines to timed/async rather than blocking
-
-- Make a fade from x to y in ms function
-
-- Add class around outputs, to allow for more state
-
-
-Real todo
----------
-
-* Get generalized HMTLModule working that can be slave or master
-* Slave code in HMTLModule
-  - Test only mode
-* Changes to write a master config
-* Master code in HMTLModule
-  - Read from serial
-  - Set own outputs
-  - Retransmit to destination
-  - Test only mode

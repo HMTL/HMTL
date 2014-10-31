@@ -11,6 +11,7 @@
 
 #include "HMTLTypes.h"
 
+// Uncomment this line to enable CRC checking of messages
 //#define HMTL_USE_CRC
 
 /******************************************************************************
@@ -18,12 +19,14 @@
  */
 
 /*
- * Message format is:
+ * A message is composed of a msg_hdr_t followed by additional structures
+ * depending on the header's type and flag fields.
  *
- *   msg_hdr_t + outout_hdr_t + command
- *
+ * Message header:
  * 8B:  |startcode |   crc    | version  | length   |
  *      |  type    |  flags   |       address       |
+ *
+ * Output message adds output_hdr_t + output-type specific data
  * 2B:  |   type   |  output  | ...
  */
 
@@ -55,6 +58,10 @@ typedef struct {
 /* Message flags */
 #define MSG_FLAG_ACK    0x1
 
+/*******************************************************************************
+ * Message formats for messages of type MSG_TYPE_OUTPUT
+ */
+
 typedef struct {
   output_hdr_t hdr;
   int value;
@@ -74,6 +81,19 @@ typedef struct {
 } msg_program_t;
 #define HMTL_MSG_PROGRAM_LEN (sizeof (msg_hdr_t) + sizeof (msg_program_t))
 
+/*******************************************************************************
+ * Message format for MSG_TYPE_POLL
+ */
+
+typedef struct {
+  config_hdr_t config;
+  uint16_t recv_buffer_size;
+  uint8_t msg_version;
+  uint8_t data[0];
+} msg_poll_response_t;
+#define HMTL_MSG_POLL_MIN_LEN (sizeof (msg_hdr_t) + sizeof (msg_poll_response_t))
+
+// This should be the largest individual message object
 typedef msg_program_t msg_max_t;
 
 /*******************************************************************************
@@ -82,9 +102,9 @@ typedef msg_program_t msg_max_t;
 uint16_t hmtl_msg_size(output_hdr_t *output);
 
 /* Process a HMTL formatted message */
-int hmtl_handle_msg(msg_hdr_t *msg_hdr,
-		    config_hdr_t *config_hdr, output_hdr_t *outputs[],
-		    void *objects[] = NULL);
+int hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
+			   config_hdr_t *config_hdr, output_hdr_t *outputs[],
+			   void *objects[] = NULL);
 
 
 /* Receive a message over the serial interface */
@@ -95,16 +115,17 @@ msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
 			     uint16_t address);
 
 
-/*
+/*******************************************************************************
  * Formatting for individual messages
  */
-uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsz,
-		    uint16_t address, uint8_t output, int value);
-uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsz,
+uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
+			uint16_t address, uint8_t output, int value);
+uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 		      uint16_t address, uint8_t output, 
 		      uint8_t r, uint8_t g, uint8_t b);
-
-
+uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+		       config_hdr_t *config, output_hdr_t *outputs[],
+		       uint16_t recv_buffer_size);
 
 
 /*******************************************************************************
