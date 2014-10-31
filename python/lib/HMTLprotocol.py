@@ -59,12 +59,12 @@ UPDATE_DEVICE_ID_FMT = '<H'
 UPDATE_BAUD_FMT = '<B'
 
 # HMTL Message formats
-MSG_HDR_FMT = "<BBBBH" # All HMTL messages start with this
+MSG_HDR_FMT = "<BBBBBBH" # All HMTL messages start with this
 MSG_VALUE_FMT = "H"
 MSG_RGB_FMT = "BBB"
 MSG_PROGRAM_FMT = "B"
 
-MSG_BASE_LEN = 6 + 2
+MSG_BASE_LEN = 8 + 2
 MSG_VALUE_LEN = MSG_BASE_LEN + 2
 MSG_RGB_LEN = MSG_BASE_LEN + 3
 
@@ -192,8 +192,10 @@ def get_msg_hdr(msglen, address):
     packed = struct.pack(MSG_HDR_FMT,
                          0xFC, # Startcode
                          0,    # CRC - XXX: TODO!
-                         1,    # Protocol version
+                         2,    # Protocol version
                          msglen,   # Message length
+                         1,    # Type: 1 is MSG_TYPE_OUTPUT
+                         0,    # flags
                          address)  # Destination address 65535 is "Any"
     return packed
 

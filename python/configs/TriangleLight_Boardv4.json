@@ -1,9 +1,11 @@
 {
     "info": "This config is the default for the 4th revision HMTL PCB",
     "header": {
-	"protocol_version": 2,
+	"protocol_version": 3,
 	"hardware_version": 4,
-	"address": 27,
+	"address": 33,
+	"device_id": 33,
+	"baud": 57600,
 	"flags": 0
     },
     "outputs": [
@@ -16,7 +18,7 @@
 	    "type": "pixels",
 	    "clockpin": 8,
 	    "datapin": 12,
-	    "numpixels": 62,
+	    "numpixels": 57,
 	    "rgbtype": 0
 	},
 	{

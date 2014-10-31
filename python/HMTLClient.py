@@ -91,22 +91,22 @@ def main():
         msg = None
 
         if (options.commandtype == "value"):
-            print("Sending value message.  Output=%d Value=%d" %
-                  (options.output, int(options.commandvalue)))
+            print("Sending value message.  Address=%d Output=%d Value=%d" %
+                  (options.hmtladdress, options.output, int(options.commandvalue)))
             msg = HMTLprotocol.get_value_msg(options.hmtladdress,
                                              options.output,
                                              int(options.commandvalue))
         elif (options.commandtype == "rgb"):
             (r,g,b) = options.commandvalue.split(",")
-            print("Sending RGB message.  Output=%d Value=%d,%d,%d" %
-                  (options.output, int(r), int(g), int(b)))
+            print("Sending RGB message.  Address=%d Output=%d Value=%d,%d,%d" %
+                  (options.hmtladdress, options.output, int(r), int(g), int(b)))
             msg = HMTLprotocol.get_rgb_msg(options.hmtladdress,
                                            options.output,
                                            int(r), int(g), int(b))
         
         elif (options.commandtype == "blink"):
             (a,b,c,d, e,f,g,h) = options.commandvalue.split(",")
-            print("Sending BLINK message. Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.output, int(a), [int(b),int(c),int(d)],
+            print("Sending BLINK message. Address=%d Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
                                              int(e), [int(f),int(g),int(h)]))
             msg = HMTLprotocol.get_program_blink_msg(options.hmtladdress,
                                              options.output,
@@ -114,7 +114,7 @@ def main():
                                              int(e), [int(f),int(g),int(h)])
         elif (options.commandtype == "timedchange"):
             (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
-            print("Sending TIMED CHANGE message. Output=%d change_period=%d start_value=%s stop_values=%s" % (options.output, int(a), [int(b),int(c),int(d)],
+            print("Sending TIMED CHANGE message. Address=%d Output=%d change_period=%d start_value=%s stop_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
                                                                                                               [int(e),int(f),int(g)]))
             msg = HMTLprotocol.get_program_timed_change_msg(options.hmtladdress,
                                             options.output,
