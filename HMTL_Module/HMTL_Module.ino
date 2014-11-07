@@ -21,6 +21,7 @@
 
 #include "HMTLTypes.h"
 #include "HMTLMessaging.h"
+#include "HMTLProtocol.h"
 
 #include "PixelUtil.h"
 #include "RS485Utils.h"
@@ -92,7 +93,7 @@ void setup() {
   send_buffer = rs485.initBuffer(databuffer);
 
   DEBUG_PRINTLN(DEBUG_LOW, "HMTL Module initialized");
-  DEBUG_PRINTLN(DEBUG_LOW, "ready")
+  Serial.println(F(HMTL_READY));
 }
 
 int cycle = 0;
@@ -116,7 +117,7 @@ void loop() {
 		  print_hex_string(msg, offset)
 		  );
     DEBUG_PRINT_END();
-    Serial.println(F("ok")); // XXX: This should come from HMTLprotocol.h
+    Serial.println(F(HMTL_ACK));
 
     if ((msg_hdr->address != config.address) ||
 	(msg_hdr->address == RS485_ADDR_ANY)) {
@@ -181,28 +182,41 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
     case MSG_TYPE_OUTPUT: {
       output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
       if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-	// XXX: This program stuff should be moved into the framework
-	setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
+        // TODO: This program stuff should be moved into the framework
+        setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
       } else {
-	hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
+        hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
       }
 
       return true;
     }
 
     case MSG_TYPE_POLL: {
+      // TODO: This should be in framework as well
       uint16_t source_address = 0;
       uint16_t recv_buffer_size = 0;
       if (rs485 != NULL) {
-	// The response will be going over RS485, get the source address
-	source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
-	recv_buffer_size = rs485->recvLimit;
+        // The response will be going over RS485, get the source address
+        source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
+        recv_buffer_size = rs485->recvLimit;
       } else {
-	recv_buffer_size = MSG_MAX_SZ;
+        recv_buffer_size = MSG_MAX_SZ;
       }
+
+      DEBUG_VALUELN(DEBUG_MID, "Poll req src:", source_address);
+
+      // Format the poll response
       uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
 				   source_address,
 				   &config, outputs, recv_buffer_size);
+
+      // Respond to the appropriate source
+      if (rs485 != NULL) {
+        rs485->sendMsgTo(source_address, send_buffer, len);
+      } else {
+        Serial.write(send_buffer, len);
+      }
+
       break;
     }
 
@@ -210,10 +224,10 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
       /* Handle an address change message */
       msg_set_addr_t *set_addr = (msg_set_addr_t *)(msg_hdr + 1);
       if ((set_addr->device_id == 0) ||
-	  (set_addr->device_id == config.device_id)) {
-	config.address = set_addr->address;
-	rs485->sourceAddress = set_addr->address;
-	DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
+          (set_addr->device_id == config.device_id)) {
+        config.address = set_addr->address;
+        rs485->sourceAddress = set_addr->address;
+        DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
       }
     }
     }
@@ -228,8 +242,8 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
 
 /* Setup a program from a HMTL program message */
 boolean setup_program(output_hdr_t *outputs[],
-		      program_tracker_t *trackers[],
-		      msg_program_t *msg) {
+                      program_tracker_t *trackers[],
+                      msg_program_t *msg) {
 
   DEBUG_VALUE(DEBUG_HIGH, "setup_program: program=", msg->type);
   DEBUG_VALUELN(DEBUG_HIGH, " output=", msg->hdr.output);

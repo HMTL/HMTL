@@ -3,7 +3,7 @@
 #define DEBUG_LEVEL DEBUG_MID
 #include "Debug.h"
 
-#include "HMTLprotocol.h"
+#include "HMTLProtocol.h"
 #include "HMTLTypes.h"
 #include "GeneralUtils.h"
 

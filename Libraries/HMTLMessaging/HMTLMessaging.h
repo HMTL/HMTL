@@ -137,7 +137,8 @@ uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
 		       config_hdr_t *config, output_hdr_t *outputs[],
 		       uint16_t recv_buffer_size);
-
+uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+		       uint16_t device_id, uint16_t new_address);
 
 /*******************************************************************************
  * HMTL Programs
