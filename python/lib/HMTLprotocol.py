@@ -6,6 +6,7 @@
 """HMTL Protocol definitions module"""
 
 import struct
+from binascii import hexlify
 
 # Protocol commands
 HMTL_CONFIG_READY  = "ready"
@@ -58,18 +59,29 @@ UPDATE_ADDRESS_FMT = '<H'
 UPDATE_DEVICE_ID_FMT = '<H'
 UPDATE_BAUD_FMT = '<B'
 
+#
 # HMTL Message formats
+#
 MSG_HDR_FMT = "<BBBBBBH" # All HMTL messages start with this
+
+# Msg type
+MSG_TYPE_OUTPUT   = 1
+MSG_TYPE_POLL     = 2
+MSG_TYPE_SET_ADDR = 3
+
 MSG_VALUE_FMT = "H"
 MSG_RGB_FMT = "BBB"
 MSG_PROGRAM_FMT = "B"
 
-MSG_BASE_LEN = 8 + 2
-MSG_VALUE_LEN = MSG_BASE_LEN + 2
-MSG_RGB_LEN = MSG_BASE_LEN + 3
+MSG_BASE_LEN = 8
+MSG_OUTPUT_LEN = MSG_BASE_LEN + 2
+MSG_VALUE_LEN = MSG_OUTPUT_LEN + 2
+MSG_RGB_LEN = MSG_OUTPUT_LEN + 3
 
 MSG_PROGRAM_VALUE_LEN = 12
-MSG_PROGRAM_LEN = MSG_BASE_LEN + 1 + MSG_PROGRAM_VALUE_LEN
+MSG_PROGRAM_LEN = MSG_OUTPUT_LEN + 1 + MSG_PROGRAM_VALUE_LEN
+
+MSG_POLL_LEN = MSG_BASE_LEN
 
 BROADCAST = 65535
 
@@ -88,6 +100,9 @@ MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
 #
 def baud_to_byte(baud):
     return (baud / 1200)
+
+def byte_to_baud(data):
+    return data * 1200
 
 #
 # Configuration formatting
@@ -188,13 +203,13 @@ def get_baud_struct(baud):
 # HMTL Message types
 #
 
-def get_msg_hdr(msglen, address):
+def get_msg_hdr(msglen, address, type=MSG_TYPE_OUTPUT):
     packed = struct.pack(MSG_HDR_FMT,
                          0xFC, # Startcode
                          0,    # CRC - XXX: TODO!
                          2,    # Protocol version
                          msglen,   # Message length
-                         1,    # Type: 1 is MSG_TYPE_OUTPUT
+                         type, # Type: 1 is MSG_TYPE_OUTPUT, 2 MSG_TYPE_POLL ...
                          0,    # flags
                          address)  # Destination address 65535 is "Any"
     return packed
@@ -219,6 +234,12 @@ def get_rgb_msg(address, output, r, g, b):
     packed = struct.pack(MSG_RGB_FMT, r, g, b)
 
     return packed_hdr + packed_out + packed
+
+
+def get_poll_msg(address):
+    packed_hdr = get_msg_hdr(MSG_POLL_LEN, address, type=MSG_TYPE_POLL)
+
+    return packed_hdr
 
 def get_program_msg(address, output, program_type, program_data):
     if (len(program_data) != MSG_PROGRAM_VALUE_LEN):
@@ -251,3 +272,78 @@ def get_program_timed_change_msg(address, output,
                       stop_values[0], stop_values[1],stop_values[2],
                       0, 0)
     return get_program_msg(address, output, MSG_PROGRAM_TIMED_CHANGE_TYPE, msg)
+
+
+# Decode raw data into an HMTL message
+def decode_data(readdata):
+    try:
+        text = readdata.decode()
+    except UnicodeDecodeError:
+        # Check to see if this is a valid HMTL message
+        hdr = MsgHdr.from_data(readdata)
+        print(hdr)
+        hdr = hdr.next_hdr(readdata)
+#        offset = MsgHdr.length()
+#        hdr = ConfigHdr.from_data(readdata, offset)
+        print(hdr)
+
+#
+# Serialization objects
+#
+
+# Abstract class for all message types
+class Msg():
+    @classmethod
+    def from_data(cls, data, offset=0):
+        header = struct.unpack_from(cls.FORMAT, data, offset)
+        return cls(*header)
+
+    @classmethod
+    def length(cls):
+        return cls.LENGTH
+
+# Message header
+class MsgHdr(Msg):
+    FORMAT = MSG_HDR_FMT
+    LENGTH =  MSG_BASE_LEN
+
+    def __init__(self, startcode, crc, version, length, mtype, flags, address):
+        self.startcode = startcode
+        self.crc = crc
+        self.version = version
+        self.length = length
+        self.mtype = mtype
+        self.flags = flags
+        self.address = address
+
+    def __str__(self):
+        return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
+
+    def next_hdr(self, data):
+        '''Return the header following the message header'''
+        if (self.mtype == MSG_TYPE_OUTPUT):
+            raise Exception("MSG_TYPE_OUTPUT currently not handled in parsing")
+        elif (self.mtype == MSG_TYPE_POLL):
+            return ConfigHdr.from_data(data, self.LENGTH)
+        else:
+            raise Exception("Unknwon message type %d" % (msg.mtype))
+        
+
+# Configuration header
+class ConfigHdr(Msg):
+    FORMAT = "<BBBBBBHH"
+    LENGTH = 10
+
+    def __init__(self, magic, protocol_version, hardware_version, baud, 
+                 num_outputs, flags, device_id, address):
+        self.magic = magic;
+        self.protocol_version = protocol_version
+        self.hardware_version = hardware_version
+        self.baud = baud
+        self.num_outputs = num_outputs
+        self.flags = flags
+        self.device_id = device_id
+        self.address = address
+
+    def __str__(self):
+        return "  config_hdr_t:\n    magic:%02x\n    proto_ver:%d\n    hdw_ver:%d\n    baud:%d\n    outputs:%d\n    flags:%02x\n    dev_id:%d\n    addr:%d" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address)

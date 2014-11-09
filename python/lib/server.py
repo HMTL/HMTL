@@ -57,6 +57,8 @@ class HMTLServer():
             self.ser.send_and_confirm(msg, False)
             self.serial_cv.release()
 
+# XXX - Messages: Here is where reply data (like poll messages) should be returned
+
             # Reply with acknowledgement
             self.conn.send(SERVER_ACK)
 
@@ -97,7 +99,8 @@ class HMTLServer():
                 readdata = self.ser.recv_flush()
                 self.serial_cv.release()
                 if (readdata):
-                    print("[%.3f] received while idle" % (time.time() - self.starttime))
+                    print("[%.3f] received while idle: %s" % (time.time() - self.starttime, hexlify(readdata)))
+                    HMTLprotocol.decode_data(readdata)
                 else:
                     break
 

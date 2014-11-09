@@ -37,8 +37,8 @@ class HMTLSerial():
             retdata = data.decode()
             self.vprint("  - received '%s'" % (retdata))
         except UnicodeDecodeError:
-            self.vprint("  - received raw '%s'" % (data))
-            retdata = None
+            self.vprint("  - received raw '%s' : '%s'" % (data, hexlify(data)))
+            retdata = data
 
         return retdata
 
@@ -70,6 +70,8 @@ class HMTLSerial():
                 return True
             if (ack == HMTLprotocol.HMTL_CONFIG_FAIL):
                 raise HMTLConfigException("Configuration command failed")
+
+# XXX: Here we need a method of getting data back from poll or the like
 
     # Send a text command
     def send_command(self, command):

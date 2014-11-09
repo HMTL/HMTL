@@ -52,12 +52,15 @@ def handle_args():
     group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
                       help="Send program reset command")
+    group.add_option("-P", "--poll", action="store_const",
+                      dest="commandtype", const="poll",
+                      help="Send module polling command")
     parser.add_option_group(group)
 
 
     # Command options
     group = OptionGroup(parser, "Command Options")
-    group.add_option("-P", "--period", dest="period", type="float",
+    group.add_option("--period", dest="period", type="float",
                       help="Sleep period between changes")
     group.add_option("-O", "--output", dest="output", type="int",
                       help="Number of the output to be set", default=None)
@@ -127,7 +130,10 @@ def main():
             print("Sending NONE message.  Output=%d" % (options.output))
             msg = HMTLprotocol.get_program_none_msg(options.hmtladdress,
                                                     options.output)
-        
+        elif (options.commandtype == "poll"):
+            print("Sending poll message.  Address=%d" %
+                  (options.hmtladdress))
+            msg = HMTLprotocol.get_poll_msg(options.hmtladdress)
 
         if (msg != None):
             starttime = time.time()
