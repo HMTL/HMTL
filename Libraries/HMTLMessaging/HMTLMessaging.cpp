@@ -236,18 +236,18 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     if (offset >= sizeof (msg_hdr_t)) {
       /* We have the entire message header */
 
-      if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
-	DEBUG_ERR("hmtl_serial_getmsg: msg length is too short");
-	offset = 0;
-	continue;
+      if (msg_hdr->length < sizeof (msg_hdr_t)) {
+        DEBUG_ERR("hmtl_serial_getmsg: msg length is too short");
+        offset = 0;
+        continue;
       }
 
       if (offset == msg_hdr->length) {
         /* This is a complete message */
-	DEBUG_PRINTLN(DEBUG_HIGH, "hmtl_serial_getmsg: Received complete command");
+        DEBUG_PRINTLN(DEBUG_HIGH, "hmtl_serial_getmsg: Received complete command");
         complete = true;
 
-	// XXX: Check the CRC and the version
+        // XXX: Check the CRC and the version
         break;
       }
     }
