@@ -92,6 +92,7 @@ def main():
         client.test()
     else:
         msg = None
+        expect_response = False
 
         if (options.commandtype == "value"):
             print("Sending value message.  Address=%d Output=%d Value=%d" %
@@ -134,10 +135,11 @@ def main():
             print("Sending poll message.  Address=%d" %
                   (options.hmtladdress))
             msg = HMTLprotocol.get_poll_msg(options.hmtladdress)
+            expect_response = True
 
         if (msg != None):
             starttime = time.time()
-            client.send_and_ack(msg)
+            client.send_and_ack(msg, expect_response)
             endtime = time.time()
             print("Sent and acked in %.6fs" % (endtime - starttime))
 

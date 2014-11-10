@@ -3,6 +3,7 @@
 #
 
 import serial
+import time
 import HMTLprotocol
 from binascii import hexlify
 
@@ -18,6 +19,7 @@ class HMTLSerial():
         self.verbose = verbose
         self.dryrun = dryrun
         self.baud = baud
+        self.last_received = 0
 
         if (not self.dryrun):
             self.ser = serial.Serial(device, baud, timeout=timeout)
@@ -32,6 +34,7 @@ class HMTLSerial():
 
     def get_line(self):
         data = self.ser.readline().strip()
+        self.last_received = time.time()
 
         try:
             retdata = data.decode()

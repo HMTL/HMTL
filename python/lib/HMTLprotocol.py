@@ -281,12 +281,13 @@ def decode_data(readdata):
     except UnicodeDecodeError:
         # Check to see if this is a valid HMTL message
         hdr = MsgHdr.from_data(readdata)
-        print(hdr)
-        hdr = hdr.next_hdr(readdata)
-#        offset = MsgHdr.length()
-#        hdr = ConfigHdr.from_data(readdata, offset)
-        print(hdr)
+        text = str(hdr)
 
+        hdr = hdr.next_hdr(readdata)
+        if (hdr != None):
+            text += str(hdr)
+
+    return text
 #
 # Serialization objects
 #
@@ -306,6 +307,8 @@ class Msg():
 class MsgHdr(Msg):
     FORMAT = MSG_HDR_FMT
     LENGTH =  MSG_BASE_LEN
+    
+    STARTCODE = 0xFC
 
     def __init__(self, startcode, crc, version, length, mtype, flags, address):
         self.startcode = startcode
@@ -317,7 +320,7 @@ class MsgHdr(Msg):
         self.address = address
 
     def __str__(self):
-        return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
+        return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d\n" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
 
     def next_hdr(self, data):
         '''Return the header following the message header'''
@@ -326,7 +329,7 @@ class MsgHdr(Msg):
         elif (self.mtype == MSG_TYPE_POLL):
             return ConfigHdr.from_data(data, self.LENGTH)
         else:
-            raise Exception("Unknwon message type %d" % (msg.mtype))
+            raise Exception("Unknown message type %d" % (msg.mtype))
         
 
 # Configuration header
@@ -346,4 +349,4 @@ class ConfigHdr(Msg):
         self.address = address
 
     def __str__(self):
-        return "  config_hdr_t:\n    magic:%02x\n    proto_ver:%d\n    hdw_ver:%d\n    baud:%d\n    outputs:%d\n    flags:%02x\n    dev_id:%d\n    addr:%d" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address)
+        return "  config_hdr_t:\n    magic:%02x\n    proto_ver:%d\n    hdw_ver:%d\n    baud:%d\n    outputs:%d\n    flags:%02x\n    dev_id:%d\n    addr:%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address)

@@ -75,12 +75,10 @@ class HMTLClient():
         except KeyboardInterrupt:
             print("Exiting")
 
-#        self.conn.send(server.SERVER_EXIT)
-
     def close(self):
         self.conn.close()
 
-    def send_and_ack(self, msg):
+    def send_and_ack(self, msg, expect_response=False):
         if (self.verbose):
             print(" - Sending %s" % (hexlify(msg)))
 
@@ -92,7 +90,22 @@ class HMTLClient():
             if (self.verbose):
                 print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
             if (msg == server.SERVER_ACK):
+                if (expect_response):
+                    # Request response data
+                    msg = self.get_response_data()
+                    if (msg):
+                        print(" - Received data response: '%s':\n%s" % 
+                              (hexlify(msg), HMTLprotocol.decode_data(msg)))
+                    else:
+                        print(" - Failed to receive data response")
                 break
+
+    def get_response_data(self):
+        '''Request and attempt to retrieve response data'''
+        self.conn.send(server.SERVER_DATA_REQ)
+        msg = self.conn.recv()
+        return msg
+        
 
     def send_exit(self):
         self.send_and_ack(server.SERVER_EXIT)
