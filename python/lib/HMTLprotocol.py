@@ -203,20 +203,20 @@ def get_baud_struct(baud):
 # HMTL Message types
 #
 
-def get_msg_hdr(msglen, address, type=MSG_TYPE_OUTPUT):
+def get_msg_hdr(msglen, address, mtype=MSG_TYPE_OUTPUT):
     packed = struct.pack(MSG_HDR_FMT,
                          0xFC, # Startcode
                          0,    # CRC - XXX: TODO!
                          2,    # Protocol version
                          msglen,   # Message length
-                         type, # Type: 1 is MSG_TYPE_OUTPUT, 2 MSG_TYPE_POLL ...
+                         mtype, # Type: 1 is MSG_TYPE_OUTPUT, 2 MSG_TYPE_POLL ...
                          0,    # flags
                          address)  # Destination address 65535 is "Any"
     return packed
 
-def get_output_hdr(type, output):
+def get_output_hdr(otype, output):
     packed = struct.pack(OUTPUT_HDR_FMT,
-                         CONFIG_TYPES[type], # Message type 
+                         CONFIG_TYPES[otype], # Message type 
                          output)             # Output number
     return packed
 
@@ -240,6 +240,12 @@ def get_poll_msg(address):
     packed_hdr = get_msg_hdr(MSG_POLL_LEN, address, type=MSG_TYPE_POLL)
 
     return packed_hdr
+
+def get_set_addr_msg(address, device_id, new_address):
+    hdr = MsgHdr(MsgHdr.LENGTH + SetAddress.LENGTH, MSG_TYPE_SET_ADDR, address)
+    sethdr = SetAddress(device_id, new_address)
+
+    return hdr.pack() + sethdr.pack()
 
 def get_program_msg(address, output, program_type, program_data):
     if (len(program_data) != MSG_PROGRAM_VALUE_LEN):
@@ -309,6 +315,7 @@ class MsgHdr(Msg):
     LENGTH =  MSG_BASE_LEN
     
     STARTCODE = 0xFC
+    PROTOCOL_VERSION = 2
 
     def __init__(self, startcode, crc, version, length, mtype, flags, address):
         self.startcode = startcode
@@ -319,8 +326,21 @@ class MsgHdr(Msg):
         self.flags = flags
         self.address = address
 
+    def __init__(self, length, mtype, address):
+        self.startcode = self.STARTCODE
+        self.crc = 0
+        self.version = self.PROTOCOL_VERSION
+        self.length = length
+        self.mtype = mtype
+        self.flags = 0
+        self.address = address
+
     def __str__(self):
         return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d\n" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
+
+    def pack(self):
+        return struct.pack(FORMAT, self.startcode, self.crc, self.version, 
+                           self.length, self.mtype, self.flags, self.address)
 
     def next_hdr(self, data):
         '''Return the header following the message header'''
@@ -350,3 +370,18 @@ class ConfigHdr(Msg):
 
     def __str__(self):
         return "  config_hdr_t:\n    magic:%02x\n    proto_ver:%d\n    hdw_ver:%d\n    baud:%d\n    outputs:%d\n    flags:%02x\n    dev_id:%d\n    addr:%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address)
+
+class SetAddress(Msg):
+    FORMAT = "<HH"
+    LENGTH = 4
+
+    def __init__(self, device_id, address):
+        self.device_id = device_id
+        self.address = address
+
+    def __str__(self):
+        return ("  msg_set_addr_t:\n    dev_id:%d\n    addr:%d\n" % 
+                (self.device_id, self.address))
+
+    def pack(self):
+        return struct.pack(FORMAT, self.device_id, self.address)

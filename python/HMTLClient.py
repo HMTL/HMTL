@@ -55,6 +55,9 @@ def handle_args():
     group.add_option("-P", "--poll", action="store_const",
                       dest="commandtype", const="poll",
                       help="Send module polling command")
+    group.add_option("-S", "--setaddr", action="store_const",
+                      dest="commandtype", const="setaddr",
+                      help="Send address setting command")
     parser.add_option_group(group)
 
 
@@ -136,6 +139,11 @@ def main():
                   (options.hmtladdress))
             msg = HMTLprotocol.get_poll_msg(options.hmtladdress)
             expect_response = True
+        elif (options.commandtype == "setaddr"):
+            (device_id, new_address) = options.commandvalue.split(",")
+            print("Sending set address message.  Address=%d Device=%d NewAddress=%d" %
+                  (options.hmtladdress, device_id, new_address))
+            msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, device_id, new_address)
 
         if (msg != None):
             starttime = time.time()
