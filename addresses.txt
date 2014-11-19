@@ -1,24 +1,25 @@
 Assigned HMTL addresses:
 
-id	address		description
+id	address		HTML_version description
 
 ==Cube Lights==
-NA	*16/0x10	Parents (Board v2)
-NA	*17/0x11	Seth (Board v2)
-NA	*18/0x12	D (Board v2)
-NA	*19/0x13	Adam (Board v2)
-NA 	20/0x14		#5 (Board v2)
-21	21/0x15		Big Cube
+NA	*16/0x10	2            Parents (Board v2)
+NA	*17/0x11	2            Seth (Board v2)
+NA	*18/0x12	2            D (Board v2)
+NA	*19/0x13	2            Adam (Board v2)
+20 	20/0x14		3            #5 (Board v2)
+21	21/0x15		3            Big Cube
 
 ==Triangle Lights==
-NA	*32/0x20	Taller stand (Board v4)
-33	33/0x21		First XLR
+NA	*32/0x20	2            Taller stand (Board v4)
+33	33/0x21		3            First XLR
 
 ==Trigger boards==
-64	64/0x40		Trigger Board v3 (stereo terminals, XLR)
-NA	65/0x41		Trigger Board v3 (stereo terminals, XLR)
-NA	65/0x41		Trigger Board v3 (stereo terminals, XLR, KU)
-NA	65/0x41		Trigger Board v3 (stereo terminals, XLR, KU?)
+64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
+65	65/0x41	  3            Trigger Board v3 (stereo terminals, XLR)
+66	66/0x42	  3            Trigger Board v3 (stereo terminals, XLR)
+NA	65/0x41		2            Trigger Board v3 (stereo terminals, XLR, Chad)
+NA	65/0x41		2            Trigger Board v3 (stereo terminals, XLR, Chad)
 
 
 ==HMTL Fire Control===
