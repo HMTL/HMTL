@@ -171,18 +171,19 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
         DEBUG_PRINTLN(DEBUG_HIGH, " mpr121");
         if (data != NULL) {
           config_mpr121_t *out = (config_mpr121_t *)hdr;
-	  MPR121 *capSensor = (MPR121 *)data;
-	  capSensor->init(out->irqPin,
-			  out->useInterrupt,
-			  START_ADDRESS,  // XXX - Only single address
-			  false);         // XXX - No touch times
-	  for (int i = 0; i < MAX_MPR121_PINS; i++) {
-	    byte touch = out->thresholds[i] & 0x0F;
-	    byte release = (out->thresholds[i] & 0xF0) >> 4;
-	    if (touch || release) {
-	      capSensor->setThreshold(i, touch, release);
-	    }
-	  }
+          MPR121 *capSensor = (MPR121 *)data;
+          capSensor->init(out->irqPin,
+                          out->useInterrupt,
+                          START_ADDRESS,  // XXX - Only single address
+                          false,          // XXX - No touch times
+                          false);         // XXX - No auto enable
+          for (int i = 0; i < MAX_MPR121_PINS; i++) {
+            byte touch = out->thresholds[i] & 0x0F;
+            byte release = (out->thresholds[i] & 0xF0) >> 4;
+            if (touch || release) {
+              capSensor->setThreshold(i, touch, release);
+            }
+          }
         } else {
           DEBUG_ERR("Expected MPR121 data struct for mpr121 configs");
           return -1;
