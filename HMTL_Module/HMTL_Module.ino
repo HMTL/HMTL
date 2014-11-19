@@ -30,7 +30,9 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 2 // %META INCR
+#define HMTL_MODULE_BUILD 3 // %META INCR
+
+#define TYPE_HMTL_MODULE 0x1
 
 /* Program states */
 typedef struct {
@@ -224,6 +226,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
       // Format the poll response
       uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
                                    source_address,
+                                   msg_hdr->flags, TYPE_HMTL_MODULE,
                                    &config, outputs, recv_buffer_size);
 
       // Respond to the appropriate source

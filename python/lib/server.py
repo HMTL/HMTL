@@ -53,8 +53,7 @@ class HMTLServer():
         if msg == SERVER_EXIT:
             print("* Received exit signal *")
             self.conn.send(SERVER_ACK)
-            self.conn.close()
-            self.terminate = True
+            self.close()
         elif (msg == SERVER_DATA_REQ):
             msg = self.get_data_msg()
             self.conn.send(msg)
@@ -87,9 +86,17 @@ class HMTLServer():
                 print("[%.3f] Lost connection" % (self.elapsed()))
                 self.listener.close()
                 self.get_connection()
+            except Exception as e:
+                # Close the connection on uncaught exception
+                print("[%.3f] Exception during listen" % (self.elapsed()))
+                self.close()
+                raise e
+                
 
     def close(self):
         self.listener.close()
+        self.conn.close()
+        self.terminate = True
 
     def get_data_msg(self):
         '''Listen on the serial device for a properly formatted data message'''

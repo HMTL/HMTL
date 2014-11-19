@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Author: Adam Phelps
+ * License: Create Commons Attribution-Non-Commercial
+ * Copyright: 2014
+ *
+ * Protocol for communating with modules over a serial connection
+ ******************************************************************************/
+
 #ifndef HMTLPROTOCOL_H
 #define HMTLPROTOCOL_H
 

@@ -89,6 +89,7 @@ typedef struct {
 
 typedef struct {
   config_hdr_t config;
+  uint16_t object_type;
   uint16_t recv_buffer_size;
   uint8_t msg_version;
   uint8_t data[0];
@@ -136,10 +137,11 @@ uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 		      uint16_t address, uint8_t output, 
 		      uint8_t r, uint8_t g, uint8_t b);
 uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
-		       config_hdr_t *config, output_hdr_t *outputs[],
-		       uint16_t recv_buffer_size);
-uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
-		       uint16_t device_id, uint16_t new_address);
+                       byte flags, uint16_t object_type,
+                       config_hdr_t *config, output_hdr_t *outputs[],
+                       uint16_t recv_buffer_size);
+uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                           uint16_t device_id, uint16_t new_address);
 
 /*******************************************************************************
  * HMTL Programs

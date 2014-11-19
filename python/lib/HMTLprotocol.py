@@ -298,6 +298,7 @@ def decode_data(readdata):
             text += str(hdr)
 
     return text
+
 #
 # Serialization objects
 #
@@ -342,18 +343,18 @@ class MsgHdr(Msg):
         if (self.mtype == MSG_TYPE_OUTPUT):
             raise Exception("MSG_TYPE_OUTPUT currently not handled in parsing")
         elif (self.mtype == MSG_TYPE_POLL):
-            return ConfigHdr.from_data(data, self.LENGTH)
+            return PollHdr.from_data(data, self.LENGTH)
         else:
             raise Exception("Unknown message type %d" % (msg.mtype))
         
 
-# Configuration header
-class ConfigHdr(Msg):
-    FORMAT = "<BBBBBBHH"
-    LENGTH = 10
+class PollHdr(Msg):
+    FORMAT = "<BBBBBBHH" + "HHB" # config_hdr_t + remainder of poll message
+    LENGTH = 13
 
     def __init__(self, magic, protocol_version, hardware_version, baud, 
-                 num_outputs, flags, device_id, address):
+                 num_outputs, flags, device_id, address, 
+                 object_type, buffer_size, msg_version):
         self.magic = magic;
         self.protocol_version = protocol_version
         self.hardware_version = hardware_version
@@ -363,8 +364,12 @@ class ConfigHdr(Msg):
         self.device_id = device_id
         self.address = address
 
+        self.object_type = object_type
+        self.buffer_size = buffer_size
+        self.msg_version = msg_version
+
     def __str__(self):
-        return "  config_hdr_t:\n    magic:%02x\n    proto_ver:%d\n    hdw_ver:%d\n    baud:%d\n    outputs:%d\n    flags:%02x\n    dev_id:%d\n    addr:%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address)
+        return "  poll_hdr_t:\n    config_hdr_t:\n      magic:%02x\n      proto_ver:%d\n      hdw_ver:%d\n      baud:%d\n      outputs:%d\n      flags:%02x\n      dev_id:%d\n      addr:%d\n    type:%d\n    buffer_size:%d\n    msg_version=%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address, self.object_type, self.buffer_size, self.msg_version)
 
 class SetAddress(Msg):
     FORMAT = "<HH"

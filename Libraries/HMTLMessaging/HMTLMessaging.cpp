@@ -337,6 +337,7 @@ uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 
 /* Format a poll response message */
 uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                       byte flags, uint16_t object_type,
                        config_hdr_t *config, output_hdr_t *outputs[],
                        uint16_t recv_buffer_size) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
@@ -350,19 +351,20 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   // Construct the primary data
   uint16_t len = HMTL_MSG_POLL_MIN_LEN;
   memcpy(&msg_poll->config, config, sizeof (config_hdr_t));
+  msg_poll->object_type = object_type;
   msg_poll->recv_buffer_size = recv_buffer_size;
   msg_poll->msg_version = HMTL_MSG_VERSION;
   
   // TODO: Add outputs
 
   hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_POLL);
-  msg_hdr->flags |= MSG_FLAG_ACK;
+  msg_hdr->flags |= flags | MSG_FLAG_ACK;
   return len;
 }
 
 /* Format an address setting message */
-uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
-		       uint16_t device_id, uint16_t new_address) {
+uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                           uint16_t device_id, uint16_t new_address) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
   msg_set_addr_t *msg_addr = (msg_set_addr_t *)(msg_hdr + 1);
 

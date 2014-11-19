@@ -33,15 +33,49 @@ class HMTLSerial():
             print('\033[91m' + str + '\033[97m')
 
     def get_line(self):
-        data = self.ser.readline().strip()
-        self.last_received = time.time()
+        '''Returns the next line of text or a complete HMTL message'''
+        data = ""
+        is_msg_hdr = False
+        hdr = None
+        while True:
+            char = self.ser.read(1)
 
-        try:
-            retdata = data.decode()
-            self.vprint("  - received '%s'" % (retdata))
-        except UnicodeDecodeError:
+            if (len(char) == 0):
+                break
+
+            if (ord(char) == HMTLprotocol.MsgHdr.STARTCODE):
+                # This is the start of a data message
+                is_msg_hdr = True
+            if (is_msg_hdr):
+                data += char
+
+                if (len(data) == HMTLprotocol.MsgHdr.length()):
+                    # Received enough data for a full message header
+                    hdr = HMTLprotocol.MsgHdr.from_data(data)
+                if (hdr != None):
+                    if (len(data) >= hdr.length):
+                        # Reached end of message
+                        break
+            else:
+                # Arduino output lines are terminated with \r\n
+                if (char == '\r'):
+                    continue
+                if (char == '\n'):
+                    break
+                data += char
+
+        if (is_msg_hdr):
             self.vprint("  - received raw '%s' : '%s'" % (data, hexlify(data)))
             retdata = data
+        else:
+            try:
+                retdata = data.decode()
+                self.vprint("  - received '%s'" % (retdata))
+            except UnicodeDecodeError:
+                self.vprint("  - received raw '%s' : '%s'" % (data, hexlify(data)))
+                retdata = data
+
+        self.last_received = time.time()
 
         return retdata
 
