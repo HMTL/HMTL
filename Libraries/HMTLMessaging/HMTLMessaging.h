@@ -57,7 +57,8 @@ typedef struct {
 #define MSG_TYPE_SET_ADDR 0x3
 
 /* Message flags */
-#define MSG_FLAG_ACK    0x1
+#define MSG_FLAG_ACK        0x1 // This message is an acknowledgement
+#define MSG_FLAG_RESPONSE   0x2 // This message expects a response
 
 /*******************************************************************************
  * Message formats for messages of type MSG_TYPE_OUTPUT

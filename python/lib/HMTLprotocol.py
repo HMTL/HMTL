@@ -69,6 +69,10 @@ MSG_TYPE_OUTPUT   = 1
 MSG_TYPE_POLL     = 2
 MSG_TYPE_SET_ADDR = 3
 
+# Msg flags
+MSG_FLAG_ACK      = 0x1
+MSG_FLAG_RESPONSE = 0x2
+
 MSG_VALUE_FMT = "H"
 MSG_RGB_FMT = "BBB"
 MSG_PROGRAM_FMT = "B"
@@ -203,14 +207,14 @@ def get_baud_struct(baud):
 # HMTL Message types
 #
 
-def get_msg_hdr(msglen, address, mtype=MSG_TYPE_OUTPUT):
+def get_msg_hdr(msglen, address, mtype=MSG_TYPE_OUTPUT, flags=0):
     packed = struct.pack(MSG_HDR_FMT,
-                         0xFC, # Startcode
-                         0,    # CRC - XXX: TODO!
-                         2,    # Protocol version
-                         msglen,   # Message length
-                         mtype, # Type: 1 is MSG_TYPE_OUTPUT, 2 MSG_TYPE_POLL ...
-                         0,    # flags
+                         0xFC,   # Startcode
+                         0,      # CRC - XXX: TODO!
+                         2,      # Protocol version
+                         msglen, # Message length
+                         mtype,  # Type: 1 is OUTPUT, 2 POLL, 3 is SETADDR
+                         flags,  # flags
                          address)  # Destination address 65535 is "Any"
     return packed
 
@@ -237,7 +241,7 @@ def get_rgb_msg(address, output, r, g, b):
 
 
 def get_poll_msg(address):
-    packed_hdr = get_msg_hdr(MSG_POLL_LEN, address, type=MSG_TYPE_POLL)
+    packed_hdr = get_msg_hdr(MSG_POLL_LEN, address, mtype=MSG_TYPE_POLL, flags=MSG_FLAG_RESPONSE)
 
     return packed_hdr
 
@@ -324,15 +328,6 @@ class MsgHdr(Msg):
         self.length = length
         self.mtype = mtype
         self.flags = flags
-        self.address = address
-
-    def __init__(self, length, mtype, address):
-        self.startcode = self.STARTCODE
-        self.crc = 0
-        self.version = self.PROTOCOL_VERSION
-        self.length = length
-        self.mtype = mtype
-        self.flags = 0
         self.address = address
 
     def __str__(self):

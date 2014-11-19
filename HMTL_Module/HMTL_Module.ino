@@ -29,6 +29,8 @@
 
 #include "HMTL_Module.h"
 
+/* Auto update build number */
+#define HMTL_MODULE_BUILD 2 // %META INCR
 
 /* Program states */
 typedef struct {
@@ -92,7 +94,7 @@ void setup() {
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
 
-  DEBUG_PRINTLN(DEBUG_LOW, "HMTL Module initialized");
+  DEBUG_VALUELN(DEBUG_LOW, "HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
 }
 
@@ -104,34 +106,35 @@ byte offset = 0;
 
 void loop() {
   boolean update = false;
-  boolean serial = false;
   
   /* Check for messages on the serial interface */
   msg_hdr_t *msg_hdr = (msg_hdr_t *)msg;
   if (hmtl_serial_getmsg(msg, MSG_MAX_SZ, &offset)) {
-    serial = true;
+    boolean forwarded = false;
+
     /* Received a complete message */
     DEBUG_VALUE(DEBUG_TRACE, "Received msg len=", offset);
     DEBUG_PRINT(DEBUG_TRACE, " ");
     DEBUG_COMMAND(DEBUG_TRACE, 
-		  print_hex_string(msg, offset)
-		  );
+                  print_hex_string(msg, offset)
+                  );
     DEBUG_PRINT_END();
     Serial.println(F(HMTL_ACK));
 
     if ((msg_hdr->address != config.address) ||
-	(msg_hdr->address == RS485_ADDR_ANY)) {
+        (msg_hdr->address == RS485_ADDR_ANY)) {
       /* Forward the message over the rs485 interface */
       if (offset > SEND_BUFFER_SIZE) {
-	DEBUG_ERR("Message larger than send buffer");
+        DEBUG_ERR("Message larger than send buffer");
       } else {
-	DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
-	memcpy(send_buffer, msg, offset);
-	rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
+        DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
+        memcpy(send_buffer, msg, offset);
+        rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
+        forwarded = true;
       }
     }
 
-    if (process_msg(msg_hdr, NULL)) {
+    if (process_msg(msg_hdr, NULL, forwarded)) {
       update = true;
     }
 
@@ -145,11 +148,11 @@ void loop() {
     DEBUG_VALUE(DEBUG_TRACE, "Received rs485 msg len=", msglen);
     DEBUG_PRINT(DEBUG_TRACE, " ");
     DEBUG_COMMAND(DEBUG_TRACE, 
-		  print_hex_string((byte *)msg_hdr, msglen)
-		  );
+                  print_hex_string((byte *)msg_hdr, msglen)
+                  );
     DEBUG_PRINT_END();
 
-    if (process_msg(msg_hdr, &rs485)) {
+    if (process_msg(msg_hdr, &rs485, false)) {
       update = true;
     }
   }
@@ -168,7 +171,7 @@ void loop() {
 }
 
 /* Process a message if it is for this module */
-boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
+boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) {
   if (msg_hdr->version != HMTL_MSG_VERSION) {
     DEBUG_ERR("Invalid message version");
     return false;
@@ -176,6 +179,19 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
 
   if ((msg_hdr->address == config.address) ||
       (msg_hdr->address == RS485_ADDR_ANY)) {
+
+    if (msg_hdr->flags & MSG_FLAG_ACK) {
+      /* 
+       * This is an ack message that is not for us, resend it over serial in
+       * case that was the original source.
+       * TODO: Maybe this should check address as well, and serial needs to be
+       * assigned an address?
+       */
+      DEBUG_PRINTLN(DEBUG_HIGH, "Forwarding ack to serial");
+      Serial.write((byte *)msg_hdr, msg_hdr->length);
+
+      return false;
+    }
 
     switch (msg_hdr->type) {
 
@@ -207,8 +223,8 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
 
       // Format the poll response
       uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
-				   source_address,
-				   &config, outputs, recv_buffer_size);
+                                   source_address,
+                                   &config, outputs, recv_buffer_size);
 
       // Respond to the appropriate source
       if (rs485 != NULL) {
@@ -230,6 +246,14 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485) {
         DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
       }
     }
+    }
+  } else {
+  }
+
+  if (forwarded) {
+    // Special handling for messages that we've forwarded along
+    if (msg_hdr->flags & MSG_FLAG_RESPONSE) {
+      // The sender expects a response
     }
   }
 

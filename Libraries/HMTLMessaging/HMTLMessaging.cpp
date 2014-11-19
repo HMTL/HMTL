@@ -164,6 +164,8 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 
 /* Check for HMTL formatted msg over the RS485 interface */
 msg_hdr_t *
+
+
 hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
   const byte *data = rs485->getMsg(address, msglen);
   if (data != NULL) {
@@ -174,7 +176,7 @@ hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
       DEBUG_VALUELN(DEBUG_ERROR, " short for header ", sizeof (msg_hdr_t));
       goto ERROR_OUT;
     }
-    if (msg_hdr->length < (sizeof (msg_hdr_t) + sizeof (output_hdr_t))) {
+    if (msg_hdr->length < sizeof (msg_hdr_t)) {
       DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
       goto ERROR_OUT;
     }
@@ -335,8 +337,8 @@ uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
 
 /* Format a poll response message */
 uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
-		       config_hdr_t *config, output_hdr_t *outputs[],
-		       uint16_t recv_buffer_size) {
+                       config_hdr_t *config, output_hdr_t *outputs[],
+                       uint16_t recv_buffer_size) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
   msg_poll_response_t *msg_poll = (msg_poll_response_t *)(msg_hdr + 1);
 
