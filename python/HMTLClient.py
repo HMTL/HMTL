@@ -26,7 +26,7 @@ def handle_args():
 
     # General options
     parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
-                      help="Address to which messages are sent", 
+                      help="Address to which messages are sent [default=BROADCAST]", 
                       default=HMTLprotocol.BROADCAST)
 
     # Test mode
@@ -74,8 +74,12 @@ def handle_args():
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 
-    if (options.commandtype != None):
-        # Need some argument validation
+    # Need some argument validation
+    if (options.commandtype == None):
+        pass
+    elif (options.commandtype == "poll"):
+        pass
+    else:
         if (options.output == None):
             print("Must specify an outout number")
             sys.exit(1)
@@ -142,8 +146,9 @@ def main():
         elif (options.commandtype == "setaddr"):
             (device_id, new_address) = options.commandvalue.split(",")
             print("Sending set address message.  Address=%d Device=%d NewAddress=%d" %
-                  (options.hmtladdress, device_id, new_address))
-            msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, device_id, new_address)
+                  (options.hmtladdress, int(device_id), int(new_address)))
+            msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, 
+                                                int(device_id), int(new_address))
 
         if (msg != None):
             starttime = time.time()

@@ -231,6 +231,14 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
 
       // Respond to the appropriate source
       if (rs485 != NULL) {
+        if (msg_hdr->address == RS485_ADDR_ANY) {
+          // If this was a broadcast address then do not respond immediately,
+          // delay for time based on our address.
+          int delayMs = config.address * 2;
+          DEBUG_VALUELN(DEBUG_MID, "Delay resp: ", delayMs)
+          delay(delayMs);
+        }
+
         rs485->sendMsgTo(source_address, send_buffer, len);
       } else {
         Serial.write(send_buffer, len);
@@ -245,12 +253,11 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
       if ((set_addr->device_id == 0) ||
           (set_addr->device_id == config.device_id)) {
         config.address = set_addr->address;
-        rs485->sourceAddress = set_addr->address;
+        rs485->sourceAddress = config.address;
         DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
       }
     }
     }
-  } else {
   }
 
   if (forwarded) {

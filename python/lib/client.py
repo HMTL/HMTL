@@ -78,18 +78,30 @@ class HMTLClient():
     def close(self):
         self.conn.close()
 
-    def send_and_ack(self, msg, expect_response=False):
+    def send(self, msg):
         if (self.verbose):
             print(" - Sending %s" % (hexlify(msg)))
 
         self.conn.send(msg)
 
+    def get_ack(self):
+        msg = self.conn.recv()
+        if (self.verbose):
+            print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
+        if (msg == server.SERVER_ACK):
+            return True
+        else:
+            return False
+
+
+    def send_and_ack(self, msg, expect_response=False):
+        self.send(msg)
+
         # Wait for message acknowledgement
+        if (self.verbose):
+            print(" - Waiting on ack")
         while True:
-            msg = self.conn.recv()
-            if (self.verbose):
-                print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
-            if (msg == server.SERVER_ACK):
+            if self.get_ack():
                 if (expect_response):
                     # Request response data
                     msg = self.get_response_data()
@@ -98,7 +110,9 @@ class HMTLClient():
                               (hexlify(msg), HMTLprotocol.decode_data(msg)))
                     else:
                         print(" - Failed to receive data response")
-                break
+                    return msg
+                else:
+                    break
 
     def get_response_data(self):
         '''Request and attempt to retrieve response data'''

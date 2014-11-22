@@ -87,7 +87,8 @@ MSG_PROGRAM_LEN = MSG_OUTPUT_LEN + 1 + MSG_PROGRAM_VALUE_LEN
 
 MSG_POLL_LEN = MSG_BASE_LEN
 
-BROADCAST = 65535
+# Broadcast address
+BROADCAST = 65535  # = (uint16_t)-1
 
 # Specific program formats
 MSG_PROGRAM_NONE_TYPE = 0
@@ -98,6 +99,10 @@ MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 
 MSG_PROGRAM_TIMED_CHANGE_TYPE = 2
 MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
+
+MODULE_TYPES = {
+    1 : "HMTL_Module"
+}
 
 #
 # Utility
@@ -246,7 +251,9 @@ def get_poll_msg(address):
     return packed_hdr
 
 def get_set_addr_msg(address, device_id, new_address):
-    hdr = MsgHdr(MsgHdr.LENGTH + SetAddress.LENGTH, MSG_TYPE_SET_ADDR, address)
+    hdr = MsgHdr(length = MsgHdr.LENGTH + SetAddress.LENGTH,
+                 mtype = MSG_TYPE_SET_ADDR, 
+                 address = address)
     sethdr = SetAddress(device_id, new_address)
 
     return hdr.pack() + sethdr.pack()
@@ -290,14 +297,21 @@ def decode_data(readdata):
         text = readdata.decode()
     except UnicodeDecodeError:
         # Check to see if this is a valid HMTL message
-        hdr = MsgHdr.from_data(readdata)
-        text = str(hdr)
-
-        hdr = hdr.next_hdr(readdata)
-        if (hdr != None):
-            text += str(hdr)
+        (text, msg) = decode_msg(readdata)
 
     return text
+
+def decode_msg(data):
+    # Check to see if this is a valid HMTL message
+    hdr = MsgHdr.from_data(data)
+    text = str(hdr)
+
+    hdr = hdr.next_hdr(data)
+    if (hdr != None):
+        text += str(hdr)
+
+    return (text, hdr)
+
 
 #
 # Serialization objects
@@ -322,7 +336,8 @@ class MsgHdr(Msg):
     STARTCODE = 0xFC
     PROTOCOL_VERSION = 2
 
-    def __init__(self, startcode, crc, version, length, mtype, flags, address):
+    def __init__(self, startcode=STARTCODE, crc=0, version=PROTOCOL_VERSION, 
+                 length=0, mtype=0, flags=0, address=0):
         self.startcode = startcode
         self.crc = crc
         self.version = version
@@ -335,7 +350,7 @@ class MsgHdr(Msg):
         return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d\n" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
 
     def pack(self):
-        return struct.pack(FORMAT, self.startcode, self.crc, self.version, 
+        return struct.pack(self.FORMAT, self.startcode, self.crc, self.version, 
                            self.length, self.mtype, self.flags, self.address)
 
     def next_hdr(self, data):
@@ -371,6 +386,13 @@ class PollHdr(Msg):
     def __str__(self):
         return "  poll_hdr_t:\n    config_hdr_t:\n      magic:%02x\n      proto_ver:%d\n      hdw_ver:%d\n      baud:%d\n      outputs:%d\n      flags:%02x\n      dev_id:%d\n      addr:%d\n    type:%d\n    buffer_size:%d\n    msg_version=%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address, self.object_type, self.buffer_size, self.msg_version)
 
+    @classmethod
+    def headers(cls):
+        return "%-8s %-8s %-8s %-8s %-8s %-8s %-8s" % ("device", "address", "protocol", "hardware", "baud", "outputs", "type")
+
+    def dump(self):
+        return "%-8d %-8d %-8d %-8d %-8d %-8d %-8s" % (self.device_id, self.address, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, MODULE_TYPES[self.object_type])
+
 class SetAddress(Msg):
     FORMAT = "<HH"
     LENGTH = 4
@@ -384,4 +406,4 @@ class SetAddress(Msg):
                 (self.device_id, self.address))
 
     def pack(self):
-        return struct.pack(FORMAT, self.device_id, self.address)
+        return struct.pack(self.FORMAT, self.device_id, self.address)

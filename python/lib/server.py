@@ -20,7 +20,7 @@ class HMTLServer():
     def __init__(self, options):
         # Connect to serial connection
         self.ser = HMTLSerial(options.device,
-                              timeout=5,
+                              timeout=options.timeout,
                               verbose=options.verbose,
                               dryrun=options.dryrun,
                               baud=options.baud)
@@ -104,9 +104,14 @@ class HMTLServer():
         self.serial_cv.acquire()
         print("[%.3f] Starting data request" % (self.elapsed()))
         
-        self.time_limit = time.time() + 3;
+        self.time_limit = time.time() + 0.5;
         while True:
+            
+            # Lower the serial timeout
+            self.ser.ser.timeout = 0.1 # XXX: Think about this more
             msg = self.ser.get_line()
+            self.ser.ser.timeout = 5
+
             if (len(msg) == 0):
                 pass
             elif (msg[0] == chr(HMTLprotocol.MsgHdr.STARTCODE)):

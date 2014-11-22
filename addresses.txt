@@ -13,6 +13,7 @@ NA	*19/0x13	2            Adam (Board v2)
 ==Triangle Lights==
 NA	*32/0x20	2            Taller stand (Board v4)
 33	33/0x21		3            First XLR
+34  34/0x22   3            Tower (Board v4, XLR)
 
 ==Trigger boards==
 64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
