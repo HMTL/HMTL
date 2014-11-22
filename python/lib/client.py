@@ -33,7 +33,7 @@ class HMTLClient():
         else:
             port = 6000
 
-        address = ('localhost', port)
+        address = (options.address, port)
         try:
             self.conn = Client(address, authkey=b'secret password')
         except Exception as e:

@@ -28,7 +28,7 @@ def handle_args():
     parser.add_option("-p", "--port", dest="port", type="int",
                       help="Port to bind to", default=6000)
     parser.add_option("-a", "--address", dest="address",
-                      help="Address to bind to", default="localhost")
+                      help="Address to bind to", default="0.0.0.0")
 
     parser.add_option("-t", "--timeout", dest="timeout", type="int",
                       help="Timeout on serial", default=5)
