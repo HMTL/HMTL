@@ -39,7 +39,7 @@ def choose_port():
         print("There are no ports to connect to")
         return None
     elif len(ports) == 1:
-        useport = ports[0]
+        useport = 1
     else:
         useport = -1
 
