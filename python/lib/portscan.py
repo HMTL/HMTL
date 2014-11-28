@@ -34,8 +34,15 @@ def choose_port():
         if ((re.search("(.*usbserial.*)", port) != None) or
             (re.search("(.*usbmodem.*)", port) != None)):
             default = i + 1
+            
+    if len(ports) == 0:
+        print("There are no ports to connect to")
+        return None
+    elif len(ports) == 1:
+        useport = ports[0]
+    else:
+        useport = -1
 
-    useport = -1
     while (useport < 0):
         try:
             val = raw_input("Select port [1..%d][%d]:" % (len(ports), default))
