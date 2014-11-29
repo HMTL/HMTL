@@ -30,7 +30,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 3 // %META INCR
+#define HMTL_MODULE_BUILD 4 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -154,7 +154,7 @@ void loop() {
                   );
     DEBUG_PRINT_END();
 
-    if (process_msg(msg_hdr, &rs485, false)) {
+    if (process_msg(msg_hdr, true, false)) {
       update = true;
     }
   }
@@ -173,7 +173,7 @@ void loop() {
 }
 
 /* Process a message if it is for this module */
-boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) {
+boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
   if (msg_hdr->version != HMTL_MSG_VERSION) {
     DEBUG_ERR("Invalid message version");
     return false;
@@ -213,10 +213,10 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
       // TODO: This should be in framework as well
       uint16_t source_address = 0;
       uint16_t recv_buffer_size = 0;
-      if (rs485 != NULL) {
+      if (from_rs485) {
         // The response will be going over RS485, get the source address
         source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
-        recv_buffer_size = rs485->recvLimit;
+        recv_buffer_size = rs485.recvLimit;
       } else {
         recv_buffer_size = MSG_MAX_SZ;
       }
@@ -230,7 +230,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
                                    &config, outputs, recv_buffer_size);
 
       // Respond to the appropriate source
-      if (rs485 != NULL) {
+      if (from_rs485) {
         if (msg_hdr->address == RS485_ADDR_ANY) {
           // If this was a broadcast address then do not respond immediately,
           // delay for time based on our address.
@@ -239,7 +239,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
           delay(delayMs);
         }
 
-        rs485->sendMsgTo(source_address, send_buffer, len);
+        rs485.sendMsgTo(source_address, send_buffer, len);
       } else {
         Serial.write(send_buffer, len);
       }
@@ -253,7 +253,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, RS485Socket * rs485, boolean forwarded) 
       if ((set_addr->device_id == 0) ||
           (set_addr->device_id == config.device_id)) {
         config.address = set_addr->address;
-        rs485->sourceAddress = config.address;
+        rs485.sourceAddress = config.address;
         DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
       }
     }

@@ -79,6 +79,8 @@ def handle_args():
         pass
     elif (options.commandtype == "poll"):
         pass
+    elif (options.commandtype == "setaddr"):
+        pass
     else:
         if (options.output == None):
             print("Must specify an outout number")
