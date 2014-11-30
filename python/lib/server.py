@@ -106,11 +106,9 @@ class HMTLServer():
         
         self.time_limit = time.time() + 0.5;
         while True:
-            
-            # Lower the serial timeout
-            self.ser.ser.timeout = 0.1 # XXX: Think about this more
-            msg = self.ser.get_line()
-            self.ser.ser.timeout = 5
+
+            # Try to get a message with low timeout
+            msg = self.ser.get_line(timeout=0.1)
 
             if (len(msg) == 0):
                 pass

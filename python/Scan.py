@@ -102,7 +102,7 @@ def handle_poll_resp(data, modules):
 
 def scan_every(client):
     modules = []
-    for address in [HMTLprotocol.BROADCAST]:
+    for address in range(0,128):
         print("Polling address: %d" % (address))
         msg = HMTLprotocol.get_poll_msg(address)
         ret = client.send_and_ack(msg, True)

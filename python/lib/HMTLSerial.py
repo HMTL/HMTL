@@ -32,8 +32,13 @@ class HMTLSerial():
         if (self.verbose):
             print('\033[91m' + str + '\033[97m')
 
-    def get_line(self):
+    def get_line(self, timeout=None):
         '''Returns the next line of text or a complete HMTL message'''
+
+        if (timeout != None):
+            prev_timeout = self.ser.ser.timeout
+            self.ser.ser.timeout = 0.1
+
         data = ""
         is_msg_hdr = False
         hdr = None
@@ -76,6 +81,9 @@ class HMTLSerial():
                 retdata = data
 
         self.last_received = time.time()
+
+        if (timeout != None):
+            self.ser.ser.timeout = prev_timeout
 
         return retdata
 
