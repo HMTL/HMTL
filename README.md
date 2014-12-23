@@ -18,3 +18,15 @@ They also depend on several libraries that can be found here:
 Contents
 ========
 
+
+Wiring
+======
+
+## 4-Pin XLR
+
+Pin | Use      | 4-wire color
+------------------------
+1   | GND      | White
+2   | Data 1/A | Black
+3   | Data 2/B | Green
+4   | VCC (12V)| Red    
