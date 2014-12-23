@@ -3,7 +3,8 @@
  * License: Create Commons Attribution-Non-Commercial
  * Copyright: 2014
  *
- * Listen for HMTL formatted messages
+ * Code for a fully contained module which handles HMTL formatted messages
+ * from a serial or RS485 connection.
  ******************************************************************************/
 
 #include "EEPROM.h"
@@ -30,7 +31,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 4 // %META INCR
+#define HMTL_MODULE_BUILD 5 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -160,7 +161,7 @@ void loop() {
   }
 
   /* Execute any active programs */
-  if (run_programs(outputs, active_programs)) {
+  if (run_programs(outputs, objects, active_programs)) {
     update = true;
   }
 
@@ -347,19 +348,20 @@ void free_tracker(program_tracker_t *trackers[], int index) {
 
 /* Execute all active programs */
 boolean run_programs(output_hdr_t *outputs[],
-		     program_tracker_t *trackers[]) {
+                     void *objects[],
+                     program_tracker_t *trackers[]) {
   boolean updated = false;
 
   for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
     program_tracker_t *tracker = trackers[i];
     if (tracker != NULL) {
       if (tracker->done) {
-	free_tracker(trackers, i);
-	continue;
+        free_tracker(trackers, i);
+        continue;
       }
 
-      if (tracker->program->program(outputs[i], tracker)) {
-	updated = true;
+      if (tracker->program->program(outputs[i], objects[i], tracker)) {
+        updated = true;
       }
     }
   }
@@ -386,7 +388,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
   return true;
 }
 
-boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
+boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tracker) {
   boolean changed = false;
   unsigned long now = millis();
   state_blink_t *state = (state_blink_t *)tracker->state;
@@ -399,13 +401,13 @@ boolean program_blink(output_hdr_t *output, program_tracker_t *tracker) {
   if (now >= state->next_change) {
     if (state->on) {
       // Turn off the output
-      hmtl_set_output(output, state->msg.off_value);
+      hmtl_set_output_rgb(output, object, state->msg.off_value);
       
       state->on = false;
       state->next_change += state->msg.off_period;
     } else {
       // Turn on the output
-      hmtl_set_output(output, state->msg.on_value);
+      hmtl_set_output_rgb(output, object, state->msg.on_value);
 
       state->on = true;
       state->next_change += state->msg.on_period;
@@ -441,21 +443,22 @@ boolean program_timed_change_init(msg_program_t *msg,
   return true;
 }
 
-boolean program_timed_change(output_hdr_t *output, program_tracker_t *tracker) {
+boolean program_timed_change(output_hdr_t *output, void *object, 
+                             program_tracker_t *tracker) {
   boolean changed = false;
   unsigned long now = millis();
   state_timed_change_t *state = (state_timed_change_t *)tracker->state;
 
   if (state->change_time == 0) {
     // Set the initial color
-    hmtl_set_output(output, state->msg.start_value);
+    hmtl_set_output_rgb(output, object, state->msg.start_value);
     state->change_time = now + state->msg.change_period;
     changed = true;
   }
 
   if (now > state->change_time) {
     // Set the final color
-    hmtl_set_output(output, state->msg.stop_value);
+    hmtl_set_output_rgb(output, object, state->msg.stop_value);
     
     // Disable the program
     tracker->done = true;
@@ -463,15 +466,4 @@ boolean program_timed_change(output_hdr_t *output, program_tracker_t *tracker) {
   }
 
   return changed;
-}
-
-/* Set the indicated output to a 3 byte value */
-void hmtl_set_output(output_hdr_t *output, uint8_t value[3]) {
-  switch (output->type) {
-  case HMTL_OUTPUT_VALUE:{
-    config_value_t *val = (config_value_t *)output;
-    val->value = value[0];
-    break;
-  }
-  }
 }

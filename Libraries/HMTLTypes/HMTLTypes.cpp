@@ -195,10 +195,10 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
         DEBUG_PRINT(DEBUG_HIGH, " rs485");
         if (data != NULL) {
           config_rs485_t *out = (config_rs485_t *)hdr;
-	  RS485Socket *rs485 = (RS485Socket *)data;
-	  rs485->init(out->recvPin, out->xmitPin, out->enablePin,
-		      config->address,
-		      RS485_RECV_BUFFER, false); // Set to true to enable debugging
+          RS485Socket *rs485 = (RS485Socket *)data;
+          rs485->init(out->recvPin, out->xmitPin, out->enablePin,
+                      config->address,
+                      RS485_RECV_BUFFER, false); // Set to true to enable debugging
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
@@ -221,52 +221,52 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
 int hmtl_update_output(output_hdr_t *hdr, void *data) 
 {
   switch (hdr->type) {
-      case HMTL_OUTPUT_VALUE: 
-      {
-        config_value_t *out = (config_value_t *)hdr;
+  case HMTL_OUTPUT_VALUE: 
+    {
+      config_value_t *out = (config_value_t *)hdr;
 
-	// On a non-PWM pin this outputs HIGH if value >= 128
-	analogWrite(out->pin, out->value);
-	DEBUG_VALUE(DEBUG_TRACE, "hmtl_update_output: val pin=", out->pin);
-	DEBUG_VALUELN(DEBUG_TRACE, " val=", out->value);
-        break;
+      // On a non-PWM pin this outputs HIGH if value >= 128
+      analogWrite(out->pin, out->value);
+      DEBUG_VALUE(DEBUG_TRACE, "hmtl_update_output: val pin=", out->pin);
+      DEBUG_VALUELN(DEBUG_TRACE, " val=", out->value);
+      break;
+    }
+  case HMTL_OUTPUT_RGB:
+    {
+      config_rgb_t *out = (config_rgb_t *)hdr;
+      for (int j = 0; j < 3; j++) {
+        analogWrite(out->pins[j], out->values[j]);
       }
-      case HMTL_OUTPUT_RGB:
-      {
-        config_rgb_t *out = (config_rgb_t *)hdr;
-        for (int j = 0; j < 3; j++) {
-          analogWrite(out->pins[j], out->values[j]);
-        }
-        break;
+      break;
+    }
+  case HMTL_OUTPUT_PROGRAM:
+    {
+      //          config_program_t *out = (config_program_t *)hdr;
+      break;
+    }
+  case HMTL_OUTPUT_PIXELS:
+    {
+      if (data) {
+        PixelUtil *pixels = (PixelUtil *)data;
+        pixels->update();
       }
-      case HMTL_OUTPUT_PROGRAM:
-      {
-//          config_program_t *out = (config_program_t *)hdr;
-        break;
-      }
-      case HMTL_OUTPUT_PIXELS:
-      {
-	if (data) {
-	  PixelUtil *pixels = (PixelUtil *)data;
-	  pixels->update();
-	}
-        break;
-      }
-      case HMTL_OUTPUT_MPR121:
-      {
-	// XXX - Should this be reading the inputs?
-	break;
-      }
-      case HMTL_OUTPUT_RS485:
-      {
-	// XXX - Should this be checking for data?
-	break;
-      }
-      default: 
-      {
-        DEBUG_ERR("hmtl_update_output: unknown type");
-        return -1;
-      }
+      break;
+    }
+  case HMTL_OUTPUT_MPR121:
+    {
+      // XXX - Should this be reading the inputs?
+      break;
+    }
+  case HMTL_OUTPUT_RS485:
+    {
+      // XXX - Should this be checking for data?
+      break;
+    }
+  default: 
+    {
+      DEBUG_ERR("hmtl_update_output: unknown type");
+      return -1;
+    }
   }
 
   return 0;
@@ -443,17 +443,34 @@ int hmtl_test_output_car(output_hdr_t *hdr, void *data)
   return 0;
 }
 
-/* Fill in a config with default values */
-void hmtl_default_config(config_hdr_t *hdr)
-{
-  hdr->magic = HMTL_CONFIG_MAGIC;
-  hdr->protocol_version = HMTL_CONFIG_VERSION;
-  hdr->hardware_version = 0;
-  hdr->address = 0;
-  hdr->num_outputs = 0;
-  hdr->flags = 0;
-  DEBUG_VALUELN(DEBUG_LOW, "hmtl_default_config: address=", hdr->address);
+/* Set the indicated output to a 3 byte value */
+void hmtl_set_output_rgb(output_hdr_t *output, void *object, uint8_t value[3]) {
+  switch (output->type) {
+  case HMTL_OUTPUT_VALUE:{
+    config_value_t *val = (config_value_t *)output;
+    val->value = value[0];
+    break;
+  }
+  case HMTL_OUTPUT_RGB:{
+    config_rgb_t *rgb = (config_rgb_t *)output;
+    rgb->values[0] = value[0];
+    rgb->values[1] = value[1];
+    rgb->values[2] = value[2];
+    break;
+  }
+  case HMTL_OUTPUT_PIXELS: {
+    PixelUtil *pixels = (PixelUtil *)object;
+    pixels->setAllRGB(value[0], value[1], value[2]);
+    break;
+  }
+  default: {
+    DEBUG_ERR("hmtl_set_output_rgb: invalid output type");
+    break;
+  }
+
+  }
 }
+
 
 /******************************************************************************
  * Configuration validation

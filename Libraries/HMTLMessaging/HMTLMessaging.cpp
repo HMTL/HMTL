@@ -12,12 +12,10 @@
 #include "Debug.h"
 
 #include "GeneralUtils.h"
-//#include "EEPromUtils.h"
 #include "HMTLTypes.h"
 #include "HMTLMessaging.h"
 
 #include "PixelUtil.h"
-//#include "MPR121.h"
 #include "RS485Utils.h"
 
 uint16_t hmtl_msg_size(output_hdr_t *output) 
@@ -44,8 +42,8 @@ uint16_t hmtl_msg_size(output_hdr_t *output)
 /* Process an incoming message for this module */
 int
 hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
-		       config_hdr_t *config_hdr, output_hdr_t *outputs[],
-		       void *objects[])
+                       config_hdr_t *config_hdr, output_hdr_t *outputs[],
+                       void *objects[])
 {
   if (msg_hdr->type != MSG_TYPE_OUTPUT) {
     DEBUG_ERR("hmtl_handle_msg: incorrect msg type");
@@ -65,98 +63,31 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
   void *data = (objects != NULL ? objects[msg->output] : NULL);
 
   switch (msg->type) {
-      case HMTL_OUTPUT_VALUE:
-      {
-        msg_value_t *msg2 = (msg_value_t *)msg;
-        switch (out->type) {
-            case HMTL_OUTPUT_VALUE:
-            {
-              config_value_t *val = (config_value_t *)out;
-              val->value = msg2->value;
-              DEBUG_VALUELN(DEBUG_HIGH, " val=", msg2->value);
-              break;
-            }
-            case HMTL_OUTPUT_PIXELS:
-	    {
-	      if (data) {
-		PixelUtil *pixels = (PixelUtil *)data;;
-		pixels->setAllRGB(msg2->value, msg2->value, msg2->value);
-	      }
-	      break;
-	    }
-	    case HMTL_OUTPUT_RGB:
-	    {
-	      config_rgb_t *rgb = (config_rgb_t *)out;
-              DEBUG_PRINT(DEBUG_HIGH, " rgb=");
-              for (int i = 0; i < 3; i++) {
-                rgb->values[i] = msg2->value;
-                DEBUG_VALUE(DEBUG_HIGH, " ", msg2->value);
-              }
-              DEBUG_PRINT(DEBUG_HIGH, ".");
-              break;
-
-	      break;
-	    }
-            default:
-            {
-              DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for value output.  msg=", msg->type);
-              break;
-            }
-        }
-        break;
+  case HMTL_OUTPUT_VALUE:
+    {
+      msg_value_t *msg2 = (msg_value_t *)msg;
+      uint8_t values[3];
+      for (byte i = 0; i < 3; i++) {
+        values[i] = msg2->value;
       }
+      hmtl_set_output_rgb(out, data, values);
+      break;
+    }
 
-      case HMTL_OUTPUT_RGB:
-      {
-        msg_rgb_t *msg2 = (msg_rgb_t *)msg;
-        switch (out->type) {
-            case HMTL_OUTPUT_RGB:
-            {
-              config_rgb_t *rgb = (config_rgb_t *)out;
-              DEBUG_PRINT(DEBUG_HIGH, " rgb=");
-              for (int i = 0; i < 3; i++) {
-                rgb->values[i] = msg2->values[i];
-                DEBUG_VALUE(DEBUG_HIGH, " ", msg2->values[i]);
-              }
-              DEBUG_PRINT(DEBUG_HIGH, ".");
-              break;
-            }
-            case HMTL_OUTPUT_PIXELS:
-	    {
-	      if (data) {
-		PixelUtil *pixels = (PixelUtil *)data;
-		pixels->setAllRGB(msg2->values[0],
-				  msg2->values[1],
-				  msg2->values[2]);
-	      }
-	      break;
-	    }
+  case HMTL_OUTPUT_RGB:
+    {
+      msg_rgb_t *msg2 = (msg_rgb_t *)msg;
+      hmtl_set_output_rgb(out, data, msg2->values);
+      break;
+    }
 
-            default:
-            {
-              DEBUG_VALUELN(DEBUG_ERROR, "hmtl_handle_msg: invalid msg type for rgb output.  msg=", msg->type);
-              break;
-            }
+  case HMTL_OUTPUT_PROGRAM:
+    //        XXX - Need to add timed on program
+    break;
 
-        }
-        break;
-      }
-
-      case HMTL_OUTPUT_PROGRAM:
-//        XXX - Need to add timed on program
-        break;
-
-      case HMTL_OUTPUT_PIXELS:
-
-        break;
-
-      case HMTL_OUTPUT_MPR121:
-	// XXX - Need to do something here
-        break;
-
-      case HMTL_OUTPUT_RS485:
-	// XXX - Need to do something here
-        break;
+  case HMTL_OUTPUT_PIXELS:
+    // XXX - Need to do something here
+    break;
   }
 
   return -1;

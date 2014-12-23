@@ -1,12 +1,21 @@
+/*******************************************************************************
+ * Author: Adam Phelps
+ * License: Create Commons Attribution-Non-Commercial
+ * Copyright: 2014
+ *
+ * Program tracking
+ ******************************************************************************/
+
 #ifndef HMTL_MODULE_H
 #define HMTL_MODULE_H
 
 typedef struct program_tracker program_tracker_t;
 
 typedef boolean (*hmtl_program_func)(output_hdr_t *outputs,
-				     program_tracker_t *tracker);
+                                     void *object,
+                                     program_tracker_t *tracker);
 typedef boolean (*hmtl_program_setup)(msg_program_t *msg,
-				      program_tracker_t *tracker);
+                                      program_tracker_t *tracker);
 
 typedef struct {
   byte type;

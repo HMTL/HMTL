@@ -112,6 +112,7 @@ typedef struct {
 #define MAX_MPR121_PINS 12
 typedef struct {
   output_hdr_t hdr;
+  //  byte address; // XXX: Requires version update BS
   byte irqPin;
   boolean useInterrupt;
   byte thresholds[MAX_MPR121_PINS];
@@ -144,6 +145,10 @@ int hmtl_update_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output(output_hdr_t *hdr, void *data);
 int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
+// Set an output to a 3byte value
+void hmtl_set_output_rgb(output_hdr_t *output, void *object, uint8_t value[3]);
+
+
 /* Configuration validation */
 boolean hmtl_validate_header(config_hdr_t *config_hdr);
 boolean hmtl_validate_value(config_value_t *val);
@@ -158,15 +163,5 @@ boolean hmtl_validate_config(config_hdr_t *config_hdr, output_hdr_t *outputs[],
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_print_header(config_hdr_t *hdr);
 void hmtl_print_output(output_hdr_t *val);
-
-#define HTML_MAX_OUT 6
-
-class HMTL_module 
-{
-  uint8_t address;
-
-  config_max_t outputs[HTML_MAX_OUT];
-};
-
 
 #endif
