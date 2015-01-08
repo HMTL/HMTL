@@ -81,6 +81,8 @@ def handle_args():
         pass
     elif (options.commandtype == "setaddr"):
         pass
+    elif (options.commandtype == "none"):
+        pass
     else:
         if (options.output == None):
             print("Must specify an outout number")
