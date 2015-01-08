@@ -12,7 +12,7 @@
 #include "Wire.h"
 #include "EEPROM.h"
 #include "SPI.h"
-#include "Adafruit_WS2801.h"
+#include "FastLED.h"
 
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"

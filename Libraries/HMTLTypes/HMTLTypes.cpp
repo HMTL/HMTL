@@ -523,7 +523,7 @@ boolean hmtl_validate_pixels(config_pixels_t *pixels) {
   if (pixels->clockPin > 13) return false;
   if (pixels->dataPin > 13) return false;
   if (pixels->clockPin == pixels->dataPin) return false;
-  if ((pixels->type != 0) && (pixels->type != WS2801_RGB)) return false;
+  if ((pixels->type != 0) && (pixels->type != RGB)) return false;
   return true;
 }
 

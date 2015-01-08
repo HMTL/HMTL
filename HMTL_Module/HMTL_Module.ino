@@ -11,7 +11,7 @@
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
 #include "SPI.h"
-#include "Adafruit_WS2801.h"
+#include "FastLED.h"
 #include "Wire.h"
 
 #define DEBUG_LEVEL DEBUG_HIGH
@@ -31,7 +31,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 5 // %META INCR
+#define HMTL_MODULE_BUILD 6 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -107,8 +107,22 @@ int cycle = 0;
 byte msg[MSG_MAX_SZ];
 byte offset = 0;
 
+unsigned long last_msg_ms = 0;
+
 void loop() {
+  unsigned long now = millis();
   boolean update = false;
+
+  if ((now - last_msg_ms > 10000) &&
+      (now % 250 == 0)) {
+    /*
+     * If the module has never received a message (last_msg_ms == 0) or it has
+     * been a long time since the last message, itermittently resend the 'ready'
+     * message.  This allows for connection methods that may miss the first
+     * 'ready' to catch this one (such as Bluetooth).
+     */
+    Serial.println(F(HMTL_READY));
+  }
   
   /* Check for messages on the serial interface */
   msg_hdr_t *msg_hdr = (msg_hdr_t *)msg;
@@ -142,6 +156,7 @@ void loop() {
     }
 
     offset = 0;
+    last_msg_ms = now;
   }
 
   /* Check for message over RS485 */
@@ -158,6 +173,8 @@ void loop() {
     if (process_msg(msg_hdr, true, false)) {
       update = true;
     }
+
+    last_msg_ms = now;
   }
 
   /* Execute any active programs */
