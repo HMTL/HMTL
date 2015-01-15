@@ -1,8 +1,10 @@
 {
     "header": {
-	"protocol_version": 2,
-	"hardware_version": 3,
+	"protocol_version": 3,
+	"hardware_version": 5,
 	"address": 1,
+	"device_id": 1,
+        "baud": 57600,
 	"flags": 0
     },
     "outputs": [
