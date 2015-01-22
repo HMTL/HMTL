@@ -16,6 +16,7 @@
 #include "EEPromUtils.h"
 #include "PixelUtil.h"
 #include "MPR121.h"
+#include "Socket.h"
 #include "RS485Utils.h"
 #include "Wire.h"
 
@@ -87,8 +88,8 @@ boolean receive_command()
 
   while (Serial.available()) {
     buff[offset] = Serial.read();
-    DEBUG_HEXVAL(DEBUG_TRACE, "Recv char:", buff[offset]);
-    DEBUG_VALUELN(DEBUG_TRACE, " off:", offset);
+    DEBUG5_HEXVAL("Recv char:", buff[offset]);
+    DEBUG5_VALUELN(" off:", offset);
 
     /*
      * Check for termination.  This can come in two forms:
@@ -134,12 +135,12 @@ int state = STATE_NEW;
  * Process a complete command
  */
 void handle_command(byte *cmd, byte len) {
-  DEBUG_VALUE(DEBUG_HIGH, "Recv: ", (char *)cmd);
-  DEBUG_PRINT(DEBUG_HIGH, " Hex:");
+  DEBUG4_VALUE("Recv: ", (char *)cmd);
+  DEBUG4_PRINT(" Hex:");
   for (int i = 0; i < len; i++) {
-    DEBUG_HEXVAL(DEBUG_HIGH, " ", cmd[i]);
+    DEBUG4_HEXVAL(" ", cmd[i]);
   }
-  DEBUG_PRINTLN(DEBUG_HIGH, "");
+  DEBUG4_PRINTLN("");
 
   if (cmd[0] == CONFIG_START_BYTE) {
     /* This is a configuration command */
@@ -157,12 +158,12 @@ void handle_command(byte *cmd, byte len) {
     int config_length = len - CONFIG_START_SIZE;
     switch (type) {
     case 0: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received configuration header");
+      DEBUG3_PRINTLN("Received configuration header");
       if (config_length != sizeof (config_hdr_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message wrong len for header: ",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_hdr_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_hdr_t));
         goto FAIL;
       }
       config_hdr_t *hdr = (config_hdr_t *)config_start;
@@ -178,12 +179,12 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
     case HMTL_OUTPUT_VALUE: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received value output");
+      DEBUG3_PRINTLN("Received value output");
       if (config_length != sizeof (config_value_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for value:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_value_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_value_t));
         goto FAIL;
       }
       config_value_t *val = (config_value_t *)config_start;
@@ -201,12 +202,12 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
     case HMTL_OUTPUT_RGB: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received RGB output");
+      DEBUG3_PRINTLN("Received RGB output");
       if (config_length != sizeof (config_rgb_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for RGB:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rgb_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_rgb_t));
         goto FAIL;
       }
       config_rgb_t *rgb = (config_rgb_t *)config_start;
@@ -224,12 +225,12 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
     case HMTL_OUTPUT_PIXELS: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received PIXELS output");
+      DEBUG3_PRINTLN("Received PIXELS output");
       if (config_length != sizeof (config_pixels_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for PIXELS:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_pixels_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_pixels_t));
         goto FAIL;
       }
       config_pixels_t *pixels = (config_pixels_t *)config_start;
@@ -247,12 +248,12 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
     case HMTL_OUTPUT_MPR121: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received MPR121 output");
+      DEBUG3_PRINTLN("Received MPR121 output");
       if (config_length != sizeof (config_mpr121_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for MPR121:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_mpr121_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_mpr121_t));
         goto FAIL;
       }
       config_mpr121_t *mpr121 = (config_mpr121_t *)config_start;
@@ -270,12 +271,12 @@ void handle_command(byte *cmd, byte len) {
       break;
     }
     case HMTL_OUTPUT_RS485: {
-      DEBUG_PRINTLN(DEBUG_MID, "Received RS485 output");
+      DEBUG3_PRINTLN("Received RS485 output");
       if (config_length != sizeof (config_rs485_t)) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for RS485:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof (config_rs485_t));
+        DEBUG1_VALUELN(" needed:", sizeof (config_rs485_t));
         goto FAIL;
       }
       config_rs485_t *rs485 = (config_rs485_t *)config_start;
@@ -298,11 +299,11 @@ void handle_command(byte *cmd, byte len) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for address:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof(uint16_t));
+        DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
         goto FAIL;
       }
       uint16_t address = *(uint16_t *)config_start;
-      DEBUG_VALUELN(DEBUG_MID, "Received address: ", address);
+      DEBUG3_VALUELN("Received address: ", address);
 
       config_hdr.address = address;
 
@@ -314,11 +315,11 @@ void handle_command(byte *cmd, byte len) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for device_id:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof(uint16_t));
+        DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
         goto FAIL;
       }
       uint16_t device_id = *(uint16_t *)config_start;
-      DEBUG_VALUELN(DEBUG_MID, "Received device_id: ", device_id);
+      DEBUG3_VALUELN("Received device_id: ", device_id);
 
       config_hdr.device_id = device_id;
 
@@ -330,12 +331,12 @@ void handle_command(byte *cmd, byte len) {
         DEBUG_VALUE(DEBUG_ERROR,
                     "Received config message with wrong len for baud:",
                     config_length);
-        DEBUG_VALUELN(DEBUG_ERROR, " needed:", sizeof(uint8_t));
+        DEBUG1_VALUELN(" needed:", sizeof(uint8_t));
         goto FAIL;
       }
       uint8_t baud = *(uint8_t *)config_start;
-      DEBUG_VALUE(DEBUG_MID, "Received baud byte: ", baud);
-      DEBUG_VALUELN(DEBUG_MID, " baud: ", BYTE_TO_BAUD(baud));
+      DEBUG3_VALUE("Received baud byte: ", baud);
+      DEBUG3_VALUELN(" baud: ", BYTE_TO_BAUD(baud));
 
       config_hdr.baud = baud;
 
@@ -343,7 +344,7 @@ void handle_command(byte *cmd, byte len) {
     }
 
     default: {
-      DEBUG_VALUELN(DEBUG_ERROR, "Received unknown configuration type:",
+      DEBUG1_VALUELN("Received unknown configuration type:",
                     type);
       goto FAIL;
     }
@@ -353,12 +354,12 @@ void handle_command(byte *cmd, byte len) {
     char *str = (char *)cmd;
 
     if (strcmp(str, HMTL_CONFIG_START) == 0) {
-      DEBUG_PRINTLN(DEBUG_MID, "Received command 'start'");
+      DEBUG3_PRINTLN("Received command 'start'");
       state = STATE_READY;
     }
 
     else if (strcmp(str, HMTL_CONFIG_END) == 0) {
-      DEBUG_PRINTLN(DEBUG_MID, "Received command 'end'");
+      DEBUG3_PRINTLN("Received command 'end'");
       if (state != STATE_READY) {
         DEBUG_ERR("Recived END before START");
         goto FAIL;
@@ -374,7 +375,7 @@ void handle_command(byte *cmd, byte len) {
     }
 
     else if (strcmp(str, HMTL_CONFIG_WRITE) == 0) {
-      DEBUG_PRINTLN(DEBUG_MID, "Received command 'write'");
+      DEBUG3_PRINTLN("Received command 'write'");
 
       if (state != STATE_DONE) {
         DEBUG_ERR("Received WRITE when state is not DONE");
@@ -389,19 +390,19 @@ void handle_command(byte *cmd, byte len) {
     }
 
     else if (strcmp(str, HMTL_CONFIG_PRINT) == 0) {
-      DEBUG_PRINTLN(DEBUG_MID, "Received command 'print'");
+      DEBUG3_PRINTLN("Received command 'print'");
       hmtl_print_config(&config_hdr, outputs);
     }
 
     else if (strcmp(str, HMTL_CONFIG_READ) == 0) {
-      DEBUG_PRINTLN(DEBUG_MID, "Received command 'read'");
+      DEBUG3_PRINTLN("Received command 'read'");
       if (!read_configuration()) {
         goto FAIL;
       }
     }
 
     else {
-      DEBUG_VALUELN(DEBUG_ERROR, "Received unknown command: ", str);
+      DEBUG1_VALUELN("Received unknown command: ", str);
       goto FAIL;
     }
   }

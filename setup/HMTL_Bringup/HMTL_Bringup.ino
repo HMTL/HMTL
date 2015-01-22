@@ -18,6 +18,8 @@
 #include "Wire.h"
 #include "MPR121.h"
 #include "SerialCLI.h"
+
+#include "Socket.h"
 #include "RS485Utils.h"
 
 /******/
@@ -41,7 +43,7 @@ PixelUtil pixels;
 void setup() {
   Serial.begin(9600);
 
-  DEBUG_PRINTLN(DEBUG_LOW, "***** HMTL Bringup *****");
+  DEBUG2_PRINTLN("***** HMTL Bringup *****");
 
   // XXX Update this to hmtl_setup() !!!
   readconfig.address = -1;
@@ -52,20 +54,20 @@ void setup() {
     DEBUG_ERR("Failed to read config");
     DEBUG_ERR_STATE(1);
   } else {
-    DEBUG_VALUELN(DEBUG_LOW, "Read config.  offset=", configOffset);
+    DEBUG2_VALUELN("Read config.  offset=", configOffset);
     memcpy(&config, &readconfig, sizeof (config_hdr_t));
     for (int i = 0; i < config.num_outputs; i++) {
       if (i >= HMTL_MAX_OUTPUTS) {
-        DEBUG_VALUELN(0, "Too many outputs:", config.num_outputs);
+        DEBUG1_VALUELN("Too many outputs:", config.num_outputs);
         return;
       }
       outputs[i] = (output_hdr_t *)&readoutputs[i];
     }
   }
 
-  DEBUG_VALUE(DEBUG_HIGH, "Config size:", configOffset - HMTL_CONFIG_ADDR);
-  DEBUG_VALUELN(DEBUG_HIGH, " end:", configOffset);
-  DEBUG_COMMAND(DEBUG_HIGH, hmtl_print_config(&config, outputs));
+  DEBUG4_VALUE("Config size:", configOffset - HMTL_CONFIG_ADDR);
+  DEBUG4_VALUELN(" end:", configOffset);
+  DEBUG4_COMMAND(hmtl_print_config(&config, outputs));
 
   /* Initialize the outputs */
   for (int i = 0; i < config.num_outputs; i++) {
@@ -99,7 +101,7 @@ void setup() {
 
 void loop() {
 
-  DEBUG_PRINTLN(0, "White");
+  DEBUG1_PRINTLN("White");
   if (has_value) digitalWrite(value_output.pin, HIGH);
   if (has_pixels) {
     for (unsigned int i=0; i < pixels.numPixels(); i++) 
@@ -109,7 +111,7 @@ void loop() {
 
   delay(1000);
 
-  DEBUG_PRINTLN(0, "Red");
+  DEBUG1_PRINTLN("Red");
   if (has_value) digitalWrite(value_output.pin, LOW);
   digitalWrite(rgb_output.pins[0], HIGH);
   if (has_pixels) {
@@ -120,7 +122,7 @@ void loop() {
 
   delay(1000);
 
-  DEBUG_PRINTLN(0, "Green");
+  DEBUG1_PRINTLN("Green");
   digitalWrite(rgb_output.pins[0], LOW);
   digitalWrite(rgb_output.pins[1], HIGH);
   if (has_pixels) {
@@ -131,7 +133,7 @@ void loop() {
 
   delay(1000);
 
-  DEBUG_PRINTLN(0, "Blue");
+  DEBUG1_PRINTLN("Blue");
   digitalWrite(rgb_output.pins[1], LOW);
   digitalWrite(rgb_output.pins[2], HIGH);
   if (has_pixels) {

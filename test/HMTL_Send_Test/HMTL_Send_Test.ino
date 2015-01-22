@@ -50,7 +50,7 @@ void setup() {
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
 
-  DEBUG_PRINTLN(DEBUG_LOW, "HMTL Send test initialized");
+  DEBUG2_PRINTLN("HMTL Send test initialized");
 }
 
 int cycle = 0;
@@ -61,8 +61,8 @@ void loop() {
   send_buffer[0] = 'A';
   send_buffer[1] += 1;
 
-  DEBUG_VALUE(DEBUG_HIGH, "Sending: ", (char)send_buffer[0]);
-  DEBUG_VALUELN(DEBUG_HIGH, " - ", send_buffer[1]);
+  DEBUG4_VALUE("Sending: ", (char)send_buffer[0]);
+  DEBUG4_VALUELN(" - ", send_buffer[1]);
 
   rs485.sendMsgTo(RS485_ADDR_ANY, send_buffer, 2);
 

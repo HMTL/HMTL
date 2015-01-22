@@ -25,13 +25,15 @@
 #include "HMTLProtocol.h"
 
 #include "PixelUtil.h"
+
+#include "Socket.h"
 #include "RS485Utils.h"
 #include "MPR121.h"
 
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 6 // %META INCR
+#define HMTL_MODULE_BUILD 7 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -97,7 +99,7 @@ void setup() {
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
 
-  DEBUG_VALUELN(DEBUG_LOW, "HMTL Module initialized, v", HMTL_MODULE_BUILD);
+  DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
 }
 
@@ -130,9 +132,9 @@ void loop() {
     boolean forwarded = false;
 
     /* Received a complete message */
-    DEBUG_VALUE(DEBUG_TRACE, "Received msg len=", offset);
-    DEBUG_PRINT(DEBUG_TRACE, " ");
-    DEBUG_COMMAND(DEBUG_TRACE, 
+    DEBUG5_VALUE("Received msg len=", offset);
+    DEBUG5_PRINT(" ");
+    DEBUG5_COMMAND(
                   print_hex_string(msg, offset)
                   );
     DEBUG_PRINT_END();
@@ -144,7 +146,7 @@ void loop() {
       if (offset > SEND_BUFFER_SIZE) {
         DEBUG_ERR("Message larger than send buffer");
       } else {
-        DEBUG_VALUELN(DEBUG_HIGH, "Forwarding serial msg to ", msg_hdr->address);
+        DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
         memcpy(send_buffer, msg, offset);
         rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
         forwarded = true;
@@ -163,9 +165,9 @@ void loop() {
   unsigned int msglen;
   msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
   if (msg_hdr != NULL) {
-    DEBUG_VALUE(DEBUG_TRACE, "Received rs485 msg len=", msglen);
-    DEBUG_PRINT(DEBUG_TRACE, " ");
-    DEBUG_COMMAND(DEBUG_TRACE, 
+    DEBUG5_VALUE("Received rs485 msg len=", msglen);
+    DEBUG5_PRINT(" ");
+    DEBUG5_COMMAND(
                   print_hex_string((byte *)msg_hdr, msglen)
                   );
     DEBUG_PRINT_END();
@@ -207,7 +209,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
        * TODO: Maybe this should check address as well, and serial needs to be
        * assigned an address?
        */
-      DEBUG_PRINTLN(DEBUG_HIGH, "Forwarding ack to serial");
+      DEBUG4_PRINTLN("Forwarding ack to serial");
       Serial.write((byte *)msg_hdr, msg_hdr->length);
 
       return false;
@@ -239,7 +241,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
         recv_buffer_size = MSG_MAX_SZ;
       }
 
-      DEBUG_VALUELN(DEBUG_MID, "Poll req src:", source_address);
+      DEBUG3_VALUELN("Poll req src:", source_address);
 
       // Format the poll response
       uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
@@ -253,7 +255,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
           // If this was a broadcast address then do not respond immediately,
           // delay for time based on our address.
           int delayMs = config.address * 2;
-          DEBUG_VALUELN(DEBUG_MID, "Delay resp: ", delayMs)
+          DEBUG3_VALUELN("Delay resp: ", delayMs)
           delay(delayMs);
         }
 
@@ -272,7 +274,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
           (set_addr->device_id == config.device_id)) {
         config.address = set_addr->address;
         rs485.sourceAddress = config.address;
-        DEBUG_VALUELN(DEBUG_LOW, "Address changed to ", config.address);
+        DEBUG2_VALUELN("Address changed to ", config.address);
       }
     }
     }
@@ -297,8 +299,8 @@ boolean setup_program(output_hdr_t *outputs[],
                       program_tracker_t *trackers[],
                       msg_program_t *msg) {
 
-  DEBUG_VALUE(DEBUG_HIGH, "setup_program: program=", msg->type);
-  DEBUG_VALUELN(DEBUG_HIGH, " output=", msg->hdr.output);
+  DEBUG4_VALUE("setup_program: program=", msg->type);
+  DEBUG4_VALUELN(" output=", msg->hdr.output);
 
   /* Find the program to be executed */ 
   hmtl_program_t *program = NULL;
@@ -309,19 +311,19 @@ boolean setup_program(output_hdr_t *outputs[],
     }
   }
   if (program == NULL) {
-    DEBUG_VALUELN(DEBUG_ERROR, "setup_program: invalid type: ",
+    DEBUG1_VALUELN("setup_program: invalid type: ",
 		  msg->type);
     return false;
   }
 
    /* Setup the tracker */
   if (msg->hdr.output > HMTL_MAX_OUTPUTS) {
-    DEBUG_VALUELN(DEBUG_ERROR, "setup_program: invalid output: ",
+    DEBUG1_VALUELN("setup_program: invalid output: ",
 		  msg->hdr.output);
     return false;
   }
   if (outputs[msg->hdr.output] == NULL) {
-    DEBUG_VALUELN(DEBUG_ERROR, "setup_program: NULL output: ",
+    DEBUG1_VALUELN("setup_program: NULL output: ",
 		  msg->hdr.output);
     return false;
   }
@@ -334,9 +336,9 @@ boolean setup_program(output_hdr_t *outputs[],
   }
 
   if (tracker != NULL) {
-    DEBUG_PRINTLN(DEBUG_TRACE, "setup_program: reusing old tracker");
+    DEBUG5_PRINTLN("setup_program: reusing old tracker");
     if (tracker->state) {
-      DEBUG_PRINTLN(DEBUG_TRACE, "setup_program: deleting old state");
+      DEBUG5_PRINTLN("setup_program: deleting old state");
       free(tracker->state);
     }
   } else {
@@ -355,7 +357,7 @@ boolean setup_program(output_hdr_t *outputs[],
 void free_tracker(program_tracker_t *trackers[], int index) {
   program_tracker_t *tracker = trackers[index];
   if (tracker != NULL) {
-      DEBUG_VALUELN(DEBUG_MID, "free_tracker: clearing program for ", 
+      DEBUG3_VALUELN("free_tracker: clearing program for ", 
 		    index);
       if (tracker->state) free(tracker->state);
       free(tracker);
@@ -390,7 +392,7 @@ boolean run_programs(output_hdr_t *outputs[],
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
-  DEBUG_PRINT(DEBUG_MID, "Initializing blink program state");
+  DEBUG3_PRINT("Initializing blink program state");
 
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));  
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
@@ -399,8 +401,8 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
 
   tracker->state = state;
 
-  DEBUG_VALUE(DEBUG_MID, " on_period:", state->msg.on_period);
-  DEBUG_VALUELN(DEBUG_MID, " off_period:", state->msg.off_period);
+  DEBUG3_VALUE(" on_period:", state->msg.on_period);
+  DEBUG3_VALUELN(" off_period:", state->msg.off_period);
 
   return true;
 }
@@ -410,10 +412,10 @@ boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tra
   unsigned long now = millis();
   state_blink_t *state = (state_blink_t *)tracker->state;
 
-  DEBUG_PRINT(DEBUG_TRACE, "Blink");
-  DEBUG_VALUE(DEBUG_TRACE, " now:", now);
-  DEBUG_VALUE(DEBUG_TRACE, " next:", state->next_change);
-  DEBUG_VALUE(DEBUG_TRACE, " on: ", state->on);
+  DEBUG5_PRINT("Blink");
+  DEBUG5_VALUE(" now:", now);
+  DEBUG5_VALUE(" next:", state->next_change);
+  DEBUG5_VALUE(" on: ", state->on);
 
   if (now >= state->next_change) {
     if (state->on) {
@@ -444,18 +446,18 @@ boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tra
  */
 boolean program_timed_change_init(msg_program_t *msg,
 				  program_tracker_t *tracker) {
-  DEBUG_PRINT(DEBUG_MID, "Initializing timed change program");
+  DEBUG3_PRINT("Initializing timed change program");
 
   state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));  
 
-  DEBUG_VALUE(DEBUG_MID, " msgsz=", sizeof (state->msg));
+  DEBUG3_VALUE(" msgsz=", sizeof (state->msg));
 
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->change_time = 0;
 
   tracker->state = state;
 
-  DEBUG_VALUELN(DEBUG_MID, " change_period:", state->msg.change_period);
+  DEBUG3_VALUELN(" change_period:", state->msg.change_period);
 
   return true;
 }

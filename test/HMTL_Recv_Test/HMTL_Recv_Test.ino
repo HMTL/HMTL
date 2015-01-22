@@ -55,7 +55,7 @@ void setup() {
   rs485.setup();
   send_buffer = rs485.initBuffer(databuffer);
 
-  DEBUG_PRINTLN(DEBUG_LOW, "HMTL Recv test initialized");
+  DEBUG2_PRINTLN("HMTL Recv test initialized");
 }
 
 int cycle = 0;
@@ -65,9 +65,9 @@ void loop() {
   const byte *data = rs485.getMsg(RS485_ADDR_ANY, &msglen);
 
   if (data != NULL) {
-    DEBUG_PRINT(DEBUG_HIGH, " Recv:");
-    DEBUG_COMMAND(DEBUG_HIGH, print_hex_string(data, msglen));
-    DEBUG_PRINTLN(DEBUG_HIGH, "");
+    DEBUG4_PRINT(" Recv:");
+    DEBUG4_COMMAND(print_hex_string(data, msglen));
+    DEBUG4_PRINTLN("");
     
     if (has_rgb) {
       digitalWrite(rgb_output.pins[0], HIGH);

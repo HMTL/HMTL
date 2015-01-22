@@ -43,7 +43,7 @@ void setup()
     DEBUG_ERR_STATE(1);
   }
 
-  DEBUG_PRINTLN(DEBUG_LOW, "Current config:");
+  DEBUG2_PRINTLN("Current config:");
   hmtl_print_config(&readconfig, NULL);
 }
 
@@ -72,30 +72,30 @@ void cliHandler(char **tokens, byte numtokens) {
   case 'a': {
     if (numtokens < 2) return;
    address = atoi(tokens[1]);
-    DEBUG_VALUELN(DEBUG_LOW, "Set device address:", address);
+    DEBUG2_VALUELN("Set device address:", address);
     break;
   }
   case 'd': {
     if (numtokens < 2) return;
     device_id = atoi(tokens[1]);
-    DEBUG_VALUELN(DEBUG_LOW, "Set device id:", device_id);
+    DEBUG2_VALUELN("Set device id:", device_id);
     break;
   }
   case 'h': {
     if (numtokens < 2) return;
     hardware_version = atoi(tokens[1]);
-    DEBUG_VALUELN(DEBUG_LOW, "Set hardware version:", hardware_version);
+    DEBUG2_VALUELN("Set hardware version:", hardware_version);
     break;
   }
   case 'b': {
     if (numtokens < 2) return;
     uint16_t newBaud = atoi(tokens[1]);
     if ((newBaud < 1200) || (newBaud > 115200)) {
-      DEBUG_VALUELN(DEBUG_ERROR, "Invalid baud:", newBaud);
+      DEBUG1_VALUELN("Invalid baud:", newBaud);
       return;
     }
     baud = BAUD_TO_BYTE(newBaud);
-    DEBUG_VALUELN(DEBUG_LOW, "Set baud:", BYTE_TO_BAUD(baud));
+    DEBUG2_VALUELN("Set baud:", BYTE_TO_BAUD(baud));
     break;
   }
 
@@ -121,7 +121,7 @@ void write_config() {
     DEBUG_ERR_STATE(1);
   }
 
-  DEBUG_PRINTLN(DEBUG_LOW, "Current config:");
+  DEBUG2_PRINTLN("Current config:");
   hmtl_print_config((config_hdr_t *)read_buffer, NULL);
 
   config_hdr_v3_t config;
@@ -185,7 +185,7 @@ int read_config_hdr(uint8_t *buff, int buff_size) {
     return -2;
   }
 
-  DEBUG_VALUELN(0, "Read version ", buff[1]);
+  DEBUG1_VALUELN("Read version ", buff[1]);
 
   // Second byte is the protocol version
   return buff[1];
