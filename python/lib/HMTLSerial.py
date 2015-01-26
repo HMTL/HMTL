@@ -36,8 +36,8 @@ class HMTLSerial():
         '''Returns the next line of text or a complete HMTL message'''
 
         if (timeout != None):
-            prev_timeout = self.ser.ser.timeout
-            self.ser.ser.timeout = 0.1
+            prev_timeout = self.ser.timeout
+            self.ser.timeout = 0.1
 
         data = ""
         is_msg_hdr = False
@@ -83,7 +83,7 @@ class HMTLSerial():
         self.last_received = time.time()
 
         if (timeout != None):
-            self.ser.ser.timeout = prev_timeout
+            self.ser.timeout = prev_timeout
 
         return retdata
 

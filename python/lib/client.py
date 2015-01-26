@@ -14,16 +14,10 @@ import HMTLprotocol
 import server
 
 class HMTLClient():
-    setrgb = False
-    period = 1.0
     address = HMTLprotocol.BROADCAST
     verbose = False
 
     def __init__(self, options):
-        if (options.setrgb):
-            self.setrgb = True
-        if (options.period):
-            self.period = options.period
         if (options.hmtladdress != None):
             self.address = options.hmtladdress
         if (options.verbose):
@@ -39,41 +33,6 @@ class HMTLClient():
         except Exception as e:
             raise Exception("Failed to connect to '%s'" % (str(address)))
         random.seed()
-
-    def test(self):
-        output = 0
-        try:
-            if (not self.setrgb):
-                while True:
-                    print("Turning output %d on" % (output))
-
-                    command = HMTLprotocol.get_value_msg(self.address, output, 
-                                                         255)
-                    self.send_and_ack(command)
-                    time.sleep(self.period)
-
-                    print("Turning output %d off" % (output))
-                    command = HMTLprotocol.get_value_msg(self.address, output, 
-                                                         0)
-                    self.send_and_ack(command)
-                    output = (output + 1) % 4
-            else:
-                red = 255
-                green = 0
-                blue = 0
-                while True:
-                    print("Setting RGB output to %d,%d,%d" % (red, green, blue))
-                    command = HMTLprotocol.get_rgb_msg(self.address, 4,
-                                                       red, green, blue)
-                    self.send_and_ack(command)
-                    time.sleep(self.period)
-
-                    red = random.randrange(0,2)*255
-                    green = random.randrange(0,2)*255
-                    blue = random.randrange(0,2)*255
-
-        except KeyboardInterrupt:
-            print("Exiting")
 
     def close(self):
         self.conn.close()

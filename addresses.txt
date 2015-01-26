@@ -6,7 +6,7 @@ id	address		HTML_version description
 NA	*16/0x10	2            Parents (Board v2)
 NA	*17/0x11	2            Seth (Board v2)
 NA	*18/0x12	2            D (Board v2)
-NA	*19/0x13	2            Adam (Board v2)
+19	19/0x13 	3            Adam (Board v2)
 20 	20/0x14		3            #5 (Board v2)
 21	21/0x15		3            Big Cube
 
@@ -24,6 +24,9 @@ NA	65/0x41		2            Trigger Board v3 (stereo terminals, XLR, Chad)
 69  69/0x45   3            Trigger Board v4
 
 ==HMTL Fire Control===
-NA     128/0x80		HMTL Fire Control Module 1
+NA  128/0x80               HMTL Fire Control Module 1
+
+==Sound Unit==
+8   8/0x8     3            First Sound Unit
 
 (*) Not yet set
