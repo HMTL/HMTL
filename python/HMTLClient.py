@@ -29,12 +29,6 @@ def handle_args():
                       help="Address to which messages are sent [default=BROADCAST]", 
                       default=HMTLprotocol.BROADCAST)
 
-    # Test mode
-    parser.add_option("-t", "--testmode", dest="testmode", action="store_true",
-                      help="Run test mode", default=False)
-    parser.add_option("-r", "--rgbtest", dest="setrgb", action="store_true",
-                      help="Set RGB value", default=False)
-
     # Command types
     group = OptionGroup(parser, "Command Types")
     group.add_option("-V", "--value", action="store_const",
@@ -99,66 +93,63 @@ def main():
 
     client = HMTLClient(options)
 
-    if (options.testmode):
-        client.test()
-    else:
-        msg = None
-        expect_response = False
+    msg = None
+    expect_response = False
 
-        if (options.commandtype == "value"):
-            print("Sending value message.  Address=%d Output=%d Value=%d" %
-                  (options.hmtladdress, options.output, int(options.commandvalue)))
-            msg = HMTLprotocol.get_value_msg(options.hmtladdress,
-                                             options.output,
-                                             int(options.commandvalue))
-        elif (options.commandtype == "rgb"):
-            (r,g,b) = options.commandvalue.split(",")
-            print("Sending RGB message.  Address=%d Output=%d Value=%d,%d,%d" %
-                  (options.hmtladdress, options.output, int(r), int(g), int(b)))
-            msg = HMTLprotocol.get_rgb_msg(options.hmtladdress,
-                                           options.output,
-                                           int(r), int(g), int(b))
-        
-        elif (options.commandtype == "blink"):
-            (a,b,c,d, e,f,g,h) = options.commandvalue.split(",")
-            print("Sending BLINK message. Address=%d Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
-                                             int(e), [int(f),int(g),int(h)]))
-            msg = HMTLprotocol.get_program_blink_msg(options.hmtladdress,
-                                             options.output,
-                                             int(a), [int(b),int(c),int(d)],
-                                             int(e), [int(f),int(g),int(h)])
-        elif (options.commandtype == "timedchange"):
-            (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
-            print("Sending TIMED CHANGE message. Address=%d Output=%d change_period=%d start_value=%s stop_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
-                                                                                                              [int(e),int(f),int(g)]))
-            msg = HMTLprotocol.get_program_timed_change_msg(options.hmtladdress,
-                                            options.output,
-                                            int(a),
-                                            [int(b),int(c),int(d)],
-                                            [int(e),int(f),int(g)])
+    if (options.commandtype == "value"):
+        print("Sending value message.  Address=%d Output=%d Value=%d" %
+              (options.hmtladdress, options.output, int(options.commandvalue)))
+        msg = HMTLprotocol.get_value_msg(options.hmtladdress,
+                                         options.output,
+                                         int(options.commandvalue))
+    elif (options.commandtype == "rgb"):
+        (r,g,b) = options.commandvalue.split(",")
+        print("Sending RGB message.  Address=%d Output=%d Value=%d,%d,%d" %
+              (options.hmtladdress, options.output, int(r), int(g), int(b)))
+        msg = HMTLprotocol.get_rgb_msg(options.hmtladdress,
+                                       options.output,
+                                       int(r), int(g), int(b))
+
+    elif (options.commandtype == "blink"):
+        (a,b,c,d, e,f,g,h) = options.commandvalue.split(",")
+        print("Sending BLINK message. Address=%d Output=%d on_period=%d on_value=%s off_period=%d off_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
+                                         int(e), [int(f),int(g),int(h)]))
+        msg = HMTLprotocol.get_program_blink_msg(options.hmtladdress,
+                                         options.output,
+                                         int(a), [int(b),int(c),int(d)],
+                                         int(e), [int(f),int(g),int(h)])
+    elif (options.commandtype == "timedchange"):
+        (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
+        print("Sending TIMED CHANGE message. Address=%d Output=%d change_period=%d start_value=%s stop_values=%s" % (options.hmtladdress, options.output, int(a), [int(b),int(c),int(d)],
+                                                                                                          [int(e),int(f),int(g)]))
+        msg = HMTLprotocol.get_program_timed_change_msg(options.hmtladdress,
+                                        options.output,
+                                        int(a),
+                                        [int(b),int(c),int(d)],
+                                        [int(e),int(f),int(g)])
 
 
-        elif (options.commandtype == "none"):
-            print("Sending NONE message.  Output=%d" % (options.output))
-            msg = HMTLprotocol.get_program_none_msg(options.hmtladdress,
-                                                    options.output)
-        elif (options.commandtype == "poll"):
-            print("Sending poll message.  Address=%d" %
-                  (options.hmtladdress))
-            msg = HMTLprotocol.get_poll_msg(options.hmtladdress)
-            expect_response = True
-        elif (options.commandtype == "setaddr"):
-            (device_id, new_address) = options.commandvalue.split(",")
-            print("Sending set address message.  Address=%d Device=%d NewAddress=%d" %
-                  (options.hmtladdress, int(device_id), int(new_address)))
-            msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, 
-                                                int(device_id), int(new_address))
+    elif (options.commandtype == "none"):
+        print("Sending NONE message.  Output=%d" % (options.output))
+        msg = HMTLprotocol.get_program_none_msg(options.hmtladdress,
+                                                options.output)
+    elif (options.commandtype == "poll"):
+        print("Sending poll message.  Address=%d" %
+              (options.hmtladdress))
+        msg = HMTLprotocol.get_poll_msg(options.hmtladdress)
+        expect_response = True
+    elif (options.commandtype == "setaddr"):
+        (device_id, new_address) = options.commandvalue.split(",")
+        print("Sending set address message.  Address=%d Device=%d NewAddress=%d" %
+              (options.hmtladdress, int(device_id), int(new_address)))
+        msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, 
+                                            int(device_id), int(new_address))
 
-        if (msg != None):
-            starttime = time.time()
-            client.send_and_ack(msg, expect_response)
-            endtime = time.time()
-            print("Sent and acked in %.6fs" % (endtime - starttime))
+    if (msg != None):
+        starttime = time.time()
+        client.send_and_ack(msg, expect_response)
+        endtime = time.time()
+        print("Sent and acked in %.6fs" % (endtime - starttime))
 
     if (options.killserver):
         # Send an exit message to the server
