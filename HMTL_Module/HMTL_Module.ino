@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 7 // %META INCR
+#define HMTL_MODULE_BUILD 10 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -116,7 +116,7 @@ void loop() {
   boolean update = false;
 
   if ((now - last_msg_ms > 10000) &&
-      (now % 250 == 0)) {
+      (now % 1000 == 0)) {
     /*
      * If the module has never received a message (last_msg_ms == 0) or it has
      * been a long time since the last message, itermittently resend the 'ready'
@@ -153,7 +153,7 @@ void loop() {
       }
     }
 
-    if (process_msg(msg_hdr, NULL, forwarded)) {
+    if (process_msg(msg_hdr, false, forwarded)) {
       update = true;
     }
 

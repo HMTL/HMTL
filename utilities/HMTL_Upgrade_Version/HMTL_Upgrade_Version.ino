@@ -22,6 +22,7 @@
 #include "HMTLTypes.h"
 #include "SerialCLI.h"
 #include "MPR121.h"
+#include "Socket.h"
 #include "RS485Utils.h"
 #include "PixelUtil.h"
 

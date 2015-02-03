@@ -62,7 +62,7 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
   }
 
   if (hdr->protocol_version != HMTL_CONFIG_VERSION) {
-    DEBUG_ERR("hmtl_read_config: hdr has wrong protocol version");
+    DEBUG1_VALUELN("hmtl_read_config: hdr has wrong protocol version:", hdr->protocol_version);
     return -3;
   }
 
@@ -785,10 +785,12 @@ int32_t hmtl_setup(config_hdr_t *config,
       DEBUG1_VALUELN("Too many outputs:", config->num_outputs);
       DEBUG_ERR_STATE(13);
     }
-    if (readoutputs[i].hdr.type == HMTL_OUTPUT_NONE) {
-      outputs[i] = NULL;
-    } else {
-      outputs[i] = (output_hdr_t *)&readoutputs[i];
+    if (outputs != NULL) {
+      if (readoutputs[i].hdr.type == HMTL_OUTPUT_NONE) {
+        outputs[i] = NULL;
+      } else {
+        outputs[i] = (output_hdr_t *)&readoutputs[i];
+      }
     }
   }
 
@@ -797,8 +799,8 @@ int32_t hmtl_setup(config_hdr_t *config,
   /* Initialize the outputs */
   for (int i = 0; i < config->num_outputs; i++) {
     void *data = NULL;
-    byte type = ((output_hdr_t *)outputs[i])->type;
-    switch (type) {
+    output_hdr_t *out = (output_hdr_t *)&readoutputs[i];
+    switch (out->type) {
       case HMTL_OUTPUT_PIXELS: {
         if (pixels == NULL) continue;
         data = pixels;
@@ -811,12 +813,12 @@ int32_t hmtl_setup(config_hdr_t *config,
       }
       case HMTL_OUTPUT_RGB: {
         if (rgb_output == NULL) continue;
-        memcpy(rgb_output, outputs[i], sizeof (config_rgb_t));
+        memcpy(rgb_output, out, sizeof (config_rgb_t));
         break;
       }
       case HMTL_OUTPUT_VALUE: {
         if (value_output == NULL) continue;
-        memcpy(value_output, outputs[i], sizeof (config_value_t));
+        memcpy(value_output, out, sizeof (config_value_t));
         break;
       }
       case HMTL_OUTPUT_MPR121: {
@@ -828,8 +830,8 @@ int32_t hmtl_setup(config_hdr_t *config,
 
     if (objects) objects[i] = data;
 
-    hmtl_setup_output(config, (output_hdr_t *)outputs[i], data);
-    outputs_found |= (1 << type);
+    hmtl_setup_output(config, out, data);
+    outputs_found |= (1 << out->type);
   }
 
   return outputs_found;
