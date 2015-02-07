@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 10 // %META INCR
+#define HMTL_MODULE_BUILD 11 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 

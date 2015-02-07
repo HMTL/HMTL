@@ -10,9 +10,27 @@
 #include "GeneralUtils.h"
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"
+
+#ifdef USE_PIXELUTIL
 #include "PixelUtil.h"
-#include "MPR121.h"
+#warning USE_PIXELUTIL is enabled
+#else
+#warning USE_PIXELUTIL is disabled
+#endif
+
+#ifdef USE_RS485
 #include "RS485Utils.h"
+#warning USE_RS485 is enabled
+#else
+#warning USE_RS485 is disabled
+#endif
+
+#ifdef USE_MPR121
+#include "MPR121.h"
+#warning USE_MPR121 is enabled
+#else
+#warning USE_MPR121 is disabled
+#endif
 
 int hmtl_output_size(output_hdr_t *output) 
 {
@@ -154,12 +172,14 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
       {
         DEBUG4_PRINT(" pixels");
         if (data != NULL) {
+#ifdef USE_PIXELUTIL
           config_pixels_t *out = (config_pixels_t *)hdr;
           PixelUtil *pixels = (PixelUtil *)data;
           pixels->init(out->numPixels,
                        out->dataPin,
                        out->clockPin,
                        out->type);
+#endif
         } else {
           DEBUG_ERR("Expected PixelUtil data struct for pixel configs");
           return -1;
@@ -170,6 +190,7 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
       {
         DEBUG4_PRINTLN(" mpr121");
         if (data != NULL) {
+#ifdef USE_MPR121
           config_mpr121_t *out = (config_mpr121_t *)hdr;
           MPR121 *capSensor = (MPR121 *)data;
           capSensor->init(out->irqPin,
@@ -184,6 +205,7 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
               capSensor->setThreshold(i, touch, release);
             }
           }
+#endif
         } else {
           DEBUG_ERR("Expected MPR121 data struct for mpr121 configs");
           return -1;
@@ -194,11 +216,13 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
       {
         DEBUG4_PRINT(" rs485");
         if (data != NULL) {
+#ifdef USE_RS485
           config_rs485_t *out = (config_rs485_t *)hdr;
           RS485Socket *rs485 = (RS485Socket *)data;
           rs485->init(out->recvPin, out->xmitPin, out->enablePin,
                       config->address,
                       RS485_RECV_BUFFER, false); // Set to true to enable debugging
+#endif
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
@@ -247,8 +271,10 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
     case HMTL_OUTPUT_PIXELS:
       {
         if (data) {
+#ifdef USE_PIXELUTIL
           PixelUtil *pixels = (PixelUtil *)data;
           pixels->update();
+#endif
         }
         break;
       }
@@ -272,177 +298,6 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
   return 0;
 }
 
-/* Update the output with test data */
-#define TEST_MAX_VAL 128
-#define TEST_PWM_STEP  1
-int hmtl_test_output(output_hdr_t *hdr, void *data) 
-{
-  switch (hdr->type) {
-    case HMTL_OUTPUT_VALUE: 
-      {
-        config_value_t *out = (config_value_t *)hdr;
-        out->value = 255;
-        //out->value = (out->value + TEST_PWM_STEP) % TEST_MAX_VAL;
-        break;
-      }
-    case HMTL_OUTPUT_RGB:
-      {
-        config_rgb_t *out = (config_rgb_t *)hdr;
-        for (int j = 0; j < 3; j++) {
-          out->values[j] = (out->values[j] + TEST_PWM_STEP + j) % TEST_MAX_VAL;
-        }
-        break;
-      }
-    case HMTL_OUTPUT_PROGRAM:
-      {
-        //          config_program_t *out = (config_program_t *)hdr;
-        break;
-      }
-    case HMTL_OUTPUT_PIXELS:
-      {
-        //          config_pixels_t *out = (config_pixels_t *)hdr;
-        PixelUtil *pixels = (PixelUtil *)data;
-        static int currentPixel = 0;
-        pixels->setPixelRGB(currentPixel, 0, 0, 0);
-        currentPixel = (currentPixel + 1) % pixels->numPixels();
-        pixels->setPixelRGB(currentPixel, 255, 0, 0);
-        break;
-      }
-    case HMTL_OUTPUT_MPR121: break; // Nothing to do here
-    case HMTL_OUTPUT_RS485:  break; // Nothing to do here
-    default: 
-      {
-        DEBUG_ERR("hmtl_test_output: unknown type");
-        return -1;
-      }
-
-  }
-
-  return 0;
-}
-
-int hmtl_test_output_car(output_hdr_t *hdr, void *data) 
-{
-  switch (hdr->type) {
-    case HMTL_OUTPUT_VALUE: 
-      {
-        config_value_t *out = (config_value_t *)hdr;
-        out->value = (out->value + TEST_PWM_STEP) % TEST_MAX_VAL;
-        break;
-      }
-    case HMTL_OUTPUT_RGB:
-      {
-        config_rgb_t *out = (config_rgb_t *)hdr;
-        out->values[0] = TEST_MAX_VAL;
-        out->values[1] = 0;
-        out->values[2] = 0;
-        break;
-      }
-    case HMTL_OUTPUT_PROGRAM:
-      {
-        //          config_program_t *out = (config_program_t *)hdr;
-        break;
-      }
-    case HMTL_OUTPUT_PIXELS:
-      {
-        //          config_pixels_t *out = (config_pixels_t *)hdr;
-#if 0
-        PixelUtil *pixels = (PixelUtil *)data;
-        static int prevPixel = pixels->numPixels() - 1;
-        static int currPixel = 0;
-        static int nextPixel = 1;
-        pixels->setPixelRGB(prevPixel, 0, 0, 0);
-        pixels->setPixelRGB(currPixel, 128, 0, 0);
-        pixels->setPixelRGB(nextPixel, 0, 255, 0);
-
-        prevPixel = (prevPixel + 1) % pixels->numPixels();
-        currPixel = (currPixel + 1) % pixels->numPixels();
-        nextPixel = (nextPixel + 1) % pixels->numPixels();
-
-        pixels->setPixelRGB(nextPixel, 0, 0, 125);
-#endif
-
-#if 0
-#define TEST_MAX_RAINBOW 128
-        static int rainbow = 0;
-        for (byte i = 0; i < pixels->numPixels(); i++) {
-          pixels->setPixelRGB(i, 
-                              pixel_wheel(((i * 256 / pixels->numPixels()) + rainbow) % 256, TEST_MAX_RAINBOW) );
-        }
-        rainbow = (rainbow + 1) % (256 * 5);
-#endif
-
-#if 0
-#define TEST_PERIOD_MS    100
-
-	
-#define TEST_PATTERN_SIZE 9
-        static byte pattern[TEST_PATTERN_SIZE][3] = {
-          {64,  0,   128},
-          {128, 0,   64 },
-          {255, 0,   0  },
-          {128, 64,  0  },
-          {64,  128, 0  },
-          {0,   255, 0  },
-          {0,   128, 64 },
-          {0,   64,  128},
-          {0,   0,   255},
-        };
-	
-        /*
-          #define TEST_PATTERN_SIZE 5
-          static byte pattern[TEST_PATTERN_SIZE][3] = {
-          {64, 64, 64},
-          {128, 128, 128},
-          {256, 256, 256},
-          {128, 128, 128},
-          {64, 64, 64},
-          };
-        */
-        /*
-          #define TEST_PATTERN_SIZE 9
-          static byte pattern[TEST_PATTERN_SIZE][3] = {
-          {16, 00, 00},
-          {32, 00, 00},
-          {64, 00, 00},
-          {128, 00, 00},
-          {256, 00, 00},
-          {128, 00, 00},
-          {64, 00, 00},
-          {32, 00, 00},
-          {16, 00, 00},
-          };
-        */
-        static long next_time = millis() + TEST_PERIOD_MS;
-        static byte current = 0;
-
-        long now = millis();
-        if (now > next_time) {
-          pixels->setPixelRGB(current % pixels->numPixels(), 0, 0, 0);
-          current++;
-          next_time += TEST_PERIOD_MS;
-        }
-
-        for (byte i = 0; i <  TEST_PATTERN_SIZE; i++) {
-          pixels->setPixelRGB((current + i) % pixels->numPixels(),
-                              pattern[i][0], pattern[i][1], pattern[i][2]);
-        }
-#endif
-        break;
-      }
-    case HMTL_OUTPUT_MPR121: break; // Nothing to do here
-    case HMTL_OUTPUT_RS485:  break; // Nothing to do here
-    default: 
-      {
-        DEBUG_ERR("hmtl_test_output: unknown type");
-        return -1;
-      }
-
-  }
-
-  return 0;
-}
-
 /* Set the indicated output to a 3 byte value */
 void hmtl_set_output_rgb(output_hdr_t *output, void *object, uint8_t value[3]) {
   switch (output->type) {
@@ -459,8 +314,10 @@ void hmtl_set_output_rgb(output_hdr_t *output, void *object, uint8_t value[3]) {
       break;
     }
     case HMTL_OUTPUT_PIXELS: {
+#ifdef USE_PIXELUTIL
       PixelUtil *pixels = (PixelUtil *)object;
       pixels->setAllRGB(value[0], value[1], value[2]);
+#endif
       break;
     }
     default: {
@@ -523,7 +380,6 @@ boolean hmtl_validate_pixels(config_pixels_t *pixels) {
   if (pixels->clockPin > 13) return false;
   if (pixels->dataPin > 13) return false;
   if (pixels->clockPin == pixels->dataPin) return false;
-  if ((pixels->type != 0) && (pixels->type != RGB)) return false;
   return true;
 }
 
@@ -758,9 +614,9 @@ int32_t hmtl_setup(config_hdr_t *config,
                    void *objects[],
                    byte num_outputs,
 		   
-                   RS485Socket *rs485,
-                   PixelUtil *pixels,
-                   MPR121 *mpr121,
+                   void *rs485,
+                   void *pixels,
+                   void *mpr121,
                    config_rgb_t *rgb_output,
                    config_value_t *value_output,
 		   

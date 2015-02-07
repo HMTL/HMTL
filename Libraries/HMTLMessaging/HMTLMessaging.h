@@ -9,6 +9,7 @@
 #ifndef HMTLMESSAGING_H
 #define HMTLMESSAGING_H
 
+#include "RS485Utils.h"
 #include "HMTLTypes.h"
 
 // Uncomment this line to enable CRC checking of messages

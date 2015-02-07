@@ -4,9 +4,25 @@
 #ifndef HMTLTYPES_H
 #define HMTLTYPES_H
 
-#include "PixelUtil.h"
-#include "RS485Utils.h"
-#include "MPR121.h"
+/******************************************************************************
+ * Library options
+ */
+
+//#define DISABLE_PIXELUTIL
+#ifndef DISABLE_PIXELUTIL
+#define USE_PIXELUTIL
+#endif
+
+//#define DISABLE_RS485
+#ifndef DISABLE_RS485
+#define USE_RS485
+#endif
+
+//#define DISABLE_MPR121
+#ifndef DISABLE_MPR121
+#define USE_MPR121
+#endif
+
 
 /******************************************************************************
  * Module configuration
@@ -134,7 +150,7 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
 int32_t hmtl_setup(config_hdr_t *config, 
 		     config_max_t readoutputs[], output_hdr_t *outputs[], 
 		     void *objects[], byte num_outputs, 
-		     RS485Socket *rs485, PixelUtil *pixels, MPR121 *mpr121,
+		     void *rs485, void *pixels, void *mpr121,
 		     config_rgb_t *rgb_output, config_value_t *value_output,
 		     int *configOffset);
 
