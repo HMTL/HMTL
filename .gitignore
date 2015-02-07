@@ -4,3 +4,6 @@ cscope.*
 *.pyc
 *~
 \#*
+.pioenvs
+.sconsign*
+.idea
