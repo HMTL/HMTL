@@ -1,0 +1,33 @@
+{
+    "info": "2nd revision HMTL PCB, SoundBox with 5 LEDS (1-4 visible)",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 2,
+
+        "device_id": 8,
+	      "address": 8,
+        "baud": 57600,
+       
+	      "flags": 0
+    },
+    "outputs": [
+	      {
+	          "type": "rgb",
+	          "pins": [ 10, 11, 13 ],
+	          "values": [ 0, 0, 0 ]
+	      },
+	      {
+	          "type": "pixels",
+	          "clockpin": 8,
+	          "datapin": 12,
+	          "numpixels": 5,
+	          "rgbtype": 0
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 7,
+	          "enablepin": 5
+	      }
+    ]
+}
