@@ -119,7 +119,7 @@ hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
       goto ERROR_OUT;
     }
 
-    // XXX: Check the CRC!  Check the version!
+    // TODO: Check the CRC!  Check the version!
 
     return msg_hdr;
   }
@@ -194,13 +194,13 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
 
 /* Initialize the message header */
 void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length, 
-                  uint8_t type) {
+                  uint8_t type, uint8_t flags = 0) {
   msg_hdr->startcode = HMTL_MSG_START;
   msg_hdr->crc = 0;
   msg_hdr->version = HMTL_MSG_VERSION;
   msg_hdr->length = length;
   msg_hdr->type = type;
-  msg_hdr->flags = 0;
+  msg_hdr->flags = flags;
   msg_hdr->address = address;
 
 #ifdef HMTL_USE_CRC
@@ -284,10 +284,31 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   msg_poll->recv_buffer_size = recv_buffer_size;
   msg_poll->msg_version = HMTL_MSG_VERSION;
   
-  // TODO: Add outputs
+  // TODO: Add outputs XXX
 
   hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_POLL);
   msg_hdr->flags |= flags | MSG_FLAG_ACK;
+  return len;
+}
+
+/*
+ * Format a sensor response message.  The caller will fill in the actual sensor
+ * data after the header.
+ */
+uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                         uint8_t datalen, uint8_t **data_ptr) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_sensor_response_t *msg_sense = (msg_sensor_response_t *)(msg_hdr + 1);
+
+  uint16_t len = HMTL_MSG_SENSOR_MIN_LEN + datalen;
+
+  /* Format the message header */
+  hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_SENSOR);
+  msg_hdr->flags |= MSG_FLAG_ACK;
+
+  /* Set the data ptr to be returned */
+  *data_ptr = (uint8_t *)&msg_sense->data;
+
   return len;
 }
 
@@ -421,4 +442,29 @@ void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
                                                start_color,
                                                stop_color);
   rs485->sendMsgTo(address, buff, len);
+}
+
+/* Send a sensor data request to an address */
+void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
+                              uint16_t address) {
+  DEBUG5_VALUELN("hmtl_send_sensor_request: addr:", address);
+
+  uint16_t len = sizeof (msg_hdr_t);
+  msg_hdr_t *msg = (msg_hdr_t *)buff;
+  hmtl_msg_fmt(msg, address, len, MSG_TYPE_SENSOR, MSG_FLAG_RESPONSE);
+
+  rs485->sendMsgTo(address, buff, len);
+}
+
+/* Send a poll request */
+void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
+                            uint16_t address) {
+  DEBUG5_VALUELN("hmtl_poll_request: addr:", address);
+
+  uint16_t len = sizeof (msg_hdr_t);
+  msg_hdr_t *msg = (msg_hdr_t *)buff;
+  hmtl_msg_fmt(msg, address, len, MSG_TYPE_POLL, MSG_FLAG_RESPONSE);
+
+  rs485->sendMsgTo(address, buff, len);
+
 }

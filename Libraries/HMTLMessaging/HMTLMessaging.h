@@ -56,6 +56,7 @@ typedef struct {
 #define MSG_TYPE_OUTPUT   0x1
 #define MSG_TYPE_POLL     0x2
 #define MSG_TYPE_SET_ADDR 0x3
+#define MSG_TYPE_SENSOR   0x4
 
 /* Message flags */
 #define MSG_FLAG_ACK        0x1 // This message is an acknowledgement
@@ -107,7 +108,26 @@ typedef struct {
 } msg_set_addr_t;
 #define HMTL_MSG_SET_ADDR_LEN (sizeof (msg_hdr_t) + sizeof (msg_set_addr_t))
 
-// This should be the largest individual message object
+/*******************************************************************************
+ * Message format for MSG_TYPE_SENSOR
+ */
+typedef struct {
+  uint8_t data[];
+} msg_sensor_response_t;
+#define HMTL_MSG_SENSOR_MIN_LEN (sizeof (msg_hdr_t) + sizeof (msg_sensor_response_t))
+
+typedef struct {
+  uint8_t sensor_type;
+  uint8_t data_len;
+  uint8_t data[];
+} msg_sensor_data_t;
+
+// Sensor types
+#define HMTL_SENSOR_SOUND 0x1
+#define HMTL_SENSOR_LIGHT 0x2
+#define HMTL_SENSOR_POT   0x3
+
+/* This should be the largest individual message object ***********************/
 typedef msg_program_t msg_max_t;
 
 /*******************************************************************************
@@ -143,6 +163,8 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
                        uint16_t recv_buffer_size);
 uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
                            uint16_t device_id, uint16_t new_address);
+uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                         uint8_t datalen, uint8_t **data_ptr);
 
 /*******************************************************************************
  * HMTL Programs
@@ -195,5 +217,11 @@ void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
 			    uint32_t change_period,
 			    uint32_t start_color,
 			    uint32_t stop_color);
+
+void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
+                            uint16_t address);
+
+void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
+                              uint16_t address);
 
 #endif
