@@ -224,4 +224,9 @@ void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
 void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
                               uint16_t address);
 
+/*******************************************************************************
+ * Data processing helper functions
+ */
+msg_sensor_data_t* hmtl_next_sensor(msg_hdr_t *msg, msg_sensor_data_t *current);
+
 #endif

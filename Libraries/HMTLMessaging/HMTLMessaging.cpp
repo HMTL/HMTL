@@ -468,3 +468,27 @@ void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
   rs485->sendMsgTo(address, buff, len);
 
 }
+
+/*******************************************************************************
+ * Data processing helper functions
+ */
+
+/*
+ * Return the next sensor structure from a sensor message
+ */
+msg_sensor_data_t* hmtl_next_sensor(msg_hdr_t *msg, msg_sensor_data_t *current) {
+  byte* next = NULL;
+
+  if (current) {
+    next = (byte *)current + sizeof (msg_sensor_data_t) + current->data_len;
+    if (next >= (byte *)msg + msg->length) {
+      next = NULL;
+    }
+  } else {
+    if (msg->length >= sizeof (msg_hdr_t) + sizeof (msg_sensor_data_t)) {
+      next = (byte *)(msg + 1);
+    }
+  }
+
+  return (msg_sensor_data_t*)next;
+}
