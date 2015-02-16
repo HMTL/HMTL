@@ -490,5 +490,19 @@ msg_sensor_data_t* hmtl_next_sensor(msg_hdr_t *msg, msg_sensor_data_t *current) 
     }
   }
 
+  DEBUG1_COMMAND(
+    if (msg->type != MSG_TYPE_SENSOR) {
+      DEBUG1_VALUELN("Not a sensor msg:", msg->type);
+      next = NULL;
+    }
+
+    if (next) {
+      if (next + sizeof (msg_sensor_data_t) + ((msg_sensor_data_t*)next)->data_len > (byte *)msg + msg->length) {
+        DEBUG1_PRINTLN("Invalid sensor message");
+        next = NULL;
+      }
+    }
+                 );
+
   return (msg_sensor_data_t*)next;
 }
