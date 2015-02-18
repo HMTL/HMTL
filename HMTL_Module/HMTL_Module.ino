@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 12 // %META INCR
+#define HMTL_MODULE_BUILD 14 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -49,11 +49,16 @@ typedef struct {
   unsigned long change_time;
 } state_timed_change_t;
 
+typedef struct {
+  uint16_t value;
+} state_level_value_t;
+
 /* List of available programs */
 hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_NONE, NULL, NULL},
   { HMTL_PROGRAM_BLINK, program_blink, program_blink_init },
-  { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init }
+  { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init },
+  { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -76,7 +81,14 @@ PixelUtil pixels;
 byte databuffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 byte *send_buffer;
 
+/*
+ * Data from sensors, set to highest analog value
+ */
+uint16_t level_data = 1023;
+uint16_t light_data = 1023;
+
 void setup() {
+
   //  Serial.begin(115200);
   Serial.begin(57600);
 
@@ -101,22 +113,78 @@ void setup() {
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
+
+  //startup_commands();
 }
 
-int cycle = 0;
+/*******************************************************************************
+ * Execute any startup commands
+ */
+void startup_commands() {
+  // TODO: These should be stored in EEPROM
+
+  #define STARTUP_MSGS 4
+  msg_hdr_t *startupmsg[STARTUP_MSGS];
+
+  for (byte i = 0; i < STARTUP_MSGS; i++) {
+    byte length = sizeof (msg_hdr_t) + sizeof (msg_program_t);
+    startupmsg[i] = (msg_hdr_t *)malloc(length);
+
+    startupmsg[i]->version = HMTL_MSG_VERSION;
+    startupmsg[i]->type = MSG_TYPE_OUTPUT;
+    startupmsg[i]->flags = 0;
+    startupmsg[i]->address = 0; // XXX: This address?
+
+#if 1
+    msg_value_t *value = (msg_value_t *)(startupmsg[i] + 1);
+    value->hdr.type = HMTL_OUTPUT_VALUE;
+    value->hdr.output = i;
+    value->value = 128;
+#else
+    msg_program_t *program = (msg_program_t *)(startupmsg[i] + 1);
+    programs->hdr.type = HMTL_OUTPUT_PROGRAM;
+    programs->hdr.output = i;
+    programs->type = ;
+#endif
+  }
+
+  /* 
+   * Process the startup commands, forwarding them if they're broadcast or
+   * to some other address, and then apply them locally
+   */
+  for (byte i = 0; i < STARTUP_MSGS; i++) {
+    boolean forwarded = check_and_forward(startupmsg[i]);
+    process_msg(startupmsg[i], false, forwarded);
+  }
+
+  /* Free the startupup messages */
+  for (byte i = 0; i < STARTUP_MSGS; i++) {
+    free(startupmsg[i]);
+  }
+}
 
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
 byte offset = 0;
 
+#define READY_THRESHOLD 10000
+#define READY_RESEND_PERIOD 1000
 unsigned long last_msg_ms = 0;
+unsigned long last_ready_ms = 0;
 
+/*******************************************************************************
+ * The main event loop
+ *
+ * - Checks for and handles messages over all interfaces
+ * - Runs any enabled programs
+ * - Updates any outputs
+ */
 void loop() {
   unsigned long now = millis();
   boolean update = false;
 
-  if ((now - last_msg_ms > 10000) &&
-      (now % 1000 == 0)) {
+  if ((now - last_msg_ms > READY_THRESHOLD) && 
+      (now - last_ready_ms > READY_RESEND_PERIOD)) {
     /*
      * If the module has never received a message (last_msg_ms == 0) or it has
      * been a long time since the last message, itermittently resend the 'ready'
@@ -124,6 +192,7 @@ void loop() {
      * 'ready' to catch this one (such as Bluetooth).
      */
     Serial.println(F(HMTL_READY));
+    last_ready_ms = now;
   }
   
   /* Check for messages on the serial interface */
@@ -140,18 +209,8 @@ void loop() {
     DEBUG_PRINT_END();
     Serial.println(F(HMTL_ACK));
 
-    if ((msg_hdr->address != config.address) ||
-        (msg_hdr->address == RS485_ADDR_ANY)) {
-      /* Forward the message over the rs485 interface */
-      if (offset > SEND_BUFFER_SIZE) {
-        DEBUG_ERR("Message larger than send buffer");
-      } else {
-        DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
-        memcpy(send_buffer, msg, offset);
-        rs485.sendMsgTo(msg_hdr->address, send_buffer, offset);
-        forwarded = true;
-      }
-    }
+    /* Forward the message over RS485 if needed */
+    forwarded = check_and_forward(msg_hdr);
 
     if (process_msg(msg_hdr, false, forwarded)) {
       update = true;
@@ -202,7 +261,8 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
   if ((msg_hdr->address == config.address) ||
       (msg_hdr->address == RS485_ADDR_ANY)) {
 
-    if (msg_hdr->flags & MSG_FLAG_ACK) {
+    if ((msg_hdr->flags & MSG_FLAG_ACK) && 
+        (msg_hdr->address != RS485_ADDR_ANY)) {
       /* 
        * This is an ack message that is not for us, resend it over serial in
        * case that was the original source.
@@ -212,71 +272,89 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
       DEBUG4_PRINTLN("Forwarding ack to serial");
       Serial.write((byte *)msg_hdr, msg_hdr->length);
 
-      return false;
+      if (msg_hdr->type != MSG_TYPE_SENSOR) { // Sensor broadcasts are for everyone
+        return false;
+      }
     }
 
     switch (msg_hdr->type) {
 
-    case MSG_TYPE_OUTPUT: {
-      output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
-      if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-        // TODO: This program stuff should be moved into the framework
-        setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
-      } else {
-        hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
-      }
-
-      return true;
-    }
-
-    case MSG_TYPE_POLL: {
-      // TODO: This should be in framework as well
-      uint16_t source_address = 0;
-      uint16_t recv_buffer_size = 0;
-      if (from_rs485) {
-        // The response will be going over RS485, get the source address
-        source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
-        recv_buffer_size = rs485.recvLimit;
-      } else {
-        recv_buffer_size = MSG_MAX_SZ;
-      }
-
-      DEBUG3_VALUELN("Poll req src:", source_address);
-
-      // Format the poll response
-      uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
-                                   source_address,
-                                   msg_hdr->flags, TYPE_HMTL_MODULE,
-                                   &config, outputs, recv_buffer_size);
-
-      // Respond to the appropriate source
-      if (from_rs485) {
-        if (msg_hdr->address == RS485_ADDR_ANY) {
-          // If this was a broadcast address then do not respond immediately,
-          // delay for time based on our address.
-          int delayMs = config.address * 2;
-          DEBUG3_VALUELN("Delay resp: ", delayMs)
-          delay(delayMs);
+      case MSG_TYPE_OUTPUT: {
+        output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
+        if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
+          // TODO: This program stuff should be moved into the framework
+          setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
+        } else {
+          hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
         }
 
-        rs485.sendMsgTo(source_address, send_buffer, len);
-      } else {
-        Serial.write(send_buffer, len);
+        return true;
       }
 
-      break;
-    }
+      case MSG_TYPE_POLL: {
+        // TODO: This should be in framework as well
+        uint16_t source_address = 0;
+        uint16_t recv_buffer_size = 0;
+        if (from_rs485) {
+          // The response will be going over RS485, get the source address
+          source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
+          recv_buffer_size = rs485.recvLimit;
+        } else {
+          recv_buffer_size = MSG_MAX_SZ;
+        }
 
-    case MSG_TYPE_SET_ADDR: {
-      /* Handle an address change message */
-      msg_set_addr_t *set_addr = (msg_set_addr_t *)(msg_hdr + 1);
-      if ((set_addr->device_id == 0) ||
-          (set_addr->device_id == config.device_id)) {
-        config.address = set_addr->address;
-        rs485.sourceAddress = config.address;
-        DEBUG2_VALUELN("Address changed to ", config.address);
+        DEBUG3_VALUELN("Poll req src:", source_address);
+
+        // Format the poll response
+        uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
+                                     source_address,
+                                     msg_hdr->flags, TYPE_HMTL_MODULE,
+                                     &config, outputs, recv_buffer_size);
+
+        // Respond to the appropriate source
+        if (from_rs485) {
+          if (msg_hdr->address == RS485_ADDR_ANY) {
+            // If this was a broadcast address then do not respond immediately,
+            // delay for time based on our address.
+            int delayMs = config.address * 2;
+            DEBUG3_VALUELN("Delay resp: ", delayMs)
+              delay(delayMs);
+          }
+
+          rs485.sendMsgTo(source_address, send_buffer, len);
+        } else {
+          Serial.write(send_buffer, len);
+        }
+
+        break;
       }
-    }
+
+      case MSG_TYPE_SET_ADDR: {
+        /* Handle an address change message */
+        msg_set_addr_t *set_addr = (msg_set_addr_t *)(msg_hdr + 1);
+        if ((set_addr->device_id == 0) ||
+            (set_addr->device_id == config.device_id)) {
+          config.address = set_addr->address;
+          rs485.sourceAddress = config.address;
+          DEBUG2_VALUELN("Address changed to ", config.address);
+        }
+        break;
+      }
+
+      case MSG_TYPE_SENSOR: {
+        if (msg_hdr->flags & MSG_FLAG_ACK) {
+          /*
+           * This is a sensor response, record relevant values for usage
+           * elsewhere.
+           */
+          msg_sensor_data_t *sensor = NULL;
+          while (sensor = hmtl_next_sensor(msg_hdr, sensor)) {
+            process_sensor_data(sensor);
+          }
+          DEBUG_PRINT_END();
+        }
+        break;
+      }
     }
   }
 
@@ -285,12 +363,71 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
     if (msg_hdr->flags & MSG_FLAG_RESPONSE) {
       // The sender expects a response
     }
+    // TODO: Why is this section here?
   }
 
   return false;
 }
 
 /*
+ * Check if a message should be forwarded and transmit it over the
+ * rs485 socket if so.
+ */
+boolean check_and_forward(msg_hdr_t *msg_hdr) {
+  if ((msg_hdr->address != config.address) ||
+      (msg_hdr->address == RS485_ADDR_ANY)) {
+    /*
+     * Messages that are not to this module's address or are on the broadcast
+     * address should be forwarded.
+     */
+    
+    if (msg_hdr->length > SEND_BUFFER_SIZE) {
+      DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
+    } else {
+      DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
+      memcpy(send_buffer, msg_hdr, msg_hdr->length);
+      rs485.sendMsgTo(msg_hdr->address, send_buffer, msg_hdr->length);
+      return true;
+    }
+  }
+
+  // The message was not forwarded over RS485
+  return false;
+}
+
+/*
+ * Record relevant sensor data for programatic usage
+ */
+void process_sensor_data(msg_sensor_data_t *sensor) {
+  switch (sensor->sensor_type) {
+    case HMTL_SENSOR_SOUND: {
+      DEBUG4_COMMAND(
+        DEBUG4_PRINT(" SOUND:");
+        uint16_t *data = (uint16_t *)&sensor->data;
+        for (byte i = 0; i < sensor->data_len / sizeof (uint16_t); i++) {
+          DEBUG4_HEXVAL(" ", data[i]);
+        }
+                     );
+      break;
+    }
+    case HMTL_SENSOR_LIGHT: {
+      light_data = *(uint16_t *)&sensor->data;
+      DEBUG4_VALUE(" LIGHT:", light_data);
+      break;
+    }
+    case HMTL_SENSOR_POT: {
+      level_data = *(uint16_t *)&sensor->data;
+      DEBUG4_VALUE(" LEVEL:", level_data);
+      break;
+    }
+    default: {
+      DEBUG1_PRINT(" ERROR: UNKNOWN TYPE");
+      break;
+    }
+  }
+}
+
+/*******************************************************************************
  * Code for program execution
  */
 
@@ -388,7 +525,7 @@ boolean run_programs(output_hdr_t *outputs[],
   return updated;
 }
 
-/*
+/*******************************************************************************
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
@@ -407,15 +544,11 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
   return true;
 }
 
-boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tracker) {
+boolean program_blink(output_hdr_t *output, void *object, 
+                      program_tracker_t *tracker) {
   boolean changed = false;
   unsigned long now = millis();
   state_blink_t *state = (state_blink_t *)tracker->state;
-
-  DEBUG5_PRINT("Blink");
-  DEBUG5_VALUE(" now:", now);
-  DEBUG5_VALUE(" next:", state->next_change);
-  DEBUG5_VALUE(" on: ", state->on);
 
   if (now >= state->next_change) {
     if (state->on) {
@@ -432,6 +565,11 @@ boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tra
       state->next_change += state->msg.on_period;
     }
 
+    DEBUG4_PRINT("Blink");
+    DEBUG4_VALUE(" now:", now);
+    DEBUG4_VALUE(" next:", state->next_change);
+    DEBUG4_VALUE(" on: ", state->on);
+
     changed = true;
   }
 
@@ -440,8 +578,7 @@ boolean program_blink(output_hdr_t *output, void *object, program_tracker_t *tra
   return changed;
 }
 
-
-/*
+/*******************************************************************************
  * Program which sets a value and waits for a period setting another value
  */
 boolean program_timed_change_init(msg_program_t *msg,
@@ -485,4 +622,37 @@ boolean program_timed_change(output_hdr_t *output, void *object,
   }
 
   return changed;
+}
+
+/*******************************************************************************
+ * Program to set the value level based on the most recent sensor data
+ */
+
+boolean program_level_value_init(msg_program_t *msg, 
+                                 program_tracker_t *tracker) {
+  DEBUG3_PRINT("Initializing level value state");
+
+  state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t *));
+  state->value = 0;
+  
+  tracker->state = state;
+
+  return true;
+}
+
+boolean program_level_value(output_hdr_t *output, void *object, 
+                            program_tracker_t *tracker) {
+  state_level_value_t *state = (state_level_value_t *)tracker->state;
+  if (state->value != level_data) {
+    state->value = level_data;
+    uint8_t mapped = map(level_data, 0, 1023, 0, 255);
+    uint8_t values[3] = {mapped, mapped, mapped};
+    hmtl_set_output_rgb(output, object, values);
+
+    DEBUG3_VALUELN("Level value:", mapped);
+
+    return true;
+  }
+
+  return false;
 }

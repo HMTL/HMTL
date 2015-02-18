@@ -100,6 +100,9 @@ MSG_PROGRAM_BLINK_FMT = '<HBBBHBBB' + 'BB' # Msg + padding
 MSG_PROGRAM_TIMED_CHANGE_TYPE = 2
 MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
 
+MSG_PROGRAM_LEVEL_VALUE_TYPE = 3
+MSG_PROGRAM_LEVEL_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
+
 MODULE_TYPES = {
     1 : "HMTL_Module"
 }
@@ -258,6 +261,7 @@ def get_set_addr_msg(address, device_id, new_address):
 
     return hdr.pack() + sethdr.pack()
 
+
 def get_program_msg(address, output, program_type, program_data):
     if (len(program_data) != MSG_PROGRAM_VALUE_LEN):
         raise Exception("Program data must be %d bytes" % (MSG_PROGRAM_VALUE_LEN))
@@ -407,3 +411,53 @@ class SetAddress(Msg):
 
     def pack(self):
         return struct.pack(self.FORMAT, self.device_id, self.address)
+
+class OutputHdr(Msg):
+    FORMAT = OUTPUT_HDR_FMT
+    LENGTH = 2
+
+    def __init__(self, outputtype, output):
+        self.outputtype = outputtype
+        self.output = output
+
+    def __str__(self):
+        return ("  output_hdr_t:\n    type:%d\n    output:%d\n" %
+                (self.outputtype, self.output))
+
+    def pack(self):
+        return struct.pack(self.FORMAT, self.outputtype, self.output)
+
+class ProgramHdr(Msg):
+    FORMAT = "<B"
+    LENGTH = OutputHdr.LENGTH + 1 + 12
+
+    def __init__(self, program, output):
+        self.outputHdr = OutputHdr(CONFIG_TYPES["program"], output)
+        self.program = program
+
+    def __str__(self):
+        return str(self.outputHdr) + ("  msg_program_t:\n    type:%d\n" % 
+                                      (self.program))
+
+    def pack(self):
+        return self.outputHdr.pack() + struct.pack(self.FORMAT, self.program)
+
+    @classmethod
+    def from_data(cls, data, offset=0):
+        raise Exception("From data needs to be defined for ProgramHdr")
+
+class ProgramLevelValue(Msg):
+    FORMAT = "x"*12
+
+    def pack(self):
+        return struct.pack(self.FORMAT)
+
+
+def get_program_level_value_msg(address, output):
+    hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                 mtype = MSG_TYPE_OUTPUT,
+                 address = address)
+    programhdr = ProgramHdr(MSG_PROGRAM_LEVEL_VALUE_TYPE, output)
+    levelhdr = ProgramLevelValue()
+
+    return hdr.pack() + programhdr.pack() + levelhdr.pack()

@@ -43,6 +43,9 @@ def handle_args():
     group.add_option("-T", "--timedchange", action="store_const",
                       dest="commandtype", const="timedchange",
                       help="Send timed change program")
+    group.add_option("-L", "--levelvalue", action="store_const",
+                      dest="commandtype", const="levelvalue",
+                      help="Send timed change program")
     group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
                       help="Send program reset command")
@@ -127,7 +130,10 @@ def main():
                                         int(a),
                                         [int(b),int(c),int(d)],
                                         [int(e),int(f),int(g)])
-
+    elif (options.commandtype == "levelvalue"):
+        print("Sending LEVEL VALUE message. Address=%d Output=%d" % (options.hmtladdress, options.output))
+        msg = HMTLprotocol.get_program_level_value_msg(options.hmtladdress,
+                                                       options.output)
 
     elif (options.commandtype == "none"):
         print("Sending NONE message.  Output=%d" % (options.output))
