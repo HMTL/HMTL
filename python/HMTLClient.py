@@ -45,14 +45,19 @@ def handle_args():
                       help="Send timed change program")
     group.add_option("-L", "--levelvalue", action="store_const",
                       dest="commandtype", const="levelvalue",
-                      help="Send timed change program")
+                      help="Send program to set value to sensor level")
+    group.add_option("-S", "--soundvalue", action="store_const",
+                      dest="commandtype", const="soundvalue",
+                      help="Send program to set value to sound level")
+
     group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
                       help="Send program reset command")
+
     group.add_option("-P", "--poll", action="store_const",
                       dest="commandtype", const="poll",
                       help="Send module polling command")
-    group.add_option("-S", "--setaddr", action="store_const",
+    group.add_option("--setaddr", action="store_const",
                       dest="commandtype", const="setaddr",
                       help="Send address setting command")
     parser.add_option_group(group)
@@ -72,21 +77,14 @@ def handle_args():
     print("options:" + str(options) + " args:" + str(args))
 
     # Need some argument validation
-    if (options.commandtype == None):
-        pass
-    elif (options.commandtype == "poll"):
-        pass
-    elif (options.commandtype == "setaddr"):
-        pass
-    elif (options.commandtype == "none"):
-        pass
-    else:
-        if (options.output == None):
-            print("Must specify an outout number")
-            sys.exit(1)
-        if (options.commandvalue == None):
-            print("Must specify a command value")
-            sys.exit(1)
+    if ((options.output == None) and not (options.commandtype in [None, "poll", "setaddr", "none"])):
+        print("Must specify an outout number")
+        sys.exit(1)
+
+
+    if ((options.commandvalue == None) and not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue"])):
+        print("Must specify a command value")
+        sys.exit(1)
 
     return (options, args)
  
@@ -133,6 +131,10 @@ def main():
     elif (options.commandtype == "levelvalue"):
         print("Sending LEVEL VALUE message. Address=%d Output=%d" % (options.hmtladdress, options.output))
         msg = HMTLprotocol.get_program_level_value_msg(options.hmtladdress,
+                                                       options.output)
+    elif (options.commandtype == "soundvalue"):
+        print("Sending SOUND VALUE message. Address=%d Output=%d" % (options.hmtladdress, options.output))
+        msg = HMTLprotocol.get_program_sound_value_msg(options.hmtladdress,
                                                        options.output)
 
     elif (options.commandtype == "none"):

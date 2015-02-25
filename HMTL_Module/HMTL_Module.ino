@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 14 // %META INCR
+#define HMTL_MODULE_BUILD 16 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -53,12 +53,18 @@ typedef struct {
   uint16_t value;
 } state_level_value_t;
 
+typedef struct {
+  uint16_t value;
+  uint32_t max;
+} state_sound_value_t;
+
 /* List of available programs */
 hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_NONE, NULL, NULL},
   { HMTL_PROGRAM_BLINK, program_blink, program_blink_init },
   { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init },
-  { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init }
+  { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
+  { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -86,6 +92,10 @@ byte *send_buffer;
  */
 uint16_t level_data = 1023;
 uint16_t light_data = 1023;
+
+byte sound_channels = 0;
+#define SOUND_CHANNELS 8
+uint16_t sound_data[SOUND_CHANNELS] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 void setup() {
 
@@ -169,7 +179,7 @@ byte offset = 0;
 
 #define READY_THRESHOLD 10000
 #define READY_RESEND_PERIOD 1000
-unsigned long last_msg_ms = 0;
+unsigned long last_serial_ms = 0;
 unsigned long last_ready_ms = 0;
 
 /*******************************************************************************
@@ -183,10 +193,10 @@ void loop() {
   unsigned long now = millis();
   boolean update = false;
 
-  if ((now - last_msg_ms > READY_THRESHOLD) && 
+  if ((now - last_serial_ms > READY_THRESHOLD) && 
       (now - last_ready_ms > READY_RESEND_PERIOD)) {
     /*
-     * If the module has never received a message (last_msg_ms == 0) or it has
+     * If the module has never received a message (last_serial_ms == 0) or it has
      * been a long time since the last message, itermittently resend the 'ready'
      * message.  This allows for connection methods that may miss the first
      * 'ready' to catch this one (such as Bluetooth).
@@ -217,7 +227,7 @@ void loop() {
     }
 
     offset = 0;
-    last_msg_ms = now;
+    last_serial_ms = now;
   }
 
   /* Check for message over RS485 */
@@ -234,8 +244,6 @@ void loop() {
     if (process_msg(msg_hdr, true, false)) {
       update = true;
     }
-
-    last_msg_ms = now;
   }
 
   /* Execute any active programs */
@@ -348,7 +356,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
            * elsewhere.
            */
           msg_sensor_data_t *sensor = NULL;
-          while (sensor = hmtl_next_sensor(msg_hdr, sensor)) {
+          while ((sensor = hmtl_next_sensor(msg_hdr, sensor))) {
             process_sensor_data(sensor);
           }
           DEBUG_PRINT_END();
@@ -399,24 +407,34 @@ boolean check_and_forward(msg_hdr_t *msg_hdr) {
  * Record relevant sensor data for programatic usage
  */
 void process_sensor_data(msg_sensor_data_t *sensor) {
+  void *data = (void *)&sensor->data;
+
   switch (sensor->sensor_type) {
     case HMTL_SENSOR_SOUND: {
+      byte copy_len;
+      if (sizeof (uint16_t) * SOUND_CHANNELS < sensor->data_len) {
+        copy_len = sizeof (uint16_t) * SOUND_CHANNELS;
+      } else {
+        copy_len = sensor->data_len;
+      }
+
+      memcpy(sound_data, data, copy_len);
+      sound_channels = sensor->data_len / sizeof (uint16_t);
       DEBUG4_COMMAND(
-        DEBUG4_PRINT(" SOUND:");
-        uint16_t *data = (uint16_t *)&sensor->data;
-        for (byte i = 0; i < sensor->data_len / sizeof (uint16_t); i++) {
-          DEBUG4_HEXVAL(" ", data[i]);
-        }
+                     DEBUG4_VALUE(" SOUND:", sound_channels);
+                     for (byte i = 0; i < sound_channels; i++) {
+                       DEBUG4_HEXVAL(" ", sound_data[i]);
+                     }
                      );
       break;
     }
     case HMTL_SENSOR_LIGHT: {
-      light_data = *(uint16_t *)&sensor->data;
+      light_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LIGHT:", light_data);
       break;
     }
     case HMTL_SENSOR_POT: {
-      level_data = *(uint16_t *)&sensor->data;
+      level_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LEVEL:", level_data);
       break;
     }
@@ -628,11 +646,11 @@ boolean program_timed_change(output_hdr_t *output, void *object,
  * Program to set the value level based on the most recent sensor data
  */
 
-boolean program_level_value_init(msg_program_t *msg, 
+boolean program_level_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker) {
-  DEBUG3_PRINT("Initializing level value state");
+  DEBUG3_PRINTLN("Initializing level value state");
 
-  state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t *));
+  state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t));
   state->value = 0;
   
   tracker->state = state;
@@ -640,7 +658,7 @@ boolean program_level_value_init(msg_program_t *msg,
   return true;
 }
 
-boolean program_level_value(output_hdr_t *output, void *object, 
+boolean program_level_value(output_hdr_t *output, void *object,
                             program_tracker_t *tracker) {
   state_level_value_t *state = (state_level_value_t *)tracker->state;
   if (state->value != level_data) {
@@ -650,6 +668,53 @@ boolean program_level_value(output_hdr_t *output, void *object,
     hmtl_set_output_rgb(output, object, values);
 
     DEBUG3_VALUELN("Level value:", mapped);
+
+    return true;
+  }
+
+  return false;
+}
+
+/*******************************************************************************
+ * Program to set the value based on the most recent sound data
+ */
+
+boolean program_sound_value_init(msg_program_t *msg,
+                                 program_tracker_t *tracker) {
+  DEBUG3_PRINTLN("Initializing sound value state");
+
+  state_sound_value_t *state = (state_sound_value_t *)malloc(sizeof (state_sound_value_t));
+  state->value = 0;
+  state->max = 0;
+  
+  tracker->state = state;
+
+  return true;
+}
+
+boolean program_sound_value(output_hdr_t *output, void *object,
+                            program_tracker_t *tracker) {
+  state_sound_value_t *state = (state_sound_value_t *)tracker->state;
+
+  uint32_t total = 0;
+  for (int i = 0; i < sound_channels; i++) {
+    total += sound_data[i];
+  }
+  if (total > state->max) {
+    state->max = total;
+    DEBUG3_VALUELN("Sound max:", total);
+  }
+
+  DEBUG3_VALUE("Check out:", output->output);
+  DEBUG3_VALUELN(" value:", total);
+
+
+  uint8_t mapped = map(total, 0, state->max, 0, 255);
+  if (mapped != state->value) {
+    state->value = mapped;
+
+    uint8_t values[3] = {mapped, mapped, mapped};
+    hmtl_set_output_rgb(output, object, values);
 
     return true;
   }

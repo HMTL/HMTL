@@ -103,6 +103,9 @@ MSG_PROGRAM_TIMED_CHANGE_FMT = '<LBBBBBB' + 'BB' # Msg + padding
 MSG_PROGRAM_LEVEL_VALUE_TYPE = 3
 MSG_PROGRAM_LEVEL_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 
+MSG_PROGRAM_SOUND_VALUE_TYPE = 4
+MSG_PROGRAM_SOUND_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
+
 MODULE_TYPES = {
     1 : "HMTL_Module"
 }
@@ -453,6 +456,12 @@ class ProgramLevelValue(Msg):
         return struct.pack(self.FORMAT)
 
 
+class ProgramSoundValue(Msg):
+    FORMAT = "x"*12
+
+    def pack(self):
+        return struct.pack(self.FORMAT)
+
 def get_program_level_value_msg(address, output):
     hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
                  mtype = MSG_TYPE_OUTPUT,
@@ -461,3 +470,13 @@ def get_program_level_value_msg(address, output):
     levelhdr = ProgramLevelValue()
 
     return hdr.pack() + programhdr.pack() + levelhdr.pack()
+
+
+def get_program_sound_value_msg(address, output):
+    hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                 mtype = MSG_TYPE_OUTPUT,
+                 address = address)
+    programhdr = ProgramHdr(MSG_PROGRAM_SOUND_VALUE_TYPE, output)
+    soundhdr = ProgramSoundValue()
+
+    return hdr.pack() + programhdr.pack() + soundhdr.pack()
