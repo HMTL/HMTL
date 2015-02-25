@@ -88,15 +88,17 @@ class HMTLSerial():
         return retdata
 
     # Wait for data from device indicating its ready for commands
+    MAX_READY_WAIT = 10
     def wait_for_ready(self):
         """Wait for the Arduino to send its ready signal"""
         print("***** Waiting for ready from Arduino *****")
+        starttime = time.time()
         while True:
             data = self.get_line()
-            if (len(data) == 0):
-                raise Exception("Receive returned empty, timed out")
             if (data == HMTLprotocol.HMTL_CONFIG_READY):
                 return True
+            if ((time.time() - starttime) > 10):
+                raise Exception("Timed out waiting for ready signal")
 
     # Send terminated data and wait for (N)ACK
     def send_and_confirm(self, data, terminated):
