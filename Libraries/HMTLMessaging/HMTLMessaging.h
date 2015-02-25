@@ -146,7 +146,7 @@ boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 
 /* Receive a message over the rs485 interface */
 msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
-			     uint16_t address);
+                             uint16_t address = RS485_ADDR_INVALID);
 
 
 /*******************************************************************************
@@ -173,6 +173,8 @@ uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
 #define HMTL_PROGRAM_NONE         0x0
 #define HMTL_PROGRAM_BLINK        0x1
 #define HMTL_PROGRAM_TIMED_CHANGE 0x2
+#define HMTL_PROGRAM_LEVEL_VALUE  0x3
+#define HMTL_PROGRAM_SOUND_VALUE  0x4
 
 /* Program to blink between two colors */
 typedef struct {

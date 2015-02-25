@@ -96,7 +96,9 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 /* Check for HMTL formatted msg over the RS485 interface */
 msg_hdr_t *
 hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
-  const byte *data = rs485->getMsg(address, msglen);
+  const byte *data;
+  if (address == RS485_ADDR_INVALID) data = rs485->getMsg(msglen);
+  else data = rs485->getMsg(address, msglen);
   if (data != NULL) {
     msg_hdr_t *msg_hdr = (msg_hdr_t *)data;
       
