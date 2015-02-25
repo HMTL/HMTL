@@ -133,13 +133,12 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
   switch (msg->type) {
     case MSG_TYPE_SENSOR: {
       DEBUG1_PRINTLN(" * Sensor data:");
-      byte *curr_ptr = (uint8_t *)(msg + 1);
-      do {
-        msg_sensor_data_t *sense = (msg_sensor_data_t *)(curr_ptr);
+
+      msg_sensor_data_t *sense = NULL;
+      while (sense = hmtl_next_sensor(msg, sense)) {
         DEBUG1_VALUE(" ptr:", (int)sense);
         DEBUG1_VALUE(" type:", sense->sensor_type);
         DEBUG1_VALUE(" datalen:", sense->data_len);
-        curr_ptr += sizeof (msg_sensor_data_t) + sense->data_len;
 
         switch (sense->sensor_type) {
           case HMTL_SENSOR_SOUND: {
@@ -167,8 +166,7 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
         }
 
         DEBUG_PRINT_END();
-      } while (curr_ptr < (byte *)msg + msg->length);
-      
+      }
       break;
     }
     case MSG_TYPE_POLL: {
