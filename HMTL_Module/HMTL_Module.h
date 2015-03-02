@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Author: Adam Phelps
- * License: Create Commons Attribution-Non-Commercial
+ * License: MIT
  * Copyright: 2014
  *
  * Program tracking

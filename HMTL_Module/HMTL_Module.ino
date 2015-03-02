@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Author: Adam Phelps
- * License: Create Commons Attribution-Non-Commercial
+ * License: MIT
  * Copyright: 2014
  *
  * Code for a fully contained module which handles HMTL formatted messages
@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 16 // %META INCR
+#define HMTL_MODULE_BUILD 17 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -708,8 +708,11 @@ boolean program_sound_value(output_hdr_t *output, void *object,
   DEBUG3_VALUE("Check out:", output->output);
   DEBUG3_VALUELN(" value:", total);
 
-
-  uint8_t mapped = map(total, 0, state->max, 0, 255);
+  uint8_t mapped = 0;
+  if (total > 2) {
+    // To avoid noise while quiet set a minimumza
+    mapped = map(total, 0, state->max, 0, 255);
+  }
   if (mapped != state->value) {
     state->value = mapped;
 

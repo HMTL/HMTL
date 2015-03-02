@@ -2,7 +2,7 @@
  * Convert an older HMTL config to the current version
  *
  * Author: Adam Phelps
- * License: Creative Commons Attribution-Non-Commercial
+ * License: MIT
  * Copyright: 2014
  ******************************************************************************/
 
