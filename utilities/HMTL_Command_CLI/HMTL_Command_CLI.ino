@@ -51,7 +51,7 @@ SerialCLI serialcli(64, cliHandler);
 config_hdr_t config;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(57600);
   DEBUG2_PRINTLN("*** HMTL_Command_CLI starting ***");
 
   config_max_t readoutputs[HMTL_MAX_OUTPUTS];
@@ -60,6 +60,11 @@ void setup() {
                                      &rs485, NULL, NULL,
                                      &rgb_output, NULL,
                                      NULL);
+
+  if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
+    DEBUG_ERR("No RS485 config found");
+    DEBUG_ERR_STATE(1);
+  }
 
   /* Setup the RS485 connection */  
   rs485.setup();
@@ -131,13 +136,51 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
   DEBUG_PRINT_END();
 
   switch (msg->type) {
+
+    case MSG_TYPE_OUTPUT: {
+      DEBUG1_PRINT(" * OUTPUT");
+      break;
+    }
+
+    case MSG_TYPE_POLL: {
+      DEBUG1_PRINT(" * POLL:");
+      if (msg->flags & MSG_FLAG_ACK) {
+        if (msg->length < HMTL_MSG_POLL_MIN_LEN) {
+          DEBUG1_VALUE("Bad length: ", msg->length);
+          DEBUG1_VALUE(" < ", HMTL_MSG_POLL_MIN_LEN);
+          break;
+        }
+
+        msg_poll_response_t *poll = (msg_poll_response_t *)(msg + 1);
+        hmtl_print_header(&poll->config);
+        DEBUG1_VALUE(" type:", poll->object_type);
+        DEBUG1_VALUE(" rcvbuff:", poll->recv_buffer_size);
+        DEBUG1_VALUE(" msgver:", poll->msg_version);
+      }
+      break;
+    }
+
+    case MSG_TYPE_SET_ADDR: {
+      DEBUG1_PRINT(" * SET_ADDR:");
+
+      if (msg->length != HMTL_MSG_SET_ADDR_LEN) {
+        DEBUG1_VALUE("Wrong length: ", msg->length);
+        DEBUG1_VALUE(" not ", HMTL_MSG_SET_ADDR_LEN);
+        break;
+      }
+
+      msg_set_addr_t *set = (msg_set_addr_t *)(msg + 1);
+      DEBUG1_VALUE(" dev_id:", set->device_id);
+      DEBUG1_VALUE(" addr:", set->address);
+      break;
+    }
+
     case MSG_TYPE_SENSOR: {
-      DEBUG1_PRINTLN(" * Sensor data:");
+      DEBUG1_PRINTLN(" * SENSOR:");
 
       msg_sensor_data_t *sense = NULL;
-      while (sense = hmtl_next_sensor(msg, sense)) {
-        DEBUG1_VALUE(" ptr:", (int)sense);
-        DEBUG1_VALUE(" type:", sense->sensor_type);
+      while ((sense = hmtl_next_sensor(msg, sense))) {
+        DEBUG1_VALUE("   type:", sense->sensor_type);
         DEBUG1_VALUE(" datalen:", sense->data_len);
 
         switch (sense->sensor_type) {
@@ -169,10 +212,7 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
       }
       break;
     }
-    case MSG_TYPE_POLL: {
-      DEBUG1_PRINT("POLL");
-      break;
-    }
+
   }
 
   DEBUG_PRINT_END();
