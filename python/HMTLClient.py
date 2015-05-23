@@ -3,12 +3,11 @@
 # Launch a client/server HMTL command system
 
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 
 from optparse import OptionParser, OptionGroup
-from client import *
 
-import HMTLprotocol
+import hmtl.HMTLprotocol as HMTLprotocol
+from hmtl.client import HMTLClient
 
 def handle_args():
     global options

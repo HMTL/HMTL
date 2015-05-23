@@ -5,16 +5,13 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
-
 from wsgiref.simple_server import make_server
 from io import StringIO
 import re
 from optparse import OptionParser
 
-from client import *
-import HMTLprotocol
+from hmtl.client import *
+import hmtl.HMTLprotocol as HMTLprotocol
 
 bind_address=''
 bind_port=8000

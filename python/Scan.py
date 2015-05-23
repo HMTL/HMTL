@@ -2,12 +2,8 @@
 #
 # Scan for all network addresses
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
-
-import HMTLprotocol
-
-from client import *
+import hmtl.HMTLprotocol as HMTLprotocol
+from hmtl.client import HMTLClient
 
 from optparse import OptionParser, OptionGroup
 

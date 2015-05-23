@@ -15,8 +15,8 @@ from myo.lowlevel import pose_t, stream_emg
 from myo.six import print_
 import random
 
-from client import *
-import HMTLprotocol
+from hmtl.client import *
+import hmtl.HMTLprotocol as HMTLprotocol
 
 
 myo.init()

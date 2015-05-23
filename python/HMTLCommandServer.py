@@ -2,13 +2,9 @@
 #
 # Launch a HMTL command server
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
-
 from optparse import OptionParser
-from server import *
-from client import *
-import portscan
+from hmtl.server import *
+import hmtl.portscan as portscan
 
 def handle_args():
     global options
@@ -33,12 +29,8 @@ def handle_args():
     parser.add_option("-t", "--timeout", dest="timeout", type="int",
                       help="Timeout on serial", default=5)
 
-
-
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
-
-
 
     if ((options.device == None) and (not options.dryrun)):
         options.device = portscan.choose_port()

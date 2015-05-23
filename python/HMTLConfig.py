@@ -3,18 +3,14 @@
 # This reads a HMTL configuration in JSON format and sends it over the serial
 # connection to a HMTL module
 
-import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+import sys
 
 from optparse import OptionParser
-import serial
-from binascii import hexlify
-import time
 
-import portscan
-import HMTLprotocol
-import HMTLjson
-from HMTLSerial import *
+import hmtl.portscan as portscan
+import hmtl.HMTLprotocol as HMTLprotocol
+import hmtl.HMTLjson as HMTLjson
+from hmtl.HMTLSerial import *
 
 
 def handle_args():
@@ -41,17 +37,14 @@ def handle_args():
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
 
-
-
     (options, args) = parser.parse_args()
-    # print("options:" + str(options) + " args:" + str(args))
 
     # Required args
-    if ((options.filename == None) and
-        (options.printconfig == False) and
-        (options.address == None) and
-        (options.device_id == None) and
-        (options.baud == None)):
+    if ((options.filename is None) and
+        (options.printconfig is False) and
+        (options.address is None) and
+        (options.device_id is None) and
+        (options.baud is None)):
         parser.print_help()
         exit("Must specify mode")
 

@@ -7,3 +7,4 @@ cscope.*
 .pioenvs
 .sconsign*
 .idea
+buildall.out

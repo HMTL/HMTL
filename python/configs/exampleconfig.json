@@ -1,0 +1,42 @@
+{
+    "header": {
+      "protocol_version": 3,
+      "hardware_version": 5,
+      "address": 1,
+      "device_id": 1,
+      "baud": 57600,
+      "flags": 0
+    },
+    "outputs": [
+      {
+          "type": "value",
+          "pin": 3,
+          "value": 0
+      },
+      {
+          "type": "rgb",
+          "pins": [ 10, 11, 13 ],
+          "values": [ 0, 0, 0 ]
+      },
+      {
+          "type": "pixels",
+          "clockpin": 12,
+          "datapin": 8,
+          "numpixels": 50,
+          "rgbtype": 0
+      },
+      {
+          "type": "rs485",
+          "recvpin": 4,
+          "xmitpin": 7,
+          "enablepin": 5
+      },
+      {
+          "type": "mpr121",
+          "irqpin": 2,
+          "useinterrupt": 0,
+          "trigger": [ 15, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ],
+          "release": [ 12, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+      }
+    ]
+}

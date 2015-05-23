@@ -3,7 +3,6 @@
 import os
 import re
 import serial
-import fileinput
 from serial.tools import list_ports
 
 def serial_ports():

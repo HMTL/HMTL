@@ -1,10 +1,4 @@
-import sys
-sys.path.append("/Users/amp/Dropbox/Arduino/HMTL/HMTL_Modules/HMTLPython")
-
 from multiprocessing.connection import Listener
-import time
-from binascii import hexlify
-import serial
 import threading
 
 import HMTLprotocol
@@ -39,8 +33,6 @@ class HMTLServer():
     def get_connection(self):
         try:
             print("[%.3f] Waiting for connection" % (self.elapsed()))
-            # XXX - We need to perform some form of background flush of the
-            # XXX - serial connection?  May be behind lockups.
             self.listener = Listener(self.address, authkey='secret password')
             self.conn = self.listener.accept()
             print("[%.3f]  Connection accepted from %s" % 
@@ -135,7 +127,7 @@ class HMTLServer():
 
 
     # Read in all pending data on the serial device as a separate thread
-    # XXX: Without this it seems to crash my Mac as the arduino continues to
+    # XXX: Without this it seems to crash my Mac as the Arduino continues to
     # stream data
     def serial_flush_idle(self, delay, test):
         print("Flush delay set to %f" % (delay))
