@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
