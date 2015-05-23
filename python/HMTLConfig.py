@@ -153,6 +153,7 @@ def main():
     if (config_data != None):
         # Send the configuration
         send_configuration(config_data)
+
     else:
 
         # If not sending the entire configuration, first read the existing
@@ -174,8 +175,16 @@ def main():
         ser.send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
 
     if (options.writeconfig == True):
+        if (config_data):
+            if ((config_data["header"]["address"] == 0) or
+                (config_data["header"]["device_id"] == 0)):
+                print("Both device ID and address must be set before write")
+                sys.exit(1)
+
         # Write out the module's config to EEPROM
         ser.send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
+
+        print("Wrote config")
     else:
         print("Did not write config")
 
