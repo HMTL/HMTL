@@ -106,6 +106,9 @@ MSG_PROGRAM_LEVEL_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 MSG_PROGRAM_SOUND_VALUE_TYPE = 4
 MSG_PROGRAM_SOUND_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 
+MSG_PROGRAM_FADE_TYPE = 5
+MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'BBB' # Msg + padding
+
 MODULE_TYPES = {
     1 : "HMTL_Module"
 }
@@ -462,6 +465,28 @@ class ProgramSoundValue(Msg):
     def pack(self):
         return struct.pack(self.FORMAT)
 
+class ProgramFade(Msg):
+    FORMAT = MSG_PROGRAM_FADE_FMT
+
+    def __init__(self, change_period, start_values, stop_values, flags):
+        self.change_period = change_period
+        self.start_values = start_values
+        self.stop_values = stop_values
+        self.flags = flags
+
+    def pack(self):
+        return struct.pack(self.FORMAT, self.change_period,
+                           self.start_values[0], 
+                           self.start_values[1], 
+                           self.start_values[2],
+                           self.stop_values[0],
+                           self.stop_values[1],
+                           self.stop_values[2],
+                           self.flags,
+                           0, 0)
+
+    
+
 def get_program_level_value_msg(address, output):
     hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
                  mtype = MSG_TYPE_OUTPUT,
@@ -480,3 +505,13 @@ def get_program_sound_value_msg(address, output):
     soundhdr = ProgramSoundValue()
 
     return hdr.pack() + programhdr.pack() + soundhdr.pack()
+
+def get_program_fade_msg(address, output,
+                         change_period, start_values, stop_values):
+    hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                 mtype = MSG_TYPE_OUTPUT,
+                 address = address)
+    programhdr = ProgramHdr(MSG_PROGRAM_FADE_TYPE, output)
+    fadehdr = ProgramFace(change_period, start_values, stop_values, 0)
+
+    return hdr.pack() + programhdr.pack() + fadehdr.pack()

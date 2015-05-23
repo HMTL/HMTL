@@ -33,7 +33,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 17 // %META INCR
+#define HMTL_MODULE_BUILD 18 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -65,6 +65,7 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init },
   { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
+  { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -723,4 +724,60 @@ boolean program_sound_value(output_hdr_t *output, void *object,
   }
 
   return false;
+}
+
+/*******************************************************************************
+ * Program to fade between two values
+ */
+
+typedef struct {
+  hmtl_program_fade_t msg;
+  unsigned long start_time;
+} state_fade_t;
+
+boolean program_fade_init(msg_program_t *msg,
+                          program_tracker_t *tracker) {
+  DEBUG3_PRINT("Initializing fade program");
+
+  state_fade_t *state = (state_fade_t *)malloc(sizeof (state_fade_t));
+  memcpy(&state->msg, msg->values, sizeof (state->msg));
+
+  state->start_time = 0;
+
+  return true;
+}
+
+boolean program_fade(output_hdr_t *output, void *object, 
+                     program_tracker_t *tracker) {
+  boolean changed = false;
+  unsigned long now = millis();
+  state_fade_t *state = (state_fade_t *)tracker->state;
+
+  if (state->start_time == 0) {
+    // Set the initial color
+    hmtl_set_output_rgb(output, object, state->msg.start_value);
+    changed = true;
+  } else {
+    // Calculate the color at this time
+    CRGB start = CRGB(state->msg.start_value[0],
+                      state->msg.start_value[1],
+                      state->msg.start_value[2]);
+    CRGB stop = CRGB(state->msg.stop_value[0],
+                     state->msg.stop_value[1],
+                     state->msg.stop_value[2]);
+
+    // TODO: There is probably a more efficient way to do this
+    unsigned int elapsed = now - state->start_time;
+    if (elapsed >= state->msg.period) {
+      // Disable the program
+      tracker->done = true;
+      elapsed = state->msg.period;
+    }
+    fract8 fraction = map(elapsed, 0, 255, 0, state->msg.period);
+
+    CRGB current = blend(start, stop, fraction);
+    hmtl_set_output_rgb(output, object, current.raw);
+  }
+
+  return changed;
 }

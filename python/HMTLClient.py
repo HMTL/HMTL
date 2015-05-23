@@ -49,6 +49,9 @@ def handle_args():
     group.add_option("-S", "--soundvalue", action="store_const",
                       dest="commandtype", const="soundvalue",
                       help="Send program to set value to sound level")
+    group.add_option("-F", "--fade", action="store_const",
+                      dest="commandtype", const="fade",
+                      help="Send program to fade between two values")
 
     group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
@@ -152,6 +155,19 @@ def main():
               (options.hmtladdress, int(device_id), int(new_address)))
         msg = HMTLprotocol.get_set_addr_msg(options.hmtladdress, 
                                             int(device_id), int(new_address))
+    elif (options.commandtype == "fade"):
+        (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
+        print("Sending FADE message. Address=%d Output=%d fade_period=%d start_value=%s stop_values=%s" % 
+              (options.hmtladdress, options.output,
+               int(a), 
+               [int(b),int(c),int(d)],
+               [int(e),int(f),int(g)]))
+        msg = HMTLprotocol.get_program_fade_msg(options.hmtladdress,
+                                        options.output,
+                                        int(a),
+                                        [int(b),int(c),int(d)],
+                                        [int(e),int(f),int(g)])
+
 
     if (msg != None):
         starttime = time.time()

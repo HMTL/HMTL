@@ -101,7 +101,8 @@ typedef struct {
 typedef struct {
   output_hdr_t hdr;
   byte pin;
-  int value; // XXX - Make this byte?  PWM only goes to 2552
+  uint16_t value : 13;  // 13 bits provide values up to 8192
+  uint16_t flags :  3;
 } config_value_t;
 
 typedef struct {
