@@ -1,4 +1,11 @@
-
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2014
+#
+# Functions to scan all available ports and prompt user to choose one
+#
+################################################################################
 
 import os
 import re
@@ -30,6 +37,8 @@ def choose_port():
     print("Available ports:")
     for (i, port) in enumerate(ports):
         print("  %d. %s" % (i + 1, port))
+
+        # Attempt to guess which port might be an Arduino
         if ((re.search("(.*usbserial.*)", port) != None) or
             (re.search("(.*usbmodem.*)", port) != None)):
             default = i + 1

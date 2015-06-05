@@ -1,12 +1,16 @@
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2014
 #
-# Basic HMTL client
+# Basic HMTL module client library
 #
+################################################################################
 
 from __future__ import print_function
 #from __future__ import unicode_literals
 
 from multiprocessing.connection import Client
-import time
 import random
 from binascii import hexlify
 

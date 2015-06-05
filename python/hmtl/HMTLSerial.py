@@ -1,6 +1,11 @@
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2014
 #
 # Class for handling the serial communications with an HMTL device
 #
+################################################################################
 
 import serial
 import time
