@@ -22,11 +22,11 @@ def handle_args():
     parser.add_option("-d", "--device", dest="device",
                       help="Arduino USB device")
     parser.add_option("-a", "--address", dest="address", type="int",
-                      help="Set address");
+                      help="Set address")
     parser.add_option("-i", "--device_id", dest="device_id", type="int",
-                      help="Set device_id");
+                      help="Set device_id")
     parser.add_option("-b", "--baud", dest="baud", type="int",
-                      help="Set baud");
+                      help="Set baud")
 
     parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
                       help="Perform dryrun only", default=False)

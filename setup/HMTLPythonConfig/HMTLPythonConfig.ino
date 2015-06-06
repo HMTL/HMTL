@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Author: Adam Phelps
+ * License: MIT
+ * Copyright: 2014
+ *
+ * This sketch, when paired with HMTLConfig.py, is used to configure the EEPROM 
+ * configuration of an HMTL based device from data received over serial.
+ */
+
 #include <Arduino.h>
 
 #define DEBUG_LEVEL DEBUG_MID
@@ -11,6 +20,7 @@
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
+#include "XBee.h"
 #include "SPI.h"
 #include "FastLED.h"
 #include "EEPromUtils.h"
@@ -18,6 +28,7 @@
 #include "MPR121.h"
 #include "Socket.h"
 #include "RS485Utils.h"
+#include "XBeeSocket.h"
 #include "Wire.h"
 
 
@@ -131,6 +142,13 @@ boolean receive_command()
 #define STATE_ERROR -1
 int state = STATE_NEW;
 
+void add_output(void *config, uint16_t size) {
+  memcpy(&rawoutputs[config_outputs], config, size);
+  rawoutputs[config_outputs].hdr.output = config_outputs;
+  outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
+  config_outputs++;
+}
+
 /*
  * Process a complete command
  */
@@ -157,197 +175,203 @@ void handle_command(byte *cmd, byte len) {
     void *config_start = &cmd[CONFIG_START_SIZE];
     int config_length = len - CONFIG_START_SIZE;
     switch (type) {
-    case 0: {
-      DEBUG3_PRINTLN("Received configuration header");
-      if (config_length != sizeof (config_hdr_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message wrong len for header: ",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_hdr_t));
-        goto FAIL;
+      case 0: {
+        DEBUG3_PRINTLN("Received configuration header");
+        if (config_length != sizeof (config_hdr_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message wrong len for header: ",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_hdr_t));
+          goto FAIL;
+        }
+        config_hdr_t *hdr = (config_hdr_t *)config_start;
+        hmtl_print_header(hdr);
+
+        if (!hmtl_validate_header(hdr)) {
+          DEBUG_ERR("Recieved invalid hdr");
+          goto FAIL;
+        }
+
+        memcpy(&config_hdr, hdr, sizeof (config_hdr_t));
+
+        break;
       }
-      config_hdr_t *hdr = (config_hdr_t *)config_start;
-      hmtl_print_header(hdr);
+      case HMTL_OUTPUT_VALUE: {
+        DEBUG3_PRINTLN("Received value output");
+        if (config_length != sizeof (config_value_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for value:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_value_t));
+          goto FAIL;
+        }
+        config_value_t *val = (config_value_t *)config_start;
+        hmtl_print_output(&val->hdr);
 
-      if (!hmtl_validate_header(hdr)) {
-        DEBUG_ERR("Recieved invalid hdr");
-        goto FAIL;
+        if (!hmtl_validate_value(val)) {
+          DEBUG_ERR("Recieved invalid value output");
+          goto FAIL;
+        }
+
+        add_output(val, sizeof (config_value_t));
+        break;
       }
+      case HMTL_OUTPUT_RGB: {
+        DEBUG3_PRINTLN("Received RGB output");
+        if (config_length != sizeof (config_rgb_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for RGB:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_rgb_t));
+          goto FAIL;
+        }
+        config_rgb_t *rgb = (config_rgb_t *)config_start;
+        hmtl_print_output(&rgb->hdr);
 
-      memcpy(&config_hdr, hdr, sizeof (config_hdr_t));
+        if (!hmtl_validate_rgb(rgb)) {
+          DEBUG_ERR("Recieved invalid rgb output");
+          goto FAIL;
+        }
 
-      break;
-    }
-    case HMTL_OUTPUT_VALUE: {
-      DEBUG3_PRINTLN("Received value output");
-      if (config_length != sizeof (config_value_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for value:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_value_t));
-        goto FAIL;
+        add_output(rgb, sizeof (config_rgb_t));
+        break;
       }
-      config_value_t *val = (config_value_t *)config_start;
-      hmtl_print_output(&val->hdr);
+      case HMTL_OUTPUT_PIXELS: {
+        DEBUG3_PRINTLN("Received PIXELS output");
+        if (config_length != sizeof (config_pixels_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for PIXELS:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_pixels_t));
+          goto FAIL;
+        }
+        config_pixels_t *pixels = (config_pixels_t *)config_start;
+        hmtl_print_output(&pixels->hdr);
 
-      if (!hmtl_validate_value(val)) {
-        DEBUG_ERR("Recieved invalid value output");
-        goto FAIL;
+        if (!hmtl_validate_pixels(pixels)) {
+          DEBUG_ERR("Recieved invalid pixels output");
+          goto FAIL;
+        }
+
+        add_output(pixels, sizeof (config_pixels_t));
+        break;
       }
+      case HMTL_OUTPUT_MPR121: {
+        DEBUG3_PRINTLN("Received MPR121 output");
+        if (config_length != sizeof (config_mpr121_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for MPR121:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_mpr121_t));
+          goto FAIL;
+        }
+        config_mpr121_t *mpr121 = (config_mpr121_t *)config_start;
+        hmtl_print_output(&mpr121->hdr);
 
-      memcpy(&rawoutputs[config_outputs], val, sizeof (config_value_t));
-      rawoutputs[config_outputs].hdr.output = config_outputs;
-      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
-      config_outputs++;
-      break;
-    }
-    case HMTL_OUTPUT_RGB: {
-      DEBUG3_PRINTLN("Received RGB output");
-      if (config_length != sizeof (config_rgb_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for RGB:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_rgb_t));
-        goto FAIL;
+        if (!hmtl_validate_mpr121(mpr121)) {
+          DEBUG_ERR("Recieved invalid mpr121 output");
+          break;
+        }
+
+        add_output(mpr121, sizeof (config_mpr121_t));
+        break;
       }
-      config_rgb_t *rgb = (config_rgb_t *)config_start;
-      hmtl_print_output(&rgb->hdr);
+      case HMTL_OUTPUT_RS485: {
+        DEBUG3_PRINTLN("Received RS485 output");
+        if (config_length != sizeof (config_rs485_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for RS485:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_rs485_t));
+          goto FAIL;
+        }
+        config_rs485_t *rs485 = (config_rs485_t *)config_start;
+        hmtl_print_output(&rs485->hdr);
 
-      if (!hmtl_validate_rgb(rgb)) {
-        DEBUG_ERR("Recieved invalid rgb output");
-        goto FAIL;
-      }
+        if (!hmtl_validate_rs485(rs485)) {
+          DEBUG_ERR("Recieved invalid rs485 output");
+          goto FAIL;
+        }
 
-      memcpy(&rawoutputs[config_outputs], rgb, sizeof (config_rgb_t));
-      rawoutputs[config_outputs].hdr.output = config_outputs;
-      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
-      config_outputs++;
-      break;
-    }
-    case HMTL_OUTPUT_PIXELS: {
-      DEBUG3_PRINTLN("Received PIXELS output");
-      if (config_length != sizeof (config_pixels_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for PIXELS:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_pixels_t));
-        goto FAIL;
-      }
-      config_pixels_t *pixels = (config_pixels_t *)config_start;
-      hmtl_print_output(&pixels->hdr);
-
-      if (!hmtl_validate_pixels(pixels)) {
-        DEBUG_ERR("Recieved invalid pixels output");
-        goto FAIL;
-      }
-
-      memcpy(&rawoutputs[config_outputs], pixels, sizeof (config_pixels_t));
-      rawoutputs[config_outputs].hdr.output = config_outputs;
-      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
-      config_outputs++;
-      break;
-    }
-    case HMTL_OUTPUT_MPR121: {
-      DEBUG3_PRINTLN("Received MPR121 output");
-      if (config_length != sizeof (config_mpr121_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for MPR121:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_mpr121_t));
-        goto FAIL;
-      }
-      config_mpr121_t *mpr121 = (config_mpr121_t *)config_start;
-      hmtl_print_output(&mpr121->hdr);
-
-      if (!hmtl_validate_mpr121(mpr121)) {
-        DEBUG_ERR("Recieved invalid mpr121 output");
+        add_output(rs485, sizeof (config_rs485_t));
         break;
       }
 
-      memcpy(&rawoutputs[config_outputs], mpr121, sizeof (config_mpr121_t));
-      rawoutputs[config_outputs].hdr.output = config_outputs;
-      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
-      config_outputs++;
-      break;
-    }
-    case HMTL_OUTPUT_RS485: {
-      DEBUG3_PRINTLN("Received RS485 output");
-      if (config_length != sizeof (config_rs485_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for RS485:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof (config_rs485_t));
-        goto FAIL;
-      }
-      config_rs485_t *rs485 = (config_rs485_t *)config_start;
-      hmtl_print_output(&rs485->hdr);
+      case HMTL_OUTPUT_XBEE: {
+        DEBUG3_PRINTLN("Received XBEE output");
+        if (config_length != sizeof (config_xbee_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for XBEE:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof (config_xbee_t));
+          goto FAIL;
+        }
+        config_xbee_t *xbee = (config_xbee_t *)config_start;
+        hmtl_print_output(&xbee->hdr);
 
-      if (!hmtl_validate_rs485(rs485)) {
-        DEBUG_ERR("Recieved invalid rs485 output");
-        goto FAIL;
+        if (!hmtl_validate_xbee(xbee)) {
+          DEBUG_ERR("Recieved invalid xbee output");
+          goto FAIL;
+        }
+
+        add_output(xbee, sizeof (config_xbee_t));
+        break;
       }
 
-      memcpy(&rawoutputs[config_outputs], rs485, sizeof (config_rs485_t));
-      rawoutputs[config_outputs].hdr.output = config_outputs;
-      outputs[config_outputs] = (output_hdr_t *)&rawoutputs[config_outputs];
-      config_outputs++;
-      break;
-    }
+      case HMTL_COMMAND_ADDRESS: {
+        if (config_length != sizeof(uint16_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for address:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
+          goto FAIL;
+        }
+        uint16_t address = *(uint16_t *)config_start;
+        DEBUG3_VALUELN("Received address: ", address);
 
-    case HMTL_COMMAND_ADDRESS: {
-      if (config_length != sizeof(uint16_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for address:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
+        config_hdr.address = address;
+
+        break;
+      }
+
+      case HMTL_COMMAND_DEVICE_ID: {
+        if (config_length != sizeof(uint16_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for device_id:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
+          goto FAIL;
+        }
+        uint16_t device_id = *(uint16_t *)config_start;
+        DEBUG3_VALUELN("Received device_id: ", device_id);
+
+        config_hdr.device_id = device_id;
+
+        break;
+      }
+
+      case HMTL_COMMAND_BAUD: {
+        if (config_length != sizeof(uint8_t)) {
+          DEBUG_VALUE(DEBUG_ERROR,
+                      "Received config message with wrong len for baud:",
+                      config_length);
+          DEBUG1_VALUELN(" needed:", sizeof(uint8_t));
+          goto FAIL;
+        }
+        uint8_t baud = *(uint8_t *)config_start;
+        DEBUG3_VALUE("Received baud byte: ", baud);
+        DEBUG3_VALUELN(" baud: ", BYTE_TO_BAUD(baud));
+
+        config_hdr.baud = baud;
+
+        break;
+      }
+
+      default: {
+        DEBUG1_VALUELN("Received unknown configuration type:",
+                       type);
         goto FAIL;
       }
-      uint16_t address = *(uint16_t *)config_start;
-      DEBUG3_VALUELN("Received address: ", address);
-
-      config_hdr.address = address;
-
-      break;
-    }
-
-    case HMTL_COMMAND_DEVICE_ID: {
-      if (config_length != sizeof(uint16_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for device_id:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof(uint16_t));
-        goto FAIL;
-      }
-      uint16_t device_id = *(uint16_t *)config_start;
-      DEBUG3_VALUELN("Received device_id: ", device_id);
-
-      config_hdr.device_id = device_id;
-
-      break;
-    }
-
-    case HMTL_COMMAND_BAUD: {
-      if (config_length != sizeof(uint8_t)) {
-        DEBUG_VALUE(DEBUG_ERROR,
-                    "Received config message with wrong len for baud:",
-                    config_length);
-        DEBUG1_VALUELN(" needed:", sizeof(uint8_t));
-        goto FAIL;
-      }
-      uint8_t baud = *(uint8_t *)config_start;
-      DEBUG3_VALUE("Received baud byte: ", baud);
-      DEBUG3_VALUELN(" baud: ", BYTE_TO_BAUD(baud));
-
-      config_hdr.baud = baud;
-
-      break;
-    }
-
-    default: {
-      DEBUG1_VALUELN("Received unknown configuration type:",
-                    type);
-      goto FAIL;
-    }
     }
   } else {
     /* Treat this as a plain text command */

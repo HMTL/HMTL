@@ -59,6 +59,9 @@ def validate_output(output):
         if (not check_required(output, "recvpin")): return False
         if (not check_required(output, "xmitpin")): return False
         if (not check_required(output, "enablepin")): return False
+    elif (output["type"] == "xbee"):
+        if (not check_required(output, "recvpin")): return False
+        if (not check_required(output, "xmitpin")): return False
     elif (output["type"] == "mpr121"):
         if (not check_required(output, "irqpin")): return False
         if (not check_required(output, "useinterrupt")): return False

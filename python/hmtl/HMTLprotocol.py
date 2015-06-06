@@ -37,6 +37,7 @@ CONFIG_TYPES = {
     "pixels"  : 0x4,
     "mpr121"  : 0x5,
     "rs485"   : 0x6,
+    "xbee"    : 0x7,
     
     # The following values are for special commands
     "address"   : 0xE0,
@@ -54,6 +55,8 @@ OUTPUT_RGB_FMT   = '<BBBBBB'
 OUTPUT_PIXELS_FMT = '<BBHB'
 OUTPUT_MPR121_FMT = '<BB' + 'B'*12
 OUTPUT_RS485_FMT = '<BBB'
+OUTPUT_XBEE_FMT = '<BB'
+
 
 UPDATE_ADDRESS_FMT = '<H'
 UPDATE_DEVICE_ID_FMT = '<H'
@@ -180,6 +183,11 @@ def get_output_struct(output):
                                     output['recvpin'],
                                     output['xmitpin'],
                                     output['enablepin'])
+    elif (type == "xbee"):
+        packed_output = struct.pack(OUTPUT_XBEE_FMT,
+                                    output['recvpin'],
+                                    output['xmitpin'])
+
     elif (type == "mpr121"):
         args = [OUTPUT_MPR121_FMT, output["irqpin"],
                 output["useinterrupt"]] + [x for x in output["threshold"]]

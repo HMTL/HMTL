@@ -35,8 +35,8 @@ def handle_args():
         options.device = portscan.choose_port()
 
     if (options.device == None):
-	    parser.print_help()
-            exit("Must specify device");
+        parser.print_help()
+        exit("Must specify device");
 
     return (options, args)
 
