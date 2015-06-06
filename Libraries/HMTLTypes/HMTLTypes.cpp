@@ -32,6 +32,13 @@
 #warning USE_MPR121 is disabled
 #endif
 
+#ifdef USE_XBEE
+#include "XBeeSocket.h"
+#warning USE_XBEE is enabled
+#else
+#warning USE_XBEE is disabled
+#endif
+
 int hmtl_output_size(output_hdr_t *output) 
 {
   switch (output->type) {
@@ -41,12 +48,22 @@ int hmtl_output_size(output_hdr_t *output)
     return sizeof (config_rgb_t);
     case HMTL_OUTPUT_PROGRAM:
     return sizeof (config_program_t);
+#ifdef USE_PIXELUTIL
     case HMTL_OUTPUT_PIXELS:
     return sizeof (config_pixels_t);
+#endif
+#ifdef USE_MPR121
     case HMTL_OUTPUT_MPR121:
     return sizeof (config_mpr121_t);
+#endif
+#ifdef USE_RS485
     case HMTL_OUTPUT_RS485:
     return sizeof (config_rs485_t);
+#endif
+#ifdef USE_XBEE
+    case HMTL_OUTPUT_XBEE:
+    return sizeof (config_xbee_t);
+#endif
     default:
     DEBUG_ERR("hmtl_output_size: bad output type");
     return -1;    
@@ -168,29 +185,29 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
         DEBUG4_PRINT(" program");
         break;
       }
+#ifdef USE_PIXELUTIL
     case HMTL_OUTPUT_PIXELS:
       {
         DEBUG4_PRINT(" pixels");
         if (data != NULL) {
-#ifdef USE_PIXELUTIL
           config_pixels_t *out = (config_pixels_t *)hdr;
           PixelUtil *pixels = (PixelUtil *)data;
           pixels->init(out->numPixels,
                        out->dataPin,
                        out->clockPin,
                        out->type);
-#endif
         } else {
           DEBUG_ERR("Expected PixelUtil data struct for pixel configs");
           return -1;
         }
         break;
       }
+#endif
+#ifdef USE_MPR121
     case HMTL_OUTPUT_MPR121:
       {
         DEBUG4_PRINTLN(" mpr121");
         if (data != NULL) {
-#ifdef USE_MPR121
           config_mpr121_t *out = (config_mpr121_t *)hdr;
           MPR121 *capSensor = (MPR121 *)data;
           capSensor->init(out->irqPin,
@@ -205,30 +222,47 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
               capSensor->setThreshold(i, touch, release);
             }
           }
-#endif
         } else {
           DEBUG_ERR("Expected MPR121 data struct for mpr121 configs");
           return -1;
         }
         break;
       }
+#endif
+#ifdef USE_RS485
     case HMTL_OUTPUT_RS485:
       {
         DEBUG4_PRINT(" rs485");
         if (data != NULL) {
-#ifdef USE_RS485
           config_rs485_t *out = (config_rs485_t *)hdr;
           RS485Socket *rs485 = (RS485Socket *)data;
           rs485->init(out->recvPin, out->xmitPin, out->enablePin,
                       config->address,
                       RS485_RECV_BUFFER, false); // Set to true to enable debugging
-#endif
         } else {
           DEBUG_ERR("Expected RS485Socket data struct for RS485 configs");
           return -1;
         }
         break;
       }
+#endif
+#ifdef USE_XBEE
+    case HMTL_OUTPUT_XBEE:
+      {
+        DEBUG4_PRINT(" xbee");
+        if (data != NULL) {
+          config_xbee_t *out = (config_xbee_t *)hdr;
+          XBeeSocket *xbs = (XBeeSocket *)data;
+          XBee *xbee = new XBee(); // TODO: Should this be allocated by the top level sketch?
+          xbs->init(xbee,
+                    config->address);
+        } else {
+          DEBUG_ERR("Expected XBeeSocket data struct for Xbee configs");
+          return -1;
+        }
+        break;
+      }
+#endif
     default:
       {
         DEBUG1_VALUELN("Invalid type", hdr->type);
@@ -270,22 +304,33 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
       }
     case HMTL_OUTPUT_PIXELS:
       {
-        if (data) {
 #ifdef USE_PIXELUTIL
+        if (data) {
           PixelUtil *pixels = (PixelUtil *)data;
           pixels->update();
-#endif
         }
+#endif
         break;
       }
     case HMTL_OUTPUT_MPR121:
       {
+#ifdef USE_MPR121
         // XXX - Should this be reading the inputs?
+#endif
         break;
       }
     case HMTL_OUTPUT_RS485:
       {
+#ifdef USE_RS485
         // XXX - Should this be checking for data?
+#endif
+        break;
+      }
+    case HMTL_OUTPUT_XBEE:
+      {
+#ifdef USE_XBEE
+        // XXX - Should this be checking for data?
+#endif
         break;
       }
     default: 
@@ -398,6 +443,12 @@ boolean hmtl_validate_rs485(config_rs485_t *rs485) {
   return true;
 }
 
+boolean hmtl_validate_xbee(config_xbee_t *xbee) {
+  if (xbee->recvPin > 13) return false;
+  if (xbee->xmitPin > 13) return false;
+  return true;
+}
+
 boolean hmtl_validate_config(config_hdr_t *hdr, output_hdr_t *outputs[],
                              int num_outputs) {
   uint32_t pinmap = 0;
@@ -466,6 +517,19 @@ boolean hmtl_validate_config(config_hdr_t *hdr, output_hdr_t *outputs[],
         pinmap |= pinbit;
         break;
       }
+      case HMTL_OUTPUT_XBEE: {
+        config_xbee_t *out2 = (config_xbee_t *)out;
+        if (!hmtl_validate_xbee(out2)) goto VALIDATE_ERROR;
+        pinbit = (1 << out2->recvPin);
+        if (pinmap & pinbit) goto PIN_ERROR;
+        pinmap |= pinbit;
+
+        pinbit = (1 << out2->xmitPin);
+        if (pinmap & pinbit) goto PIN_ERROR;
+        pinmap |= pinbit;
+        break;
+      }
+
       default: {
         DEBUG_ERR("Invalid output type");
         return false;
@@ -571,6 +635,14 @@ void hmtl_print_output(output_hdr_t *out) {
         DEBUG_PRINT_END();
         break;
       }
+    case HMTL_OUTPUT_XBEE
+      {
+        config_xbee_t *out2 = (config_xbee_t *)out;
+        DEBUG3_VALUE("xbee recv=", out2->recvPin);
+        DEBUG3_VALUE(" xmit=", out2->xmitPin);
+        DEBUG_PRINT_END();
+        break;
+      }
     default:
       {
         DEBUG3_PRINTLN("Unknown type");
@@ -603,7 +675,6 @@ void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 }
 
 
-
 /*
  * Read in the EEProm config and initialize ouputs
  */
@@ -615,6 +686,7 @@ int32_t hmtl_setup(config_hdr_t *config,
                    byte num_outputs,
 		   
                    void *rs485,
+                   void *xbee,
                    void *pixels,
                    void *mpr121,
                    config_rgb_t *rgb_output,
@@ -657,16 +729,27 @@ int32_t hmtl_setup(config_hdr_t *config,
     void *data = NULL;
     output_hdr_t *out = (output_hdr_t *)&readoutputs[i];
     switch (out->type) {
+#ifdef USE_PIXELUTIL
       case HMTL_OUTPUT_PIXELS: {
         if (pixels == NULL) continue;
         data = pixels;
         break;
       }
+#endif
+#ifdef USE_RS485
       case HMTL_OUTPUT_RS485: {
         if (rs485 == NULL) continue;
         data = rs485;
         break;
       }
+#endif
+#ifdef USE_XBEE
+      case HMTL_OUTPUT_XBEE: {
+        if (xbee == NULL) continue;
+        data = xbee;
+        break;
+      }
+#endif
       case HMTL_OUTPUT_RGB: {
         if (rgb_output == NULL) continue;
         memcpy(rgb_output, out, sizeof (config_rgb_t));
@@ -677,11 +760,13 @@ int32_t hmtl_setup(config_hdr_t *config,
         memcpy(value_output, out, sizeof (config_value_t));
         break;
       }
+#ifdef USE_MPR121
       case HMTL_OUTPUT_MPR121: {
         if (mpr121 == NULL) continue;
         data = mpr121;
         break;
       }
+#endif
     }
 
     if (objects) objects[i] = data;

@@ -23,6 +23,10 @@
 #define USE_MPR121
 #endif
 
+//#define DISABLE_XBEE
+#ifndef DISABLE_XBEE
+#define USE_XBEE
+#endif
 
 /******************************************************************************
  * Module configuration
@@ -89,6 +93,7 @@ typedef struct {
 #define HMTL_OUTPUT_PIXELS  0x4
 #define HMTL_OUTPUT_MPR121  0x5
 #define HMTL_OUTPUT_RS485   0x6
+#define HMTL_OUTPUT_XBEE    0x7
 
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
@@ -140,8 +145,14 @@ typedef struct {
   byte recvPin;
   byte xmitPin;
   byte enablePin;
-  //  byte bufferSize; // TODO - Need to handle this
+  //  byte bufferSize; // TODO: Need to handle this
 } config_rs485_t;
+
+typedef struct {
+  output_hdr_t hdr;
+  byte recvPin; // TODO: Use for SoftwareSerial connection
+  byte xmitPin;
+} config_xbee_t;
 
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
@@ -149,11 +160,11 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 
 int32_t hmtl_setup(config_hdr_t *config, 
-		     config_max_t readoutputs[], output_hdr_t *outputs[], 
-		     void *objects[], byte num_outputs, 
-		     void *rs485, void *pixels, void *mpr121,
-		     config_rgb_t *rgb_output, config_value_t *value_output,
-		     int *configOffset);
+                   config_max_t readoutputs[], output_hdr_t *outputs[], 
+                   void *objects[], byte num_outputs, 
+                   void *rs485, void *xbee, void *pixels, void *mpr121,
+                   config_rgb_t *rgb_output, config_value_t *value_output,
+                   int *configOffset);
 
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
 void hmtl_default_config(config_hdr_t *hdr);
@@ -173,8 +184,9 @@ boolean hmtl_validate_rgb(config_rgb_t *rgb);
 boolean hmtl_validate_pixels(config_pixels_t *pixels);
 boolean hmtl_validate_mpr121(config_mpr121_t *mpr121);
 boolean hmtl_validate_rs485(config_rs485_t *rs485);
+boolean hmtl_validate_xbee(config_xbee_t *xbee);
 boolean hmtl_validate_config(config_hdr_t *config_hdr, output_hdr_t *outputs[],
-			     int num_outputs);
+                             int num_outputs);
 
 /* Debug printing of configuration */
 void hmtl_print_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
