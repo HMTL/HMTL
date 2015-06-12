@@ -139,15 +139,22 @@ class HMTLServer():
                     # delay period
                     break
 
-                self.serial_cv.acquire()
-                #            line = self.ser.get_line()
-                readdata = self.ser.recv_flush()
-                self.serial_cv.release()
-                if (readdata):
-                    print("[%.3f] received while idle: %s" % 
-                          (self.elapsed(), hexlify(readdata)))
-                else:
-                    break
+                # Read a limited number of messages
+                data = []
+                count = 0
+                while count < 20:
+                    self.serial_cv.acquire()
+                    readdata = self.ser.recv_flush()
+                    self.serial_cv.release()
+                    if (readdata):
+                        count += 1
+                        data.append(readdata)
+                    else:
+                        break
+
+                if len(data) > 0:
+                    print("[%.3f] received %d msgs while idle" %
+                        (self.elapsed(), len(data)))
 
             # Delay before next check
             time.sleep(delay)
