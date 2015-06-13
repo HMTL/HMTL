@@ -4,7 +4,9 @@
  * Copyright: 2014
  *
  * Code for a fully contained module which handles HMTL formatted messages
- * from a serial or RS485 connection.
+ * from a serial, RS485, or XBee connection.   It also functions as a bridge
+ * router, retransmitting messages from one connections over any others that
+ * are present.
  ******************************************************************************/
 
 #include "EEPROM.h"
@@ -13,8 +15,13 @@
 #include "SPI.h"
 #include "FastLED.h"
 #include "Wire.h"
+#include "XBee.h"
 
-#define DEBUG_LEVEL DEBUG_HIGH
+
+
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_HIGH
+#endif
 #include "Debug.h"
 
 #include "GeneralUtils.h"
@@ -28,12 +35,13 @@
 
 #include "Socket.h"
 #include "RS485Utils.h"
+#include "XBeeSocket.h"
 #include "MPR121.h"
 
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 18 // %META INCR
+#define HMTL_MODULE_BUILD 22 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -73,9 +81,17 @@ hmtl_program_t program_functions[] = {
 program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
 
 
+#define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
+
+boolean has_rs485;
 RS485Socket rs485;
-config_rgb_t rgb_output;
-config_value_t value_output;
+byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+byte *rs485_send_buffer;
+
+boolean has_xbee;
+XBeeSocket xbee;
+byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+byte *xbee_send_buffer;
 
 config_hdr_t config;
 output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
@@ -84,9 +100,7 @@ void *objects[HMTL_MAX_OUTPUTS];
 
 PixelUtil pixels;
 
-#define SEND_BUFFER_SIZE 64
-byte databuffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
-byte *send_buffer;
+
 
 /*
  * Data from sensors, set to highest analog value
@@ -108,19 +122,38 @@ void setup() {
   }
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
-				     outputs, objects, HMTL_MAX_OUTPUTS,
-				     &rs485, &pixels, NULL,
-				     &rgb_output, &value_output,
-				     NULL);
+                                     outputs, objects, HMTL_MAX_OUTPUTS,
+                                     &rs485, 
+                                     &xbee,
+                                     &pixels, 
+                                     NULL, // MPR121
+                                     NULL, // RGB
+                                     NULL, // Value
+                                     NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
     DEBUG_ERR("No RS485 config found");
     DEBUG_ERR_STATE(1);
   }
 
-  /* Setup the RS485 connection */  
-  rs485.setup();
-  send_buffer = rs485.initBuffer(databuffer);
+  if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
+    /* Setup the RS485 connection */  
+    rs485.setup();
+    rs485_send_buffer = rs485.initBuffer(rs485_data_buffer);
+    has_rs485 = true;
+  } else {
+    has_rs485 = false;
+  }
+
+  if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
+    /* Setup the RS485 connection */  
+    xbee.setup();
+    xbee_send_buffer = xbee.initBuffer(xbee_data_buffer);
+    has_xbee = true;
+  } else {
+    has_xbee = false;
+  }
+
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
@@ -164,7 +197,10 @@ void startup_commands() {
    * to some other address, and then apply them locally
    */
   for (byte i = 0; i < STARTUP_MSGS; i++) {
-    boolean forwarded = check_and_forward(startupmsg[i]);
+    boolean forwarded = false;
+    if (has_rs485) {
+      forwarded = check_and_forward(startupmsg[i], &rs485);
+    }
     process_msg(startupmsg[i], false, forwarded);
   }
 
@@ -220,8 +256,10 @@ void loop() {
     DEBUG_PRINT_END();
     Serial.println(F(HMTL_ACK));
 
-    /* Forward the message over RS485 if needed */
-    forwarded = check_and_forward(msg_hdr);
+    if (has_rs485) {
+      /* Forward the message over RS485 if needed */
+      forwarded = check_and_forward(msg_hdr, &rs485);
+    }
 
     if (process_msg(msg_hdr, false, forwarded)) {
       update = true;
@@ -315,7 +353,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
         DEBUG3_VALUELN("Poll req src:", source_address);
 
         // Format the poll response
-        uint16_t len = hmtl_poll_fmt(send_buffer, SEND_BUFFER_SIZE,
+        uint16_t len = hmtl_poll_fmt(rs485_send_buffer, SEND_BUFFER_SIZE,
                                      source_address,
                                      msg_hdr->flags, TYPE_HMTL_MODULE,
                                      &config, outputs, recv_buffer_size);
@@ -330,9 +368,9 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
               delay(delayMs);
           }
 
-          rs485.sendMsgTo(source_address, send_buffer, len);
+          rs485.sendMsgTo(source_address, rs485_send_buffer, len);
         } else {
-          Serial.write(send_buffer, len);
+          Serial.write(rs485_send_buffer, len);
         }
 
         break;
@@ -380,11 +418,11 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
 
 /*
  * Check if a message should be forwarded and transmit it over the
- * rs485 socket if so.
+ * a socket if so.
  */
-boolean check_and_forward(msg_hdr_t *msg_hdr) {
+boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
   if ((msg_hdr->address != config.address) ||
-      (msg_hdr->address == RS485_ADDR_ANY)) {
+      (msg_hdr->address == SOCKET_ADDR_ANY)) {
     /*
      * Messages that are not to this module's address or are on the broadcast
      * address should be forwarded.
@@ -394,13 +432,13 @@ boolean check_and_forward(msg_hdr_t *msg_hdr) {
       DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
     } else {
       DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
-      memcpy(send_buffer, msg_hdr, msg_hdr->length);
-      rs485.sendMsgTo(msg_hdr->address, send_buffer, msg_hdr->length);
+      memcpy(socket->send_buffer, msg_hdr, msg_hdr->length);
+      rs485.sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
       return true;
     }
   }
 
-  // The message was not forwarded over RS485
+  // The message was not forwarded over the socket
   return false;
 }
 
@@ -737,10 +775,19 @@ typedef struct {
 
 boolean program_fade_init(msg_program_t *msg,
                           program_tracker_t *tracker) {
-  DEBUG3_PRINT("Initializing fade program");
+  DEBUG3_PRINT("Initializing fade program:");
 
   state_fade_t *state = (state_fade_t *)malloc(sizeof (state_fade_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
+  tracker->state = state;
+
+  DEBUG3_VALUE(" ", state->msg.period);
+  DEBUG3_VALUE(" ", state->msg.start_value[0]);
+  DEBUG3_VALUE(",", state->msg.start_value[1]);
+  DEBUG3_VALUE(",", state->msg.start_value[2]);
+  DEBUG3_VALUE(" ", state->msg.stop_value[0]);
+  DEBUG3_VALUE(",", state->msg.stop_value[1]);
+  DEBUG3_VALUELN(",", state->msg.stop_value[2]);
 
   state->start_time = 0;
 
@@ -757,6 +804,8 @@ boolean program_fade(output_hdr_t *output, void *object,
     // Set the initial color
     hmtl_set_output_rgb(output, object, state->msg.start_value);
     changed = true;
+    state->start_time = now;
+    DEBUG5_VALUELN("Fade ms:", now);
   } else {
     // Calculate the color at this time
     CRGB start = CRGB(state->msg.start_value[0],
@@ -773,10 +822,15 @@ boolean program_fade(output_hdr_t *output, void *object,
       tracker->done = true;
       elapsed = state->msg.period;
     }
-    fract8 fraction = map(elapsed, 0, 255, 0, state->msg.period);
+    fract8 fraction = map(elapsed, 0, state->msg.period, 0, 255);
 
     CRGB current = blend(start, stop, fraction);
     hmtl_set_output_rgb(output, object, current.raw);
+    changed = true;
+
+    DEBUG5_VALUE("Fade ms:", now);
+    DEBUG5_VALUE(" elapsed:", elapsed);
+    DEBUG5_VALUELN(" fract:", fraction);
   }
 
   return changed;
