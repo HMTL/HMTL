@@ -3,6 +3,7 @@
 # Launch a client/server HMTL command system
 
 import sys, os
+import time
 
 from optparse import OptionParser, OptionGroup
 

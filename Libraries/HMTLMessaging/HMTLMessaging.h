@@ -200,13 +200,13 @@ typedef struct {
 } hmtl_program_timed_change_t;
 uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 				       uint16_t address, uint8_t output,
-				       uint16_t change_period,
+				       uint32_t change_period,
 				       uint32_t start_color,
 				       uint32_t stop_color);
 
 /* Program which sets a color and fades to another over a set period */
 typedef struct {
-  uint16_t period;
+  uint32_t period;
   uint8_t start_value[3];
   uint8_t stop_value[3];
   uint8_t flags;
@@ -214,7 +214,7 @@ typedef struct {
 #define HMTL_FADE_FLAG_CYCLE 0x1
 uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
                                uint16_t address, uint8_t output,
-                               uint16_t period,
+                               uint32_t period,
                                uint32_t start_color,
                                uint32_t stop_color,
                                uint8_t flags);

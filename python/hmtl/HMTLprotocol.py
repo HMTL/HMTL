@@ -110,7 +110,7 @@ MSG_PROGRAM_SOUND_VALUE_TYPE = 4
 MSG_PROGRAM_SOUND_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 
 MSG_PROGRAM_FADE_TYPE = 5
-MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'BBB' # Msg + padding
+MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'B' # Msg + padding XXXXXX
 
 MODULE_TYPES = {
     1 : "HMTL_Module"
@@ -491,7 +491,7 @@ class ProgramFade(Msg):
                            self.stop_values[1],
                            self.stop_values[2],
                            self.flags,
-                           0, 0)
+                           0)
 
     
 
@@ -520,6 +520,6 @@ def get_program_fade_msg(address, output,
                  mtype = MSG_TYPE_OUTPUT,
                  address = address)
     programhdr = ProgramHdr(MSG_PROGRAM_FADE_TYPE, output)
-    fadehdr = ProgramFace(change_period, start_values, stop_values, 0)
+    fadehdr = ProgramFade(change_period, start_values, stop_values, 0)
 
     return hdr.pack() + programhdr.pack() + fadehdr.pack()

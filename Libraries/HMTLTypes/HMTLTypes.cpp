@@ -292,9 +292,13 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
     case HMTL_OUTPUT_RGB:
       {
         config_rgb_t *out = (config_rgb_t *)hdr;
+        DEBUG5_PRINT("hmtl_update_output: rgb");
         for (int j = 0; j < 3; j++) {
           analogWrite(out->pins[j], out->values[j]);
+          DEBUG5_VALUE(" ", out->pins[j]);
+          DEBUG5_VALUE("-", out->values[j]);
         }
+        DEBUG_PRINT_END();
         break;
       }
     case HMTL_OUTPUT_PROGRAM:
@@ -635,7 +639,7 @@ void hmtl_print_output(output_hdr_t *out) {
         DEBUG_PRINT_END();
         break;
       }
-    case HMTL_OUTPUT_XBEE
+    case HMTL_OUTPUT_XBEE:
       {
         config_xbee_t *out2 = (config_xbee_t *)out;
         DEBUG3_VALUE("xbee recv=", out2->recvPin);
@@ -751,13 +755,15 @@ int32_t hmtl_setup(config_hdr_t *config,
       }
 #endif
       case HMTL_OUTPUT_RGB: {
-        if (rgb_output == NULL) continue;
-        memcpy(rgb_output, out, sizeof (config_rgb_t));
+        if (rgb_output != NULL) {
+          memcpy(rgb_output, out, sizeof (config_rgb_t));
+        }
         break;
       }
       case HMTL_OUTPUT_VALUE: {
-        if (value_output == NULL) continue;
-        memcpy(value_output, out, sizeof (config_value_t));
+        if (value_output != NULL) {
+          memcpy(value_output, out, sizeof (config_value_t));
+        }
         break;
       }
 #ifdef USE_MPR121
