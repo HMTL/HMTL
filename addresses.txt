@@ -14,6 +14,10 @@ NA	*18/0x12	2            D (Board v2)
 NA	*32/0x20	2            Taller stand (Board v4)
 33	33/0x21		3            First XLR
 34  34/0x22   3            Tower (Board v4, XLR)
+35  35/0x23   3            Icohedron (Board v4, XLR)
+36  36/0x24   3            Icohedron (Board v4, XLR)
+37  37/0x25   3            Icohedron w/4x Triggers (Board v4, XLR)
+
 
 ==Trigger boards==
 64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
@@ -29,5 +33,8 @@ NA  128/0x80               HMTL Fire Control Module 1
 
 ==Sound Unit==
 8   8/0x8     3            First Sound Unit
+
+==Power Unit==
+4   4/0x4     3            Power Unit (Board v2)
 
 (*) Not yet set
