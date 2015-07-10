@@ -1,4 +1,3 @@
-#include <Arduino.h>
 
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
@@ -23,6 +22,7 @@
 
 #include "Socket.h"
 #include "RS485Utils.h"
+#include "XBeeSocket.h"
 
 /******/
 
@@ -145,6 +145,13 @@ void loop() {
   }
 
   delay(1000);
+
+  if (has_pixels) {
+    for (unsigned int i=0; i < pixels.numPixels(); i++) 
+      pixels.setPixelRGB(i, 200, 0, 255);  
+    pixels.update();
+    delay(1000);
+  }
 
   digitalWrite(rgb_output.pins[2], LOW);
 }
