@@ -1,0 +1,56 @@
+{
+    "info": "This is for the 4th gen board in a triangle light with 4 12V outputs",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 4,
+	      "address": 37,
+	      "device_id": 37,
+	      "baud": 57600,
+	      "flags": 0
+    },
+    "outputs": [
+	      {
+	          "type": "value",
+	          "pin": 6,
+	          "value": 0,
+	          "info": "PWM output 1"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 9,
+	          "value": 0,
+	          "info": "PWM output 2"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 11,
+	          "value": 0,
+	          "info": "PWM output 3"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 10,
+	          "value": 0,
+	          "info": "PWM output 4"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 13,
+	          "value": 0,
+            "info": "Debug LED"
+	      },
+	      {
+	          "type": "pixels",
+	          "clockpin": 8,
+	          "datapin": 12,
+	          "numpixels": 54,
+	          "rgbtype": 0
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 7,
+	          "enablepin": 2
+	      }
+    ]
+}
