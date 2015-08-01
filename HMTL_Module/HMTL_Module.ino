@@ -41,7 +41,7 @@
 #include "HMTL_Module.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 22 // %META INCR
+#define HMTL_MODULE_BUILD 24 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -86,12 +86,12 @@ program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
 boolean has_rs485;
 RS485Socket rs485;
 byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
-byte *rs485_send_buffer;
 
 boolean has_xbee;
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
-byte *xbee_send_buffer;
+
+Socket *serial_socket = NULL;
 
 config_hdr_t config;
 output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
@@ -139,8 +139,9 @@ void setup() {
   if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
     /* Setup the RS485 connection */  
     rs485.setup();
-    rs485_send_buffer = rs485.initBuffer(rs485_data_buffer);
+    rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
     has_rs485 = true;
+    serial_socket = &rs485;
   } else {
     has_rs485 = false;
   }
@@ -148,8 +149,9 @@ void setup() {
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
     /* Setup the RS485 connection */  
     xbee.setup();
-    xbee_send_buffer = xbee.initBuffer(xbee_data_buffer);
+    xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
     has_xbee = true;
+    serial_socket = &xbee;
   } else {
     has_xbee = false;
   }
@@ -201,6 +203,10 @@ void startup_commands() {
     if (has_rs485) {
       forwarded = check_and_forward(startupmsg[i], &rs485);
     }
+    if (has_xbee) {
+      forwarded = check_and_forward(startupmsg[i], &xbee);
+    }
+
     process_msg(startupmsg[i], false, forwarded);
   }
 
@@ -260,8 +266,13 @@ void loop() {
       /* Forward the message over RS485 if needed */
       forwarded = check_and_forward(msg_hdr, &rs485);
     }
+    if (has_xbee) {
+      /* Forward the message over XBee if needed */
+      forwarded = check_and_forward(msg_hdr, &xbee);
+    }
 
-    if (process_msg(msg_hdr, false, forwarded)) {
+
+    if (process_msg(msg_hdr, NULL, forwarded)) {
       update = true;
     }
 
@@ -269,20 +280,41 @@ void loop() {
     last_serial_ms = now;
   }
 
-  /* Check for message over RS485 */
-  unsigned int msglen;
-  msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
-  if (msg_hdr != NULL) {
-    DEBUG5_VALUE("Received rs485 msg len=", msglen);
-    DEBUG5_PRINT(" ");
-    DEBUG5_COMMAND(
-                  print_hex_string((byte *)msg_hdr, msglen)
-                  );
-    DEBUG_PRINT_END();
+  if (has_rs485) {
+    /* Check for message over RS485 */
+    unsigned int msglen;
+    msg_hdr = hmtl_socket_getmsg(&rs485, &msglen, config.address);
+    if (msg_hdr != NULL) {
+      DEBUG5_VALUE("Received rs485 msg len=", msglen);
+      DEBUG5_PRINT(" ");
+      DEBUG5_COMMAND(
+                     print_hex_string((byte *)msg_hdr, msglen)
+                     );
+      DEBUG_PRINT_END();
 
-    if (process_msg(msg_hdr, true, false)) {
-      update = true;
+      if (process_msg(msg_hdr, &rs485, false)) {
+        update = true;
+      }
     }
+  }
+
+  if (has_xbee) {
+    /* Check for message over Xbee */
+    unsigned int msglen;
+    msg_hdr = hmtl_socket_getmsg(&xbee, &msglen, config.address);
+    if (msg_hdr != NULL) {
+      DEBUG5_VALUE("Received XBee msg len=", msglen);
+      DEBUG5_PRINT(" ");
+      DEBUG5_COMMAND(
+                     print_hex_string((byte *)msg_hdr, msglen)
+                     );
+      DEBUG_PRINT_END();
+      
+      if (process_msg(msg_hdr, &xbee, false)) {
+        update = true;
+      }
+    }
+
   }
 
   /* Execute any active programs */
@@ -299,17 +331,17 @@ void loop() {
 }
 
 /* Process a message if it is for this module */
-boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
+boolean process_msg(msg_hdr_t *msg_hdr, Socket *src, boolean forwarded) {
   if (msg_hdr->version != HMTL_MSG_VERSION) {
     DEBUG_ERR("Invalid message version");
     return false;
   }
 
   if ((msg_hdr->address == config.address) ||
-      (msg_hdr->address == RS485_ADDR_ANY)) {
+      (msg_hdr->address == SOCKET_ADDR_ANY)) {
 
     if ((msg_hdr->flags & MSG_FLAG_ACK) && 
-        (msg_hdr->address != RS485_ADDR_ANY)) {
+        (msg_hdr->address != SOCKET_ADDR_ANY)) {
       /* 
        * This is an ack message that is not for us, resend it over serial in
        * case that was the original source.
@@ -342,25 +374,29 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
         // TODO: This should be in framework as well
         uint16_t source_address = 0;
         uint16_t recv_buffer_size = 0;
-        if (from_rs485) {
-          // The response will be going over RS485, get the source address
-          source_address = RS485_SOURCE_FROM_DATA(msg_hdr);
-          recv_buffer_size = rs485.recvLimit;
+        Socket *sock;
+
+        if (src != NULL) {
+          // The response will be going over a socket, get the source address
+          source_address = src->sourceFromData(msg_hdr);
+          recv_buffer_size = src->recvLimit;
+          sock = src;
         } else {
           recv_buffer_size = MSG_MAX_SZ;
+          sock = serial_socket;
         }
 
         DEBUG3_VALUELN("Poll req src:", source_address);
 
         // Format the poll response
-        uint16_t len = hmtl_poll_fmt(rs485_send_buffer, SEND_BUFFER_SIZE,
+        uint16_t len = hmtl_poll_fmt(sock->send_buffer, sock->send_data_size,
                                      source_address,
                                      msg_hdr->flags, TYPE_HMTL_MODULE,
                                      &config, outputs, recv_buffer_size);
 
         // Respond to the appropriate source
-        if (from_rs485) {
-          if (msg_hdr->address == RS485_ADDR_ANY) {
+        if (src != NULL) {
+          if (msg_hdr->address == SOCKET_ADDR_ANY) {
             // If this was a broadcast address then do not respond immediately,
             // delay for time based on our address.
             int delayMs = config.address * 2;
@@ -368,9 +404,9 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
               delay(delayMs);
           }
 
-          rs485.sendMsgTo(source_address, rs485_send_buffer, len);
+          src->sendMsgTo(source_address, sock->send_buffer, len);
         } else {
-          Serial.write(rs485_send_buffer, len);
+          Serial.write(sock->send_buffer, len);
         }
 
         break;
@@ -382,7 +418,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, boolean from_rs485, boolean forwarded) {
         if ((set_addr->device_id == 0) ||
             (set_addr->device_id == config.device_id)) {
           config.address = set_addr->address;
-          rs485.sourceAddress = config.address;
+          src->sourceAddress = config.address;
           DEBUG2_VALUELN("Address changed to ", config.address);
         }
         break;
@@ -427,13 +463,12 @@ boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
      * Messages that are not to this module's address or are on the broadcast
      * address should be forwarded.
      */
-    
-    if (msg_hdr->length > SEND_BUFFER_SIZE) {
+    if (msg_hdr->length > socket->send_data_size) {
       DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
     } else {
-      DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
+      DEBUG4_HEXVALLN("Forwarding serial msg to ", msg_hdr->address);
       memcpy(socket->send_buffer, msg_hdr, msg_hdr->length);
-      rs485.sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
+      socket->sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
       return true;
     }
   }
