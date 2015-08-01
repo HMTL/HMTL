@@ -146,8 +146,10 @@ int hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 
 /* Receive a message over the rs485 interface */
+msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
+                             uint16_t address = SOCKET_ADDR_INVALID);
 msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
-                             uint16_t address = RS485_ADDR_INVALID);
+                             uint16_t address = SOCKET_ADDR_INVALID);
 
 
 /*******************************************************************************

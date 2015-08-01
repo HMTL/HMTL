@@ -8,7 +8,9 @@
 
 #include <Arduino.h>
 
-#define DEBUG_LEVEL DEBUG_ERROR
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_ERROR
+#endif
 #include "Debug.h"
 
 #include "GeneralUtils.h"
@@ -52,7 +54,7 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 
   output_hdr_t *msg = (output_hdr_t *)(msg_hdr + 1);
   DEBUG4_VALUE("hmtl_handle_msg: type=", msg->type);
-  DEBUG4_VALUE(" out=", msg->output);
+  DEBUG4_VALUELN(" out=", msg->output);
 
   if (msg->output > config_hdr->num_outputs) {
     DEBUG_ERR("hmtl_handle_msg: too many outputs");
@@ -93,27 +95,27 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
   return -1;
 }
 
-/* Check for HMTL formatted msg over the RS485 interface */
+/* Check for HMTL formatted msg over a socket interface */
 msg_hdr_t *
-hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
+hmtl_socket_getmsg(Socket *socket, unsigned int *msglen, uint16_t address) {
   const byte *data;
-  if (address == RS485_ADDR_INVALID) data = rs485->getMsg(msglen);
-  else data = rs485->getMsg(address, msglen);
+  if (address == SOCKET_ADDR_INVALID) data = socket->getMsg(msglen);
+  else data = socket->getMsg(address, msglen);
   if (data != NULL) {
     msg_hdr_t *msg_hdr = (msg_hdr_t *)data;
       
     if (*msglen < sizeof (msg_hdr_t)) {
-      DEBUG1_VALUE("hmtl_rs485_getmsg: msg length ", *msglen);
+      DEBUG1_VALUE("hmtl_socket_getmsg: msg length ", *msglen);
       DEBUG1_VALUELN(" short for header ", sizeof (msg_hdr_t));
       goto ERROR_OUT;
     }
     if (msg_hdr->length < sizeof (msg_hdr_t)) {
-      DEBUG_ERR("hmtl_rs485_getmsg: msg length is too short");
+      DEBUG_ERR("hmtl_socket_getmsg: msg length is too short");
       goto ERROR_OUT;
     }
 
     if (msg_hdr->length != *msglen) {
-      DEBUG1_VALUE("hmtl_rs485_getmsg: msg->length ", msg_hdr->length);
+      DEBUG1_VALUE("hmtl_socket_getmsg: msg->length ", msg_hdr->length);
       DEBUG1_VALUE(" != msglen ", *msglen);
       DEBUG1_COMMAND(
                      print_hex_string(data, *msglen)
@@ -129,6 +131,12 @@ hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
  ERROR_OUT:
   *msglen = 0;
   return NULL;
+}
+
+/* Backwards compatibility function for RS485 */
+msg_hdr_t *
+hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
+  return hmtl_socket_getmsg(rs485, msglen, address);
 }
 
 /*
@@ -362,7 +370,7 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
 /* Format a timed change program message */
 uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
                                        uint16_t address, uint8_t output,
-                                       uint16_t change_period,
+                                       uint32_t change_period,
                                        uint32_t start_color,
                                        uint32_t stop_color) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
