@@ -3,8 +3,8 @@
     "header": {
 	      "protocol_version": 3,
 	      "hardware_version": 4,
-	      "address": 37,
-	      "device_id": 37,
+	      "address": 40,
+	      "device_id": 40,
 	      "baud": 57600,
 	      "flags": 0
     },
@@ -43,7 +43,7 @@
 	          "type": "pixels",
 	          "clockpin": 8,
 	          "datapin": 12,
-	          "numpixels": 54,
+	          "numpixels": 56,
 	          "rgbtype": 0
 	      },
 	      {

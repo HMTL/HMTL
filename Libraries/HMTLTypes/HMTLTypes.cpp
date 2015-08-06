@@ -4,7 +4,9 @@
 
 #include <Arduino.h>
 
-//#define DEBUG_LEVEL DEBUG_HIGH // XXX: Just ERROR logging adds 1K to program size
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_ERROR
+#endif
 #include "Debug.h"
 
 #include "GeneralUtils.h"
@@ -251,7 +253,7 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
       {
         DEBUG4_PRINT(" xbee");
         if (data != NULL) {
-          config_xbee_t *out = (config_xbee_t *)hdr;
+          //config_xbee_t *out = (config_xbee_t *)hdr; // XXX - Only needed for SoftwareSerial configuration
           XBeeSocket *xbs = (XBeeSocket *)data;
           XBee *xbee = new XBee(); // TODO: Should this be allocated by the top level sketch?
           xbs->init(xbee,

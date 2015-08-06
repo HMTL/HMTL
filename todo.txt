@@ -5,13 +5,4 @@ HMTL TODO LIST
 
 * Create a sync program message (synchronize timing)
 
-* Store baud in EEPROM.  
-  X Initially run at 9600, read & print baud before switching
-  - Tail and the like can watch for baud message, then switch and reconnect
-
-* Create a fade program
-* Move HMTL_MSG_test into something generic
-
-* Combine HMTLPythonConfig into general libraries to HMTL_MSG_test and the like can use it
-
 ** Add a config file that allows the serial interfaces to be named
