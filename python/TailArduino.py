@@ -7,12 +7,9 @@ from __future__ import print_function
 
 import argparse
 import time
-import serial
-import threading
 
 import hmtl.portscan as portscan
-from hmtl.CircularBuffer import CircularBuffer
-
+from hmtl.SerialBuffer import SerialBuffer
 
 def handle_args():
     parser = argparse.ArgumentParser()
@@ -42,42 +39,26 @@ def handle_args():
     return options
 
 
-# Thread to read from the serial port and submit to a queue
-def reader_thread(buff, options):
-    print("Opening connection to '%s' at %d baud." %
-          (options.device, options.baud))
-    ser = serial.Serial(options.device, options.baud, timeout=10)
-
-    while True:
-        data = ser.readline()
-
-        if data and len(data) > 0:
-            buff.put((data, time.time()))
-
-
 def main():
     options = handle_args()
 
-    buff = CircularBuffer(1000)
-
-    # Launch the reading thread
-    reader = threading.Thread(target=reader_thread, args=(buff, options))
-    reader.daemon = True  # Set to daemon so ctrl-C works
+    reader = SerialBuffer(options.device, options.baud)
     reader.start()
-    
-    starttime = time.time()
+
+    buff = reader.get_buffer()
+
+    start_time = time.time()
     while True:
         # Wait for items to show up on the que
         item = buff.get()
         if not item:
             continue
 
-
-        (data, ts) = item
-        data = data.strip()
+        data = item.data.strip()
         if options.timestamp:
             # Add a beginning of line timestamp
-            print("\033[91m[%.3f]\033[97m " % (ts - starttime), end="")
+            print("\033[91m[%.3f]\033[97m " % (item.timestamp - start_time),
+                  end="")
 
         try:
             # Attempt to print the item as ascii
