@@ -16,16 +16,14 @@ class HMTLServer():
         self.ser = HMTLSerial(options.device,
                               timeout=options.timeout,
                               verbose=options.verbose,
-                              dryrun=options.dryrun,
                               baud=options.baud)
-        print("HMTLServer: connected to %s" % (options.device))
 
         self.address = (options.address, options.port)
         self.terminate = False
         self.serial_cv = threading.Condition()
 
-        self.idle_thread = threading.Thread(target=self.serial_flush_idle, args=(0.1,'a'))
-        self.idle_thread.start()
+        self.conn = None
+        self.listener = None
 
     def elapsed(self):
         return time.time() - self.starttime
@@ -47,6 +45,7 @@ class HMTLServer():
             self.conn.send(SERVER_ACK)
             self.close()
         elif (msg == SERVER_DATA_REQ):
+            print("* Recieved data request")
             msg = self.get_data_msg()
             self.conn.send(msg)
         else:
@@ -69,9 +68,9 @@ class HMTLServer():
         while (not self.terminate):
             try:
                 msg = self.conn.recv()
-                print("[%.3f] Received '%s' '%s'" % (self.elapsed(), msg, hexlify(msg)))
+                print("[%.3f] Received '%s'" % (self.elapsed(), hexlify(msg)))
                 self.handle_msg(msg)
-                print("[%.3f] Acked '%s' '%s'" % (self.elapsed(), msg, hexlify(msg)))
+                print("[%.3f] Acked '%s'" % (self.elapsed(), hexlify(msg)))
 
             except (EOFError, IOError):
                 # Attempt to reconnect
@@ -87,7 +86,8 @@ class HMTLServer():
 
     def close(self):
         self.listener.close()
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
         self.terminate = True
 
     def get_data_msg(self):
@@ -116,7 +116,7 @@ class HMTLServer():
 
             # Check for timeout
             if (time.time() > self.time_limit):
-                print("[%.3f] Data request time limit exceeded" % 
+                print("[%.3f] Data request time limit exceeded" %
                       (self.elapsed()))
                 msg = None
                 break
@@ -124,37 +124,3 @@ class HMTLServer():
         self.serial_cv.release()
 
         return msg
-
-
-    # Read in all pending data on the serial device as a separate thread
-    # XXX: Without this it seems to crash my Mac as the Arduino continues to
-    # stream data
-    def serial_flush_idle(self, delay, test):
-        print("Flush delay set to %f" % (delay))
-        while (not self.terminate):
-            # Read until the buffer appears to be empty
-            while True:
-                if (time.time() - self.ser.last_received < delay):
-                    # Don't attempt to listen if data has come in within the
-                    # delay period
-                    break
-
-                # Read a limited number of messages
-                data = []
-                count = 0
-                while count < 20:
-                    self.serial_cv.acquire()
-                    readdata = self.ser.recv_flush()
-                    self.serial_cv.release()
-                    if (readdata):
-                        count += 1
-                        data.append(readdata)
-                    else:
-                        break
-
-                if len(data) > 0:
-                    print("[%.3f] received %d msgs while idle" %
-                        (self.elapsed(), len(data)))
-
-            # Delay before next check
-            time.sleep(delay)

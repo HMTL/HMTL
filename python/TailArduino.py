@@ -42,7 +42,7 @@ def handle_args():
 def main():
     options = handle_args()
 
-    reader = SerialBuffer(options.device, options.baud)
+    reader = SerialBuffer(options.device, options.baud, verbose=False)
     reader.start()
 
     buff = reader.get_buffer()

@@ -7,114 +7,76 @@
 #
 ################################################################################
 
-import serial
-import time
-import HMTLprotocol
 from binascii import hexlify
+import time
+
+import HMTLprotocol
+from SerialBuffer import SerialBuffer
 
 class HMTLConfigException(Exception):
     pass
 
+
 class HMTLSerial():
     ser = None
 
-    def __init__(self, device, timeout=10, verbose=False, dryrun=False, baud = 9600):
+    # How long to wait for the ready signal after connection
+    MAX_READY_WAIT = 10
+
+    def __init__(self, device, timeout=10, verbose=False, baud = 9600):
         '''Open a serial connection and wait for the ready signal'''
         self.device = device
         self.verbose = verbose
-        self.dryrun = dryrun
         self.baud = baud
         self.last_received = 0
 
-        if (not self.dryrun):
-            self.ser = serial.Serial(device, baud, timeout=timeout)
-            if (self.wait_for_ready() == False):
-                exit(1)
-        else:
-            print("HMTLSerial: initialized in dry-run mode")
+        # Create the serial buffer and start it up
+        self.serial = SerialBuffer(device, baud)
+        self.serial.start()
+        if not self.wait_for_ready():
+            exit(1)
 
     def vprint(self, str):
         if (self.verbose):
             print('\033[91m' + str + '\033[97m')
 
     def get_line(self, timeout=None):
-        '''Returns the next line of text or a complete HMTL message'''
+        """Returns the next line of text or a complete HMTL message"""
 
-        if (timeout != None):
-            prev_timeout = self.ser.timeout
-            self.ser.timeout = 0.1
+        item = self.serial.get()
 
-        data = ""
-        is_msg_hdr = False
-        hdr = None
-        while True:
-            char = self.ser.read(1)
-
-            if (len(char) == 0):
-                break
-
-            if (ord(char) == HMTLprotocol.MsgHdr.STARTCODE):
-                # This is the start of a data message
-                is_msg_hdr = True
-            if (is_msg_hdr):
-                data += char
-
-                if (len(data) == HMTLprotocol.MsgHdr.length()):
-                    # Received enough data for a full message header
-                    hdr = HMTLprotocol.MsgHdr.from_data(data)
-                if (hdr != None):
-                    if (len(data) >= hdr.length):
-                        # Reached end of message
-                        break
-            else:
-                # Arduino output lines are terminated with \r\n
-                if (char == '\r'):
-                    continue
-                if (char == '\n'):
-                    break
-                data += char
-
-        if (is_msg_hdr):
-            self.vprint("  - received raw '%s' : '%s'" % (data, hexlify(data)))
-            retdata = data
+        if item.is_hmtl:
+            retdata = item.data
         else:
             try:
-                retdata = data.decode()
-                self.vprint("  - received '%s'" % (retdata))
+                retdata = item.data.decode()
             except UnicodeDecodeError:
-                self.vprint("  - received raw '%s' : '%s'" % (data, hexlify(data)))
-                retdata = data
+                retdata = item.data
 
         self.last_received = time.time()
-
-        if (timeout != None):
-            self.ser.timeout = prev_timeout
 
         return retdata
 
     # Wait for data from device indicating its ready for commands
-    MAX_READY_WAIT = 10
     def wait_for_ready(self):
         """Wait for the Arduino to send its ready signal"""
         print("***** Waiting for ready from Arduino *****")
-        starttime = time.time()
+        start_wait = time.time()
         while True:
             data = self.get_line()
             if (data == HMTLprotocol.HMTL_CONFIG_READY):
+                print("***** Recieved ready *****")
                 return True
-            if ((time.time() - starttime) > 10):
+            if (time.time() - start_wait) > self.MAX_READY_WAIT:
                 raise Exception("Timed out waiting for ready signal")
 
     # Send terminated data and wait for (N)ACK
     def send_and_confirm(self, data, terminated):
         """Send a command and wait for the ACK"""
 
-        if (self.dryrun):
-            return True
-
-        self.ser.write(data)
+        self.serial.connection.write(data)
         if (terminated):
-            self.ser.write(HMTLprotocol.HMTL_TERMINATOR)
+            self.serial.connection.write(HMTLprotocol.HMTL_TERMINATOR)
 
         while True:
             ack = self.get_line()
@@ -139,6 +101,6 @@ class HMTLSerial():
 
     # Flush the receive buffer
     def recv_flush(self):
-        if (self.ser.inWaiting()):
+        if self.serial.connection.inWaiting():
             return self.get_line()
         return None
