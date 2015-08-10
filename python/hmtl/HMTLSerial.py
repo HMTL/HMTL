@@ -51,17 +51,9 @@ class HMTLSerial():
         if not item:
             return None
 
-        if item.is_hmtl:
-            retdata = item.data
-        else:
-            try:
-                retdata = item.data.decode()
-            except UnicodeDecodeError:
-                retdata = item.data
-
         self.last_received = time.time()
 
-        return retdata
+        return item
 
     # Wait for data from device indicating its ready for commands
     def wait_for_ready(self):
@@ -69,8 +61,8 @@ class HMTLSerial():
         self.logger.log("***** Waiting for ready from Arduino *****")
         start_wait = time.time()
         while True:
-            data = self.get_message()
-            if (data == HMTLprotocol.HMTL_CONFIG_READY):
+            item = self.get_message(1.0)
+            if item and (item.data == HMTLprotocol.HMTL_CONFIG_READY):
                 self.logger.log("***** Recieved ready *****")
                 return True
             if (time.time() - start_wait) > self.MAX_READY_WAIT:
@@ -85,10 +77,10 @@ class HMTLSerial():
             self.serial.connection.write(HMTLprotocol.HMTL_TERMINATOR)
 
         while True:
-            ack = self.get_message()
-            if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
+            item = self.get_message()
+            if item.data == HMTLprotocol.HMTL_CONFIG_ACK:
                 return True
-            if (ack == HMTLprotocol.HMTL_CONFIG_FAIL):
+            if item.data == HMTLprotocol.HMTL_CONFIG_FAIL:
                 raise HMTLConfigException("Configuration command failed")
 
 # XXX: Here we need a method of getting data back from poll or the like
@@ -104,9 +96,3 @@ class HMTLSerial():
     def send_config(self, type, config):
         self.logger.log("send_config:  %-10s %s" % (type, hexlify(config)))
         self.send_and_confirm(config, True)
-
-    # Flush the receive buffer
-    def recv_flush(self):
-        if self.serial.connection.inWaiting():
-            return self.get_message()
-        return None

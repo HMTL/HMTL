@@ -72,6 +72,12 @@ MSG_TYPE_OUTPUT   = 1
 MSG_TYPE_POLL     = 2
 MSG_TYPE_SET_ADDR = 3
 
+MSG_TYPES = {
+    MSG_TYPE_OUTPUT: "OUTPUT",
+    MSG_TYPE_POLL: "POLL",
+    MSG_TYPE_SET_ADDR: "SETADDR",
+}
+
 # Msg flags
 MSG_FLAG_ACK      = 0x1
 MSG_FLAG_RESPONSE = 0x2
@@ -346,8 +352,13 @@ class Msg():
     def length(cls):
         return cls.LENGTH
 
+    @classmethod
+    def type(cls):
+        return cls.TYPE
+
 # Message header
 class MsgHdr(Msg):
+    TYPE = "MSGHDR"
     FORMAT = MSG_HDR_FMT
     LENGTH =  MSG_BASE_LEN
     
@@ -378,10 +389,15 @@ class MsgHdr(Msg):
         elif (self.mtype == MSG_TYPE_POLL):
             return PollHdr.from_data(data, self.LENGTH)
         else:
-            raise Exception("Unknown message type %d" % (msg.mtype))
+            raise Exception("Unknown message type %d" % (self.mtype))
+
+    def msg_type(self):
+        """Return the string of the header's message type"""
+        return MSG_TYPES[self.mtype]
         
 
 class PollHdr(Msg):
+    TYPE = "POLL"
     FORMAT = "<BBBBBBHH" + "HHB" # config_hdr_t + remainder of poll message
     LENGTH = 13
 
@@ -412,6 +428,7 @@ class PollHdr(Msg):
         return "%-8d %-8d %-8d %-8d %-8d %-8d %-8s" % (self.device_id, self.address, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, MODULE_TYPES[self.object_type])
 
 class SetAddress(Msg):
+    TYPE = "SETADDR"
     FORMAT = "<HH"
     LENGTH = 4
 
@@ -427,6 +444,7 @@ class SetAddress(Msg):
         return struct.pack(self.FORMAT, self.device_id, self.address)
 
 class OutputHdr(Msg):
+    TYPE = "OUTPUT"
     FORMAT = OUTPUT_HDR_FMT
     LENGTH = 2
 
@@ -442,6 +460,7 @@ class OutputHdr(Msg):
         return struct.pack(self.FORMAT, self.outputtype, self.output)
 
 class ProgramHdr(Msg):
+    TYPE = "PROGRAM"
     FORMAT = "<B"
     LENGTH = OutputHdr.LENGTH + 1 + 12
 
@@ -461,6 +480,7 @@ class ProgramHdr(Msg):
         raise Exception("From data needs to be defined for ProgramHdr")
 
 class ProgramLevelValue(Msg):
+    TYPE = "PROGRAMLEVELVALUE"
     FORMAT = "x"*12
 
     def pack(self):
@@ -468,12 +488,14 @@ class ProgramLevelValue(Msg):
 
 
 class ProgramSoundValue(Msg):
+    TYPE = "PROGRAMSOUNDVALUE"
     FORMAT = "x"*12
 
     def pack(self):
         return struct.pack(self.FORMAT)
 
 class ProgramFade(Msg):
+    TYPE = "PROGRAMFADE"
     FORMAT = MSG_PROGRAM_FADE_FMT
 
     def __init__(self, change_period, start_values, stop_values, flags):

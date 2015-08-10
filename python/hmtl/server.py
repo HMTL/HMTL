@@ -1,8 +1,8 @@
 from multiprocessing.connection import Listener
 import threading
 
-import HMTLprotocol
 from HMTLSerial import *
+from SerialBuffer import SerialItem
 from TimedLogger import TimedLogger
 
 SERVER_ACK = "ack"
@@ -44,19 +44,22 @@ class HMTLServer():
             print("Exiting")
             self.terminate = True
 
-    def handle_msg(self, msg):
-        if msg == SERVER_EXIT:
+    def handle_msg(self, item):
+        if item.data == SERVER_EXIT:
             self.logger.log("* Received exit signal *")
             self.conn.send(SERVER_ACK)
             self.close()
-        elif msg == SERVER_DATA_REQ:
+        elif item.data == SERVER_DATA_REQ:
             self.logger.log("* Recieved data request")
-            msg = self.get_data_msg()
-            self.conn.send(msg)
+            item = self.get_data_msg()
+            if item:
+                self.conn.send(item.data)
+            else:
+                self.conn.send(None)
         else:
             # Forward the message to the device
             self.serial_cv.acquire()
-            self.ser.send_and_confirm(msg, False)
+            self.ser.send_and_confirm(item.data, False)
             self.serial_cv.release()
 
             # Reply with acknowledgement
@@ -69,10 +72,12 @@ class HMTLServer():
 
         while not self.terminate:
             try:
-                msg = self.conn.recv()
-                self.logger.log("Received '%s'" % hexlify(msg))
-                self.handle_msg(msg)
-                self.logger.log("Acked '%s'" % hexlify(msg))
+                data = self.conn.recv()
+                item = SerialItem.from_data(data)
+
+                self.logger.log("Received: %s" % item)
+                self.handle_msg(item)
+                self.logger.log("Acked: %s" % item)
 
             except (EOFError, IOError):
                 # Attempt to reconnect
@@ -98,23 +103,21 @@ class HMTLServer():
         self.logger.log("Starting data request")
         
         time_limit = time.time() + 0.5
-        msg = None
+        item = None
         while True:
-
             # Try to get a message with low timeout
-            msg = self.ser.get_message(timeout=0.1)
-
-            if msg and len(msg) > 0 and (ord(msg[0]) == HMTLprotocol.MsgHdr.STARTCODE):
-                self.logger.log("Received response: '%s':\n%s" %
-                                (hexlify(msg), HMTLprotocol.decode_data(msg)))
+            item = self.ser.get_message(timeout=0.1)
+            if item and item.is_hmtl:
+                self.logger.log("Received response: %s:\n%s" %
+                                (item, HMTLprotocol.decode_data(item.data)))
                 break
 
             # Check for timeout
-            if (time.time() > time_limit):
+            if time.time() > time_limit:
                 self.logger.log("Data request time limit exceeded")
-                msg = None
+                item = None
                 break
 
         self.serial_cv.release()
 
-        return msg
+        return item

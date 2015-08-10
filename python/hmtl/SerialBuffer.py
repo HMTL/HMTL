@@ -17,7 +17,7 @@ class SerialBuffer(threading.Thread):
     """
 
     # Default logging color
-    LOGGING_COLOR = TimedLogger.BLUE
+    LOGGING_COLOR = TimedLogger.CYAN
 
     def __init__(self, device, baud=9600, timeout=0.1, bufflen=1000, verbose=True):
         threading.Thread.__init__(self)
@@ -105,16 +105,32 @@ class SerialItem:
         self.data = data
         self.timestamp = timestamp
         self.is_hmtl = is_hmtl
+        self.hdr = HMTLprotocol.MsgHdr.from_data(data) if is_hmtl else None
 
-    def print(self, logger, color=None):
+    @staticmethod
+    def from_data(data, timestamp=None):
+        if not timestamp:
+            timestamp = time.time()
+
+        if len(data) == 0:
+            return None
+
+        if ord(data[0]) == HMTLprotocol.MsgHdr.STARTCODE:
+            is_hmtl = True
+            # TODO: Perform validation here
+        else:
+            is_hmtl = False
+
+        return SerialItem(data, timestamp, is_hmtl)
+
+    def __str__(self):
         if self.is_hmtl:
-            logger.log("(raw) %s : '%s'" %
-                       (self.data, hexlify(self.data)),
-                       self.timestamp, color)
+            return "(%s) '%s'" % (self.hdr.msg_type(), hexlify(self.data))
         else:
             try:
-                logger.log(self.data.decode(), self.timestamp, color)
+                return self.data.decode()
             except UnicodeDecodeError:
-                logger.log("(raw) %s : '%s'" %
-                           (self.data, hexlify(self.data)),
-                           self.timestamp, color)
+                return "(raw) '%s'" % (hexlify(self.data))
+
+    def print(self, logger, color=None):
+        logger.log(str(self), self.timestamp, color)
