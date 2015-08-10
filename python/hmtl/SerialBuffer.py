@@ -6,6 +6,7 @@ import threading
 import time
 
 from CircularBuffer import CircularBuffer
+from TimedLogger import TimedLogger
 import HMTLprotocol
 
 
@@ -14,6 +15,9 @@ class SerialBuffer(threading.Thread):
     This class reads from a serial port into a circular buffer.  It reads
     until it gets to the end of a line or the end of an HMTL message.
     """
+
+    # Default logging color
+    LOGGING_COLOR = TimedLogger.BLUE
 
     def __init__(self, device, baud=9600, timeout=0.1, bufflen=1000, verbose=True):
         threading.Thread.__init__(self)
@@ -28,9 +32,11 @@ class SerialBuffer(threading.Thread):
 
         # Open the serial connection
         self.connection = serial.Serial(device, baud, timeout=timeout)
-        print("SerialBuffer: connected to %s" % device)
 
         self.start_time = time.time()
+        self.logger = TimedLogger(self.start_time, textcolor=self.LOGGING_COLOR)
+
+        self.logger.log("SerialBuffer: connected to %s" % device, color=TimedLogger.CYAN)
 
         # Set as a daemon so that this thread will exit correctly
         # when the parent receives a kill signal
@@ -39,8 +45,8 @@ class SerialBuffer(threading.Thread):
     def get_buffer(self):
         return self.buff
 
-    def get(self):
-        return self.buff.get()
+    def get(self, wait=None):
+        return self.buff.get(wait=wait)
 
     def stop(self):
         self._Thread__stop()
@@ -87,34 +93,7 @@ class SerialBuffer(threading.Thread):
                 self.buff.put(item)
 
                 if self.verbose:
-                    self.print_item(item)
-
-    def print_item(self, item, color = "blue"):
-        # Add a beginning of line timestamp
-        self.print_color("[%.3f] " % (item.timestamp - self.start_time),
-                         color="green", end="")
-
-        if item.is_hmtl:
-            self.print_color("%s : '%s' (raw)" %
-                             (item.data, hexlify(item.data)),
-                             color)
-        else:
-            try:
-                self.print_color(item.data.decode(), color)
-            except UnicodeDecodeError:
-                self.print_color("%s : '%s' (raw)" %
-                                 (item.data, hexlify(item.data)),
-                                 color)
-
-    def print_color(self, str, color = "blue", end="\n"):
-        if color.lower() == "blue":
-            print('\033[94m', end="")
-        elif color.lower() == "red":
-            print('\033[91m', end="")
-        elif color.lower() == "green":
-            print('\033[92m', end="")
-        print(str, end="")
-        print('\033[97m', end=end)
+                    item.print(self.logger)
 
 
 class SerialItem:
@@ -126,3 +105,16 @@ class SerialItem:
         self.data = data
         self.timestamp = timestamp
         self.is_hmtl = is_hmtl
+
+    def print(self, logger, color=None):
+        if self.is_hmtl:
+            logger.log("(raw) %s : '%s'" %
+                       (self.data, hexlify(self.data)),
+                       self.timestamp, color)
+        else:
+            try:
+                logger.log(self.data.decode(), self.timestamp, color)
+            except UnicodeDecodeError:
+                logger.log("(raw) %s : '%s'" %
+                           (self.data, hexlify(self.data)),
+                           self.timestamp, color)

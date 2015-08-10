@@ -24,9 +24,6 @@ def handle_args():
     parser.add_option("-a", "--address", dest="address",
                       help="Address to bind to", default="0.0.0.0")
 
-    parser.add_option("-t", "--timeout", dest="timeout", type="int",
-                      help="Timeout on serial", default=5)
-
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 

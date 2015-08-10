@@ -3,49 +3,54 @@ import threading
 
 import HMTLprotocol
 from HMTLSerial import *
+from TimedLogger import TimedLogger
 
 SERVER_ACK = "ack"
 SERVER_EXIT = "exit"
 SERVER_DATA_REQ = "data"
 
+
 class HMTLServer():
     address = ('localhost', 6000)
+
+    # Default logging color
+    LOGGING_COLOR = TimedLogger.RED
 
     def __init__(self, options):
         # Connect to serial connection
         self.ser = HMTLSerial(options.device,
-                              timeout=options.timeout,
                               verbose=options.verbose,
                               baud=options.baud)
+        self.logger = TimedLogger(self.ser.serial.start_time,
+                                  textcolor=self.LOGGING_COLOR)
 
         self.address = (options.address, options.port)
         self.terminate = False
+
+         # TODO: Is this needed at all? If so should the SerialBuffer handle synchronization?
         self.serial_cv = threading.Condition()
 
         self.conn = None
         self.listener = None
 
-    def elapsed(self):
-        return time.time() - self.starttime
-
     def get_connection(self):
         try:
-            print("[%.3f] Waiting for connection" % (self.elapsed()))
+            self.logger.log("Waiting for connection")
             self.listener = Listener(self.address, authkey='secret password')
             self.conn = self.listener.accept()
-            print("[%.3f]  Connection accepted from %s" % 
-                  ((self.elapsed()), self.listener.last_accepted))
+            self.logger.log("Connection accepted from %s:%d" %
+                            self.listener.last_accepted)
         except KeyboardInterrupt:
             print("Exiting")
             self.terminate = True
 
     def handle_msg(self, msg):
         if msg == SERVER_EXIT:
-            print("* Received exit signal *")
+            self.logger.log("* Received exit signal *")
             self.conn.send(SERVER_ACK)
             self.close()
-        elif (msg == SERVER_DATA_REQ):
-            print("* Recieved data request")
+        elif msg == SERVER_DATA_REQ:
+            self.logger.log("* Recieved data request")
             msg = self.get_data_msg()
             self.conn.send(msg)
         else:
@@ -57,32 +62,28 @@ class HMTLServer():
             # Reply with acknowledgement
             self.conn.send(SERVER_ACK)
 
-
     # Wait for and handle incoming connections
     def listen(self):
-        self.starttime = time.time()
-
-        print("[%.3f] Server started" % (self.elapsed()))
+        self.logger.log("Server started")
         self.get_connection()
 
-        while (not self.terminate):
+        while not self.terminate:
             try:
                 msg = self.conn.recv()
-                print("[%.3f] Received '%s'" % (self.elapsed(), hexlify(msg)))
+                self.logger.log("Received '%s'" % hexlify(msg))
                 self.handle_msg(msg)
-                print("[%.3f] Acked '%s'" % (self.elapsed(), hexlify(msg)))
+                self.logger.log("Acked '%s'" % hexlify(msg))
 
             except (EOFError, IOError):
                 # Attempt to reconnect
-                print("[%.3f] Lost connection" % (self.elapsed()))
+                self.logger.log("Lost connection")
                 self.listener.close()
                 self.get_connection()
             except Exception as e:
                 # Close the connection on uncaught exception
-                print("[%.3f] Exception during listen" % (self.elapsed()))
+                self.logger.log("Exception during listen")
                 self.close()
                 raise e
-                
 
     def close(self):
         self.listener.close()
@@ -91,33 +92,26 @@ class HMTLServer():
         self.terminate = True
 
     def get_data_msg(self):
-        '''Listen on the serial device for a properly formatted data message'''
+        """Listen on the serial device for a properly formatted data message"""
 
         self.serial_cv.acquire()
-        print("[%.3f] Starting data request" % (self.elapsed()))
+        self.logger.log("Starting data request")
         
-        self.time_limit = time.time() + 0.5;
+        time_limit = time.time() + 0.5
+        msg = None
         while True:
 
             # Try to get a message with low timeout
-            msg = self.ser.get_line(timeout=0.1)
+            msg = self.ser.get_message(timeout=0.1)
 
-            if (len(msg) == 0):
-                pass
-            elif (msg[0] == chr(HMTLprotocol.MsgHdr.STARTCODE)):
-                print("[%.3f] Received response: '%s':\n%s" % 
-                      (self.elapsed(), hexlify(msg), 
-                       HMTLprotocol.decode_data(msg)))
+            if msg and len(msg) > 0 and (ord(msg[0]) == HMTLprotocol.MsgHdr.STARTCODE):
+                self.logger.log("Received response: '%s':\n%s" %
+                                (hexlify(msg), HMTLprotocol.decode_data(msg)))
                 break
-            else:
-                print("[%.3f] Received non-data message '%s':'%s'" % 
-                      (self.elapsed(), HMTLprotocol.decode_data(msg), 
-                       hexlify(msg)))
 
             # Check for timeout
-            if (time.time() > self.time_limit):
-                print("[%.3f] Data request time limit exceeded" %
-                      (self.elapsed()))
+            if (time.time() > time_limit):
+                self.logger.log("Data request time limit exceeded")
                 msg = None
                 break
 

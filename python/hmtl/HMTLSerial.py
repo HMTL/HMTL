@@ -12,18 +12,21 @@ import time
 
 import HMTLprotocol
 from SerialBuffer import SerialBuffer
+from TimedLogger import TimedLogger
 
 class HMTLConfigException(Exception):
     pass
 
 
 class HMTLSerial():
-    ser = None
+
+    # Default logging color
+    LOGGING_COLOR = TimedLogger.WHITE
 
     # How long to wait for the ready signal after connection
     MAX_READY_WAIT = 10
 
-    def __init__(self, device, timeout=10, verbose=False, baud = 9600):
+    def __init__(self, device, verbose=False, baud = 9600):
         '''Open a serial connection and wait for the ready signal'''
         self.device = device
         self.verbose = verbose
@@ -32,18 +35,21 @@ class HMTLSerial():
 
         # Create the serial buffer and start it up
         self.serial = SerialBuffer(device, baud)
+
+        # Create the logger
+        self.logger = TimedLogger(self.serial.start_time, textcolor=self.LOGGING_COLOR)
+
         self.serial.start()
         if not self.wait_for_ready():
             exit(1)
 
-    def vprint(self, str):
-        if (self.verbose):
-            print('\033[91m' + str + '\033[97m')
-
-    def get_line(self, timeout=None):
+    def get_message(self, timeout=None):
         """Returns the next line of text or a complete HMTL message"""
 
-        item = self.serial.get()
+        item = self.serial.get(wait=timeout)
+
+        if not item:
+            return None
 
         if item.is_hmtl:
             retdata = item.data
@@ -60,12 +66,12 @@ class HMTLSerial():
     # Wait for data from device indicating its ready for commands
     def wait_for_ready(self):
         """Wait for the Arduino to send its ready signal"""
-        print("***** Waiting for ready from Arduino *****")
+        self.logger.log("***** Waiting for ready from Arduino *****")
         start_wait = time.time()
         while True:
-            data = self.get_line()
+            data = self.get_message()
             if (data == HMTLprotocol.HMTL_CONFIG_READY):
-                print("***** Recieved ready *****")
+                self.logger.log("***** Recieved ready *****")
                 return True
             if (time.time() - start_wait) > self.MAX_READY_WAIT:
                 raise Exception("Timed out waiting for ready signal")
@@ -79,7 +85,7 @@ class HMTLSerial():
             self.serial.connection.write(HMTLprotocol.HMTL_TERMINATOR)
 
         while True:
-            ack = self.get_line()
+            ack = self.get_message()
             if (ack == HMTLprotocol.HMTL_CONFIG_ACK):
                 return True
             if (ack == HMTLprotocol.HMTL_CONFIG_FAIL):
@@ -89,18 +95,18 @@ class HMTLSerial():
 
     # Send a text command
     def send_command(self, command):
-        print("send_command: %s" % (command))
+        self.logger.log("send_command: %s" % (command))
         #    data = bytes(command, 'utf-8')
         #    send_and_confirm(data)
         self.send_and_confirm(command, True)
 
     # Send a binary config update
     def send_config(self, type, config):
-        print("send_config:  %-10s %s" % (type, hexlify(config)))
+        self.logger.log("send_config:  %-10s %s" % (type, hexlify(config)))
         self.send_and_confirm(config, True)
 
     # Flush the receive buffer
     def recv_flush(self):
         if self.serial.connection.inWaiting():
-            return self.get_line()
+            return self.get_message()
         return None
