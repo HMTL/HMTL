@@ -27,7 +27,7 @@ def handle_args():
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 
-    if ((options.device == None) and (not options.dryrun)):
+    if options.device == None:
         options.device = portscan.choose_port()
     
     return (options, args)

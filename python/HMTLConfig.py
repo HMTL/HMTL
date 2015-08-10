@@ -28,8 +28,6 @@ def handle_args():
     parser.add_option("-b", "--baud", dest="baud", type="int",
                       help="Set baud")
 
-    parser.add_option("-n", "--dryrun", dest="dryrun", action="store_true",
-                      help="Perform dryrun only", default=False)
     parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
                       help="Write configuration", default=False)
     parser.add_option("-p", "--print", dest="printconfig", action="store_true",
@@ -49,14 +47,14 @@ def handle_args():
         exit("Must specify mode")
 
     if ((options.baud != None) and (options.baud % 1200 != 0)):
-        exit("Baud must be a multiple of 1200");
+        exit("Baud must be a multiple of 1200")
 
     if (options.device == None):
         options.device = portscan.choose_port()
 
-    if ((options.dryrun == False) and (options.device == None)):
+    if (options.device == None):
         parser.print_help()
-        exit("Must specify device if not in dry-run mode");
+        exit("Must specify device")
 
     if (options.printconfig):
         options.verbose = True
@@ -65,7 +63,7 @@ def handle_args():
 
 # Send the entire configuration
 def send_configuration(config_data):
-    print("***** Sending configuration *****");
+    print("***** Sending configuration *****")
 
     if (ser.send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
         print("Failed to get ack from start message")
@@ -133,8 +131,7 @@ def main():
 
     # Open the serial connection and wait for connection
     ser = HMTLSerial(options.device, 
-                     verbose=options.verbose, 
-                     dryrun=options.dryrun)
+                     verbose=options.verbose)
 
     if (options.printconfig == True):
         # Only read and print the configuration

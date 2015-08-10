@@ -33,55 +33,16 @@ def handle_args():
                       help="Port to bind to", default=6000)
     parser.add_option("-a", "--address", dest="address",
                       help="Address to bind to", default="localhost")
-    parser.add_option("-k", "--killserver", dest="killserver", action="store_true",
-                      help="Send a kill command to the server", default=False)
 
     # General options
     parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
                       help="Address to which messages are sent [default=BROADCAST]", 
                       default=HMTLprotocol.BROADCAST)
 
-    # Test mode
-    parser.add_option("-t", "--testmode", dest="testmode", action="store_true",
-                      help="Run test mode", default=False)
-    parser.add_option("-r", "--rgbtest", dest="setrgb", action="store_true",
-                      help="Set RGB value", default=False)
+    # Scan options
+    parser.add_option("-e", "--scanevery", dest="scanevery", action="store_true",
+                      help="Individual scan through address", default=False)
 
-    # Command types
-    group = OptionGroup(parser, "Command Types")
-    group.add_option("-V", "--value", action="store_const",
-                      dest="commandtype", const="value",
-                      help="Send value command", default=None)
-    group.add_option("-R", "--rgb", action="store_const",
-                      dest="commandtype", const="rgb",
-                      help="Send rgb command")
-    group.add_option("-B", "--blink", action="store_const",
-                      dest="commandtype", const="blink",
-                      help="Send blink program")
-    group.add_option("-T", "--timedchange", action="store_const",
-                      dest="commandtype", const="timedchange",
-                      help="Send timed change program")
-    group.add_option("-N", "--none", action="store_const",
-                      dest="commandtype", const="none",
-                      help="Send program reset command")
-    group.add_option("-P", "--poll", action="store_const",
-                      dest="commandtype", const="poll",
-                      help="Send module polling command")
-    group.add_option("-S", "--setaddr", action="store_const",
-                      dest="commandtype", const="setaddr",
-                      help="Send address setting command")
-    parser.add_option_group(group)
-
-
-    # Command options
-    group = OptionGroup(parser, "Command Options")
-    group.add_option("--period", dest="period", type="float",
-                      help="Sleep period between changes")
-    group.add_option("-O", "--output", dest="output", type="int",
-                      help="Number of the output to be set", default=None)
-    group.add_option("-C", "--command", dest="commandvalue", action="store",
-                      default = None)
-    parser.add_option_group(group)
 
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
@@ -129,8 +90,10 @@ def main():
 
     client = HMTLClient(options)
 
-    #modules = scan_every(client)
-    modules = scan_broadcast(client)
+    if options.scanevery:
+        modules = scan_every(client)
+    else:
+        modules = scan_broadcast(client)
 
     client.close()
 
