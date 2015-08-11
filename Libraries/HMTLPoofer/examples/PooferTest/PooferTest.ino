@@ -12,6 +12,14 @@
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
+// Arduino IDE required BS
+#include "EEPROM.h"
+#include "FastLED.h"
+#include "Wire.h"
+#include "MPR121.h"
+#include "XBee.h"
+#include "XBeeSocket.h"
+
 // HMTL required BS
 #include "GeneralUtils.h"
 #include "EEPromUtils.h"
@@ -58,7 +66,7 @@ void setup() {
 
 #define POOFER_OFF 0
 #define IGNITING   1
-#define POOF_READY 2
+#define POOF_OK    2
 #define POOFING    3
 
 byte state = POOFER_OFF;
@@ -79,9 +87,9 @@ void loop() {
 
     case IGNITING: {
       // Wait for the ignition sequence to be complete
-      if (poofer->poof_ready) {
+      if (poofer->checkState(Poofer::POOF_READY)) {
         DEBUG1_PRINTLN("* Ignition cycle complete");
-        state = POOF_READY;
+        state = POOF_OK;
         poofer->enablePoof();
       } else {
         DEBUG1_VALUELN("* Remaining: ", poofer->ignite_remaining());
@@ -90,7 +98,7 @@ void loop() {
       break;
     }
 
-    case POOF_READY: {
+    case POOF_OK: {
       // Periodically trigger a poof
       if (millis() - last_poof_ms >= POOF_PERIOD) {
         DEBUG1_PRINTLN("* Initiating poof");
@@ -104,9 +112,9 @@ void loop() {
 
     case POOFING: {
       // Wait for the poof to complete
-      if (!poofer->poof_on) {
+      if (!poofer->checkState(Poofer::POOF_ON)) {
         DEBUG1_PRINTLN("* Poof completed");
-        state = POOF_READY;
+        state = POOF_OK;
         digitalWrite(STATUS_LED, LOW);
       }
       break;

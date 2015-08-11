@@ -38,19 +38,10 @@ Poofer::Poofer(byte _id,
   send_buffer = _send_buffer;
   send_buffer_size = _send_buffer_size;
 
-  igniter_enabled = false;
-  igniter_on = false;
-  pilot_on = false;
-
-  poof_enabled = false;
-  poof_on = false;
-
-  poof_ready = false;
+  state = 0;
 
   igniter_off_ms = 0;
   poof_off_ms = 0;
-
-  changed = false;
 
   DEBUG3_VALUELN("Init poofer: ", id);
 }
@@ -101,19 +92,33 @@ void Poofer::sendDelayedOn(uint8_t output, uint32_t period) {
 }
 
 /********************************************************************************
+ * State helpers 
+ */
+
+void Poofer::enableState(byte bit) {
+  state |= (1 << bit);
+}
+void Poofer::disableState(byte bit) {
+  state &= 0xFF ^ (1 << bit);
+}
+boolean Poofer::checkState(byte bit) {
+  return (state & (1 << bit));
+}
+
+/********************************************************************************
  * Ignition and pilot controls
  */
 
 void Poofer::enableIgniter() {
   DEBUG3_VALUELN("Igniter enabled:", id);
-  igniter_enabled = true;
+  enableState(IGNITER_ENABLED);
 
   // Disable poofing while ignition sequence is started
-  poof_ready = false;
+  disableState(POOF_READY);
 
   ignite(IGNITE_PERIOD, PILOT_DELAY);
 
-  changed = true;
+  enableState(CHANGED);
 }
 
 void Poofer::disableIgniter() {
@@ -121,24 +126,23 @@ void Poofer::disableIgniter() {
 
   sendDisable(igniter_output);
 
-  igniter_enabled = false;
-  igniter_on = false;
-
-  changed = true;
+  disableState(IGNITER_ENABLED);
+  disableState(IGNITER_ON);
+  enableState(CHANGED);
 }
 
 /* Turn off the pilot valve and disable poofing */
 void Poofer::disablePilot() {
   if (pilot_output != HMTL_NO_OUTPUT) {
     DEBUG3_VALUELN("Pilot disabled:", id);
-    poof_ready = false;
+    disableState(POOF_READY);
     disablePoof();
     sendDisable(pilot_output);
   }
 }
 
 void Poofer::ignite(uint32_t period_ms, uint32_t pilot_delay_ms) {
-  if (!igniter_enabled) {
+  if (!checkState(IGNITER_ENABLED)) {
     DEBUG_ERR("Ignite not enabled");
     return;
   }
@@ -146,9 +150,7 @@ void Poofer::ignite(uint32_t period_ms, uint32_t pilot_delay_ms) {
   DEBUG3_VALUE("Igniter ", id);
   DEBUG3_VALUELN(" on for:", period_ms);
 
-  if (!igniter_on) changed = true;
-
-  igniter_on = true;
+  enableState(IGNITER_ON);
   igniter_off_ms = millis() + period_ms;
   sendTimedOn(igniter_output, period_ms);
 
@@ -157,9 +159,8 @@ void Poofer::ignite(uint32_t period_ms, uint32_t pilot_delay_ms) {
      * If there is a pilot light valve defined then start the flow briefly
      * after engaging the ignitor
      */
-    pilot_on = true;
-    sendDelayedOn(poof_output, pilot_delay_ms);
-    
+    enableState(PILOT_ON);
+    sendDelayedOn(poof_output, pilot_delay_ms);    
   }
 }
 
@@ -179,32 +180,32 @@ uint32_t Poofer::ignite_remaining() {
 
 void Poofer::enablePoof() {
   DEBUG3_VALUELN("Poof enabled:", id);
-  poof_enabled = true;
-  changed = true;
+  enableState(POOF_ENABLED);
+  enableState(CHANGED);
 }
 
 void Poofer::disablePoof() {
   DEBUG3_VALUELN("Poof disabled:", id);
-  poof_enabled = false;
-  poof_on = false;
-  changed = true;
+  disableState(POOF_ENABLED);
+  disableState(POOF_ON);
+  enableState(CHANGED);
+
   sendDisable(poof_output);
 }
 
 /* Trigger a poof if the poofer is enabled */
 void Poofer::poof(uint32_t period_ms) {
-  if (poof_ready && poof_enabled) {
+  if (checkState(POOF_READY) && checkState(POOF_ENABLED)) {
     DEBUG3_VALUE("Poof ", id);
     DEBUG3_VALUELN(" on for:", period_ms);
-
-    if (!poof_on) changed = true;
 
     if (period_ms > POOF_MAX) {
       DEBUG_ERR("Exceeded poof max");
       period_ms = POOF_MAX;
     }
 
-    poof_on = true;
+    if (!checkState(POOF_ON)) enableState(CHANGED);
+    enableState(POOF_ON);
     poof_off_ms = millis() + period_ms;
 
     sendTimedOn(poof_output, period_ms);
@@ -218,29 +219,29 @@ void Poofer::poof(uint32_t period_ms) {
 void Poofer::update() {
   uint32_t now = millis();
 
-  if (igniter_on && (now > igniter_off_ms)) {
+  if (checkState(IGNITER_ON) && (now > igniter_off_ms)) {
     /* 
      * The ignition period has elapsed, the ignitor should have turned itself
      * off and the poofer can be enabled 
      */
     DEBUG3_VALUELN("Igniter off: ", id);
-    igniter_on = false;
-    changed = true;
-    poof_ready = true;
+    disableState(IGNITER_ON);
+    enableState(POOF_READY);
+    enableState(CHANGED);
     igniter_off_ms = 0;
   }
 
-  if (poof_on && (now > poof_off_ms)) {
+  if (checkState(POOF_ON) && (now > poof_off_ms)) {
     /* The poof period has elapsed, the poofer should have turned itself off */
     DEBUG3_VALUELN("Poof off: ", id);
-    poof_on = false;
-    changed = true;
+    disableState(POOF_ON);
+    enableState(CHANGED);
   }
 }
 
 /* Check if state has changed, and if so reset the change tracker */
 boolean Poofer::checkChanged() {
-  boolean retval = changed;
-  changed = false;
+  boolean retval = checkState(CHANGED);
+  disableState(CHANGED);
   return retval;
 }

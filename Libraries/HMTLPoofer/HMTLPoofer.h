@@ -37,15 +37,22 @@ public:
 
   byte id; // Is this needed?
 
-  boolean changed; // TODO: This needs a method of being reset
+  // State bits
+  static const uint8_t CHANGED         = 0;
+  static const uint8_t IGNITER_ENABLED = 1;
+  static const uint8_t IGNITER_ON      = 2;
+  static const uint8_t PILOT_ON        = 3;
+  static const uint8_t POOF_ENABLED    = 4;
+  static const uint8_t POOF_READY      = 5;
+  static const uint8_t POOF_ON         = 6;  
+
+  byte state;
+  boolean checkState(byte bit);
 
   /* 
    * Ignition and optional pilot light 
    */
-  boolean igniter_enabled;
-  boolean igniter_on;
   byte igniter_output;
-  boolean pilot_on;
   byte pilot_output;
 
   void enableIgniter();
@@ -57,9 +64,6 @@ public:
   /*
    * Main fire effect 
    */
-  boolean poof_enabled;
-  boolean poof_ready;
-  boolean poof_on;
   byte poof_output;
 
   void enablePoof();
@@ -89,6 +93,9 @@ public:
                            boolean stop);
   void sendHMTLEnable(uint8_t output,
                       boolean enabled);
+
+  void enableState(byte bit);
+  void disableState(byte bit);
 
 };
 
