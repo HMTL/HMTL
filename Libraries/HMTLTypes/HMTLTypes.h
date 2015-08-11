@@ -98,6 +98,8 @@ typedef struct {
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
 
+#define HMTL_NO_OUTPUT (uint8_t)-1
+
 typedef struct {
   byte type;
   byte output;
