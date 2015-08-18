@@ -55,6 +55,8 @@ public:
   byte igniter_output;
   byte pilot_output;
 
+  boolean igniterEnabled();
+  boolean igniterOn();
   void enableIgniter();
   void disableIgniter();
   void disablePilot();
@@ -66,6 +68,8 @@ public:
    */
   byte poof_output;
 
+  boolean poofEnabled();
+  boolean poofOn();
   void enablePoof();
   void disablePoof();
   void poof(uint32_t period_ms);

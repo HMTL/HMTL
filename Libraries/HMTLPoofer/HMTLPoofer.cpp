@@ -109,6 +109,14 @@ boolean Poofer::checkState(byte bit) {
  * Ignition and pilot controls
  */
 
+boolean Poofer::igniterOn() {
+  return checkState(IGNITER_ON);
+}
+
+boolean Poofer::igniterEnabled() {
+  return checkState(IGNITER_ENABLED);
+}
+
 void Poofer::enableIgniter() {
   DEBUG3_VALUELN("Igniter enabled:", id);
   enableState(IGNITER_ENABLED);
@@ -177,6 +185,14 @@ uint32_t Poofer::ignite_remaining() {
 /********************************************************************************
  * Poofer control
  */
+
+boolean Poofer::poofEnabled() {
+  return checkState(POOF_ENABLED);
+}
+
+boolean Poofer::poofOn() {
+  return checkState(POOF_ON);
+}
 
 void Poofer::enablePoof() {
   DEBUG3_VALUELN("Poof enabled:", id);
