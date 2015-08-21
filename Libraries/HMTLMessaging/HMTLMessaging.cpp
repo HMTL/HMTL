@@ -340,6 +340,17 @@ uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   return HMTL_MSG_SET_ADDR_LEN;
 }
 
+/* Format a cancel message */
+uint16_t hmtl_program_cancel_fmt(byte *buffer, uint16_t buffsize,
+                                 uint16_t address, uint8_t output) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_NONE, buffsize);
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
+  return HMTL_MSG_PROGRAM_LEN;
+}
+
 
 /* Format a blink program message */
 uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
@@ -418,6 +429,17 @@ void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
 
   uint16_t len = hmtl_rgb_fmt(buff, buff_len,
                               address, output, r, g, b);
+  rs485->sendMsgTo(address, buff, len);
+}
+
+/* Send a message that clears any program for the output */
+void hmtl_send_cancel(RS485Socket *rs485, byte *buff, byte buff_len,
+                            uint16_t address, uint8_t output) {
+  DEBUG5_VALUE("hmtl_send_cancel: addr:", address);
+  DEBUG5_VALUELN(" out:", output);
+
+  uint16_t len = hmtl_program_cancel_fmt(buff, buff_len,
+                                         address, output);
   rs485->sendMsgTo(address, buff, len);
 }
 

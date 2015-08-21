@@ -230,6 +230,8 @@ void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
 void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
 		   uint16_t address, uint8_t output, 
 		   uint8_t r, uint8_t g, uint8_t b);
+void hmtl_send_cancel(RS485Socket *rs485, byte *buff, byte buff_len,
+                      uint16_t address, uint8_t output);
 void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
 		     uint16_t address, uint8_t output,
 		     uint16_t on_period, uint32_t on_color,
