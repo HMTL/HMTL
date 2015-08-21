@@ -20,9 +20,9 @@
 
 class Poofer {
 public:
-  static const uint32_t IGNITE_PERIOD = 30 * 1000;
-  static const uint32_t PILOT_DELAY   =  5 * 1000;
-  static const uint32_t POOF_MAX      = 10 * 1000;
+  static const uint32_t IGNITE_PERIOD      = 30 * 1000;
+  static const uint32_t PILOT_DELAY_PERIOD =  5 * 1000;
+  static const uint32_t POOF_MAX           = 10 * 1000;
 
   Poofer(byte _id, 
          uint16_t _address, 
@@ -41,10 +41,11 @@ public:
   static const uint8_t CHANGED         = 0;
   static const uint8_t IGNITER_ENABLED = 1;
   static const uint8_t IGNITER_ON      = 2;
-  static const uint8_t PILOT_ON        = 3;
-  static const uint8_t POOF_ENABLED    = 4;
-  static const uint8_t POOF_READY      = 5;
-  static const uint8_t POOF_ON         = 6;  
+  static const uint8_t PILOT_DELAY     = 3;
+  static const uint8_t PILOT_ON        = 4;
+  static const uint8_t POOF_ENABLED    = 5;
+  static const uint8_t POOF_READY      = 6;
+  static const uint8_t POOF_ON         = 7;  
 
   byte state;
   boolean checkState(byte bit);
@@ -57,6 +58,7 @@ public:
 
   boolean igniterEnabled();
   boolean igniterOn();
+  boolean pilotOn();
   void enableIgniter();
   void disableIgniter();
   void disablePilot();
@@ -70,15 +72,18 @@ public:
 
   boolean poofEnabled();
   boolean poofOn();
+  boolean poofReady();
   void enablePoof();
   void disablePoof();
   void poof(uint32_t period_ms);
+  void cancelPoof();
 
   void update(void);
   boolean checkChanged();
 
  private:
   uint32_t igniter_off_ms;
+  uint32_t pilot_on_ms;
   uint32_t poof_off_ms;
 
   Socket *socket;
@@ -87,6 +92,7 @@ public:
 
   void sendEnable(uint8_t output);
   void sendDisable(uint8_t output);
+  void sendCancel(uint8_t output);
 
   void sendTimedOn(uint8_t output, uint32_t period);
   void sendDelayedOn(uint8_t output, uint32_t period);

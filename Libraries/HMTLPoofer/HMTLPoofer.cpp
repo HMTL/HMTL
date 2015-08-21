@@ -41,6 +41,7 @@ Poofer::Poofer(byte _id,
   state = 0;
 
   igniter_off_ms = 0;
+  pilot_on_ms = 0;
   poof_off_ms = 0;
 
   DEBUG3_VALUELN("Init poofer: ", id);
@@ -68,6 +69,11 @@ void Poofer::sendHMTLTimedChange(uint8_t output,
                          change_period,
                          start_value,
                          stop_value);
+}
+
+void Poofer::sendCancel(uint8_t output) {
+  hmtl_send_cancel((RS485Socket *)socket, send_buffer, send_buffer_size,
+                  address, output);
 }
 
 void Poofer::sendHMTLEnable(uint8_t output,
@@ -124,9 +130,13 @@ void Poofer::enableIgniter() {
   // Disable poofing while ignition sequence is started
   disableState(POOF_READY);
 
-  ignite(IGNITE_PERIOD, PILOT_DELAY);
+  ignite(IGNITE_PERIOD, PILOT_DELAY_PERIOD);
 
   enableState(CHANGED);
+}
+
+boolean Poofer::pilotOn() {
+  return checkState(PILOT_ON);
 }
 
 void Poofer::disableIgniter() {
@@ -143,8 +153,13 @@ void Poofer::disableIgniter() {
 void Poofer::disablePilot() {
   if (pilot_output != HMTL_NO_OUTPUT) {
     DEBUG3_VALUELN("Pilot disabled:", id);
+
+    // As the pilot is being turned off, the poofer needs to be fully disabled
     disableState(POOF_READY);
     disablePoof();
+
+    disableState(PILOT_DELAY);
+    disableState(PILOT_ON);
     sendDisable(pilot_output);
   }
 }
@@ -167,8 +182,9 @@ void Poofer::ignite(uint32_t period_ms, uint32_t pilot_delay_ms) {
      * If there is a pilot light valve defined then start the flow briefly
      * after engaging the ignitor
      */
-    enableState(PILOT_ON);
-    sendDelayedOn(poof_output, pilot_delay_ms);    
+    enableState(PILOT_DELAY);
+    pilot_on_ms = millis() + pilot_delay_ms;
+    sendDelayedOn(pilot_output, pilot_delay_ms);    
   }
 }
 
@@ -188,6 +204,10 @@ uint32_t Poofer::ignite_remaining() {
 
 boolean Poofer::poofEnabled() {
   return checkState(POOF_ENABLED);
+}
+
+boolean Poofer::poofReady() {
+  return checkState(POOF_READY);
 }
 
 boolean Poofer::poofOn() {
@@ -228,6 +248,12 @@ void Poofer::poof(uint32_t period_ms) {
   }
 }
 
+/* Send a message to cancel any ongoing poof */
+void Poofer::cancelPoof() {
+  sendCancel(poof_output);
+  disableState(POOF_ON);
+}
+
 /********************************************************************************
  * Check and update status
  */
@@ -247,11 +273,23 @@ void Poofer::update() {
     igniter_off_ms = 0;
   }
 
+  if (checkState(PILOT_DELAY) && (now > pilot_on_ms)) {
+    /*
+     * The delay before the pilot light valve is enabled has passed
+     */
+    DEBUG3_VALUELN("Igniter on: ", id);
+    disableState(PILOT_DELAY);
+    enableState(PILOT_ON);
+    enableState(CHANGED);
+    pilot_on_ms = 0;
+  }
+
   if (checkState(POOF_ON) && (now > poof_off_ms)) {
     /* The poof period has elapsed, the poofer should have turned itself off */
     DEBUG3_VALUELN("Poof off: ", id);
     disableState(POOF_ON);
     enableState(CHANGED);
+    poof_off_ms = 0;
   }
 }
 
