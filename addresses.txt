@@ -23,13 +23,13 @@ NA	*32/0x20	2            Taller stand (Board v4)
 64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
 65	65/0x41	  3            Trigger Board v3 (stereo terminals, XLR)
 66	66/0x42	  3            Trigger Board v3 (stereo terminals, XLR)
-NA	65/0x41		2            Trigger Board v3 (stereo terminals, XLR, Chad)
-NA	65/0x41		2            Trigger Board v3 (stereo terminals, XLR, Chad)
+67	64/0x41		3            Trigger Board v3 (stereo terminals, XLR, Chad)
+68	64/0x41		3            Trigger Board v3 (stereo terminals, XLR, Chad)
 69  69/0x45   3            Trigger Board v4 (stereo terminals, XLR)
 70  70/0x46   3            Trigger Board v4 (stereo terminals, XLR)
 
 ==HMTL Fire Control===
-NA  128/0x80               HMTL Fire Control Module 1
+128 128/0x80  3            HMTL Fire Control Module 1
 
 ==Sound Unit==
 8   8/0x8     3            First Sound Unit

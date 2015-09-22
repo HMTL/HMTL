@@ -9,49 +9,49 @@
         "flags": 0
     },
     "outputs": [
-	{
-	    "type": "value",
-	    "pin": 9,
-	    "value": 0,
-	    "info": "PWM output 1"
-	},
-	{
-	    "type": "value",
-	    "pin": 6,
-	    "value": 0,
-	    "info": "PWM Output 2"
-	},
-	{
-	    "type": "value",
-	    "pin": 5,
-	    "value": 0,
-	    "info": "PWM Output 3"
-	},
-	{
-	    "type": "value",
-	    "pin": 3,
-	    "value": 0,
-	    "info": "PWM Output 4"
-	},
-	{
-	    "type": "rgb",
-	    "pins": [ 11, 10, 13 ],
-	    "values": [ 0, 0, 0 ],
-	    "info": "On-board RGB LED"
-	},
-	{
-	    "type": "rs485",
-	    "recvpin": 4,
-	    "xmitpin": 7,
-	    "enablepin": 2
-	},
-	{
-	    "type": "pixels",
-	    "clockpin": 8,
-	    "datapin": 12,
-	    "numpixels": 50,
-	    "rgbtype": 0,
-	    "info": "Optional connection on back of board"
-	}
+	      {
+	          "type": "value",
+	          "pin": 9,
+	          "value": 0,
+	          "info": "PWM output 1"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 6,
+	          "value": 0,
+	          "info": "PWM Output 2"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 5,
+	          "value": 0,
+	          "info": "PWM Output 3"
+	      },
+	      {
+	          "type": "value",
+	          "pin": 3,
+	          "value": 0,
+	          "info": "PWM Output 4"
+	      },
+	      {
+	          "type": "rgb",
+	          "pins": [ 11, 10, 13 ],
+	          "values": [ 0, 0, 0 ],
+	          "info": "On-board RGB LED"
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 7,
+	          "enablepin": 2
+	      },
+	      {
+	          "type": "pixels",
+	          "clockpin": 8,
+	          "datapin": 12,
+	          "numpixels": 50,
+	          "rgbtype": 0,
+	          "info": "Optional connection on back of board"
+	      }
     ]
 }
