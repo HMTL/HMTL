@@ -1,0 +1,24 @@
+{
+    "info": "This config is for the PowerUnit",
+    "header": {
+        "protocol_version": 3,
+        "hardware_version": 2,
+        "device_id": 64,
+        "address": 64,
+        "baud": 57600,
+        "flags": 0
+    },
+    "outputs": [
+        {
+            "type": "rgb",
+            "pins": [ 11, 13, 10 ],
+            "values": [ 0, 0, 0 ]
+        },
+        {
+            "type": "rs485",
+            "recvpin": 4,
+            "xmitpin": 7,
+            "enablepin": 5
+        }
+    ]
+}
