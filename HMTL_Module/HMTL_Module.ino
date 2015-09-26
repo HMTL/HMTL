@@ -40,8 +40,10 @@
 
 #include "HMTL_Module.h"
 
+#include "TimeSync.h"
+
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 24 // %META INCR
+#define HMTL_MODULE_BUILD 26 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -111,6 +113,8 @@ uint16_t light_data = 1023;
 byte sound_channels = 0;
 #define SOUND_CHANNELS 8
 uint16_t sound_data[SOUND_CHANNELS] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+TimeSync time = TimeSync();
 
 void setup() {
 
@@ -233,7 +237,7 @@ unsigned long last_ready_ms = 0;
  * - Updates any outputs
  */
 void loop() {
-  unsigned long now = millis();
+  unsigned long now = time.ms();
   boolean update = false;
 
   if ((now - last_serial_ms > READY_THRESHOLD) && 
@@ -626,7 +630,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));  
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->on = false;
-  state->next_change = millis();
+  state->next_change = time.ms();
 
   tracker->state = state;
 
@@ -639,7 +643,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
 boolean program_blink(output_hdr_t *output, void *object, 
                       program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = millis();
+  unsigned long now = time.ms();
   state_blink_t *state = (state_blink_t *)tracker->state;
 
   if (now >= state->next_change) {
@@ -694,7 +698,7 @@ boolean program_timed_change_init(msg_program_t *msg,
 boolean program_timed_change(output_hdr_t *output, void *object, 
                              program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = millis();
+  unsigned long now = time.ms();
   state_timed_change_t *state = (state_timed_change_t *)tracker->state;
 
   if (state->change_time == 0) {
@@ -832,7 +836,7 @@ boolean program_fade_init(msg_program_t *msg,
 boolean program_fade(output_hdr_t *output, void *object, 
                      program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = millis();
+  unsigned long now = time.ms();
   state_fade_t *state = (state_fade_t *)tracker->state;
 
   if (state->start_time == 0) {

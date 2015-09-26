@@ -8,7 +8,9 @@
 
 #include <Arduino.h>
 
-#define DEBUG_LEVEL DEBUG_TRACE
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_HIGH
+#endif
 #include "Debug.h"
 
 #include "Socket.h"
