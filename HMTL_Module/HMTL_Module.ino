@@ -43,7 +43,7 @@
 #include "TimeSync.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 26 // %META INCR
+#define HMTL_MODULE_BUILD 27 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
@@ -211,10 +211,10 @@ void startup_commands() {
       forwarded = check_and_forward(startupmsg[i], &xbee);
     }
 
-    process_msg(startupmsg[i], false, forwarded);
+    process_msg(startupmsg[i], NULL, forwarded);
   }
 
-  /* Free the startupup messages */
+  /* Free the startup messages */
   for (byte i = 0; i < STARTUP_MSGS; i++) {
     free(startupmsg[i]);
   }

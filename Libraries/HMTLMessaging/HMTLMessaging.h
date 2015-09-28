@@ -57,11 +57,14 @@ typedef struct {
 #define MSG_TYPE_POLL     0x2
 #define MSG_TYPE_SET_ADDR 0x3
 #define MSG_TYPE_SENSOR   0x4
+#define MSG_TYPE_TIMESYNC 0x5
 
 /* Message flags */
 #define MSG_FLAG_ACK        0x1 // This message is an acknowledgement
 #define MSG_FLAG_RESPONSE   0x2 // This message expects a response
 
+
+#define HMTL_MSG_SIZE(msgtype) (sizeof (msg_hdr_t) + sizeof (msgtype))
 /*******************************************************************************
  * Message formats for messages of type MSG_TYPE_OUTPUT
  */
@@ -132,6 +135,11 @@ typedef struct {
 typedef msg_program_t msg_max_t;
 
 /*******************************************************************************
+ * Message format for MSG_TYPE_TIMESYNC in TimeSync.h
+ */
+
+
+/*******************************************************************************
  * Utility functions
  */
 uint16_t hmtl_msg_size(output_hdr_t *output);
@@ -155,6 +163,9 @@ msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
 /*******************************************************************************
  * Formatting for individual messages
  */
+void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length, 
+                  uint8_t type, uint8_t flags = 0);
+
 uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
 			uint16_t address, uint8_t output, int value);
 uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,

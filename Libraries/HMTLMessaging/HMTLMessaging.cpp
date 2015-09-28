@@ -204,7 +204,7 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
 
 /* Initialize the message header */
 void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length, 
-                  uint8_t type, uint8_t flags = 0) {
+                  uint8_t type, uint8_t flags) {
   msg_hdr->startcode = HMTL_MSG_START;
   msg_hdr->crc = 0;
   msg_hdr->version = HMTL_MSG_VERSION;

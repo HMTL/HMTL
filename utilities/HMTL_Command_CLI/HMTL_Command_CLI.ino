@@ -1,10 +1,9 @@
 /*******************************************************************************
  * Author: Adam Phelps
- * License: Create Commons Attribution-Non-Commercial
+ * License: MIT
  * Copyright: 2014
  *
- * Code for a fully contained module which handles HMTL formatted messages
- * from a serial or RS485 connection.
+ * This sketch provides a debugging interface for HMTL 
  ******************************************************************************/
 
 #include "EEPROM.h"
@@ -31,11 +30,13 @@
 #include "MPR121.h"
 #include "FastLED.h"
 #include "PixelUtil.h"
+#include "XBeeSocket.h"
 // End note
 
 #include "HMTLTypes.h"
 #include "HMTLMessaging.h"
 #include "HMTLProtocol.h"
+#include "TimeSync.h"
 
 #define NUM_OUTPUTS 3
 config_rgb_t rgb_output;
@@ -50,6 +51,8 @@ SerialCLI serialcli(64, cliHandler);
 
 config_hdr_t config;
 
+TimeSync time = TimeSync();
+
 void setup() {
   Serial.begin(57600);
   DEBUG2_PRINTLN("*** HMTL_Command_CLI starting ***");
@@ -57,8 +60,12 @@ void setup() {
   config_max_t readoutputs[HMTL_MAX_OUTPUTS];
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      NULL, NULL, HMTL_MAX_OUTPUTS,
-                                     &rs485, NULL, NULL,
-                                     &rgb_output, NULL,
+                                     &rs485,
+                                     NULL, // XBee
+                                     NULL, // Pixels
+                                     NULL, // MPR121
+                                     &rgb_output,
+                                     NULL, // Value
                                      NULL);
 
   if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
@@ -88,11 +95,13 @@ void loop() {
 }
 
 void print_usage() {
-Serial.print(F(" \n"
+Serial.print(F(
+  " \n"
   "Usage:\n"
   "  h - print this help\n"
   "  s <addr> - Send sensor check\n"
   "  p <addr> - Send poll request\n"
+  "  t <addr> - Initiate time sync\n"
                ));
 }             
 void cliHandler(char **tokens, byte numtokens) {
@@ -117,8 +126,15 @@ void cliHandler(char **tokens, byte numtokens) {
       DEBUG1_VALUELN("* Poll request to: ", address);
       hmtl_send_poll_request(&rs485, send_buffer, SEND_BUFFER_SIZE, address);
       break;
-    } 
+    }
 
+    case 't': {
+      if (numtokens < 2) return;
+      uint16_t address = atoi(tokens[1]);
+      DEBUG1_VALUELN("* Time sync to: ", address);
+      time.synchronize(&rs485, address, NULL);
+      break;
+    }
   }
 }
 
@@ -210,6 +226,24 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
 
         DEBUG_PRINT_END();
       }
+      break;
+    }
+
+    case MSG_TYPE_TIMESYNC: {
+      // Handle the time sync message
+      time.synchronize(&rs485, SOCKET_ADDR_INVALID, msg);
+
+      DEBUG1_PRINT(" * TIMESYNC:");
+
+      if (msg->length != HMTL_MSG_SIZE(msg_time_sync_t)) {
+        DEBUG1_VALUE("Wrong length: ", msg->length);
+        DEBUG1_VALUE(" not ", HMTL_MSG_SIZE(msg_time_sync_t));
+        break;
+      }
+
+      msg_time_sync_t *msg_time = (msg_time_sync_t *)(msg + 1);
+      DEBUG1_VALUE(" phase:", msg_time->sync_phase);
+      DEBUG1_VALUE(" ts:", msg_time->timestamp);
       break;
     }
 
