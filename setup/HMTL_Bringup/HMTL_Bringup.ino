@@ -25,6 +25,9 @@
 #include "XBee.h"
 #include "XBeeSocket.h"
 
+#include "HMTLMessaging.h"
+
+
 /******/
 
 config_hdr_t config;
@@ -36,123 +39,154 @@ config_rgb_t rgb_output;
 config_pixels_t pixel_output;
 config_value_t value_output;
 config_rs485_t rs485_output;
+
 boolean has_value = false;
 boolean has_pixels = false;
+boolean has_rs485 = false;
 
 int configOffset = -1;
 
 PixelUtil pixels;
+
+RS485Socket rs485;
+#define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
+byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
 void setup() {
   Serial.begin(9600);
 
   DEBUG2_PRINTLN("***** HMTL Bringup *****");
 
-  // XXX Update this to hmtl_setup() !!!
-  readconfig.address = -1;
-  configOffset = hmtl_read_config(&readconfig, 
-				  readoutputs, 
-				  HMTL_MAX_OUTPUTS);
-  if (configOffset < 0) {
-    DEBUG_ERR("Failed to read config");
-    DEBUG_ERR_STATE(1);
-  } else {
-    DEBUG2_VALUELN("Read config.  offset=", configOffset);
-    memcpy(&config, &readconfig, sizeof (config_hdr_t));
-    for (int i = 0; i < config.num_outputs; i++) {
-      if (i >= HMTL_MAX_OUTPUTS) {
-        DEBUG1_VALUELN("Too many outputs:", config.num_outputs);
-        return;
-      }
-      outputs[i] = (output_hdr_t *)&readoutputs[i];
-    }
-  }
+  int32_t outputs_found = hmtl_setup(&config, readoutputs,
+                                     outputs, NULL, HMTL_MAX_OUTPUTS,
+                                     &rs485, 
+                                     NULL,
+                                     &pixels, 
+                                     NULL, // MPR121
+                                     &rgb_output, // RGB
+                                     &value_output, // Value
+                                     &configOffset);
 
   DEBUG4_VALUE("Config size:", configOffset - HMTL_CONFIG_ADDR);
   DEBUG4_VALUELN(" end:", configOffset);
   DEBUG4_COMMAND(hmtl_print_config(&config, outputs));
 
-  /* Initialize the outputs */
-  for (int i = 0; i < config.num_outputs; i++) {
-    void *data = NULL;
-    switch (((output_hdr_t *)outputs[i])->type) {
-    case HMTL_OUTPUT_PIXELS: {
-      data = &pixels; 
-      has_pixels = true;
-      break;
-    }
-    case HMTL_OUTPUT_RGB: {
-      memcpy(&rgb_output, outputs[i], sizeof (rgb_output));
-      break;
-    }
-    case HMTL_OUTPUT_VALUE: {
-      memcpy(&value_output, outputs[i], sizeof (value_output));
-      has_value = true;
-      break;
-    }
-    }
-    hmtl_setup_output(&config, (output_hdr_t *)outputs[i], data);
+  /* Setup the RS485 connection if one is configured */
+  if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
+    rs485.setup();
+    rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
+    has_rs485 = true;
   }
 
-  if (has_pixels) {
+  if (outputs_found & (1 << HMTL_OUTPUT_VALUE)) {
+    has_value = true;
+  }
+
+  if (outputs_found & (1 << HMTL_OUTPUT_PIXELS)) {
     for (unsigned int i = 0; i < pixels.numPixels(); i++) {
       pixels.setPixelRGB(i, 0, 0, 0);
     }
     pixels.update();
+    has_pixels = true;
   }
 }
 
+#define PERIOD 1000
+unsigned long last_change = 0;
+int cycle = 0;
+
 void loop() {
+  unsigned long now = millis();
+  
+  /*
+   * Change the display mode periodically
+   */
+  if (now - last_change > PERIOD) {
 
-  DEBUG1_PRINTLN("White");
-  if (has_value) digitalWrite(value_output.pin, HIGH);
-  if (has_pixels) {
-    for (unsigned int i=0; i < pixels.numPixels(); i++) 
-      pixels.setPixelRGB(i, 255, 255, 255);  
-    pixels.update();
+    // Set LED colors
+    switch (cycle % 4) {
+      case 0: {
+        DEBUG1_PRINTLN("White");
+        if (has_value) digitalWrite(value_output.pin, HIGH);
+        if (has_pixels) {
+          for (unsigned int i=0; i < pixels.numPixels(); i++) 
+            pixels.setPixelRGB(i, 255, 255, 255);  
+          pixels.update();
+        }
+        break;
+      }
+
+      case 1: {
+        DEBUG1_PRINTLN("Red");
+        if (has_value) digitalWrite(value_output.pin, LOW);
+        digitalWrite(rgb_output.pins[0], HIGH);
+        if (has_pixels) {
+          for (unsigned int i=0; i < pixels.numPixels(); i++) 
+            pixels.setPixelRGB(i, 255, 0, 0);  
+          pixels.update();
+        }
+        break;
+      }
+
+      case 2: {
+        DEBUG1_PRINTLN("Green");
+        digitalWrite(rgb_output.pins[0], LOW);
+        digitalWrite(rgb_output.pins[1], HIGH);
+        if (has_pixels) {
+          for (unsigned int i=0; i < pixels.numPixels(); i++) 
+            pixels.setPixelRGB(i, 0, 255, 0);  
+          pixels.update();
+        }
+        break;
+      }
+
+      case 3: {
+        DEBUG1_PRINTLN("Blue");
+        digitalWrite(rgb_output.pins[1], LOW);
+        digitalWrite(rgb_output.pins[2], HIGH);
+        if (has_pixels) {
+          for (unsigned int i=0; i < pixels.numPixels(); i++) 
+            pixels.setPixelRGB(i, 0, 0, 255);  
+          pixels.update();
+        }
+
+        if (has_rs485) {
+          // Broadcast a message
+          DEBUG1_PRINTLN("Sending rs485");
+          hmtl_send_cancel(&rs485, rs485.send_buffer, rs485.send_data_size, 
+                           SOCKET_ADDR_ANY, 0);
+        }
+
+        break;
+      }
+    }
+
+
+    cycle++;
+    last_change = now;
   }
 
-  delay(1000);
+  if (has_rs485) {
+    /*
+     * Check for data over RS485
+     */
+    unsigned int msglen;
+    msg_hdr_t *msg = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
+    if (msg != NULL) {
+      DEBUG1_VALUE("Recieved rs485 msg len:", msglen);
+      DEBUG1_VALUE(" src:", RS485_SOURCE_FROM_DATA(msg));
+      DEBUG1_VALUE(" dst:", RS485_ADDRESS_FROM_DATA(msg));
+      DEBUG1_VALUE(" len:", msg->length);
+      DEBUG1_VALUE(" type:", msg->type);
+      DEBUG1_HEXVAL(" flags:0x", msg->flags);
+      DEBUG1_PRINT(" data:");
+      DEBUG1_COMMAND(
+                     print_hex_string((byte *)msg, msglen)
+                     );
+      DEBUG_PRINT_END();
+      
+      // TODO: Move code from command cli into library
+    }
 
-  DEBUG1_PRINTLN("Red");
-  if (has_value) digitalWrite(value_output.pin, LOW);
-  digitalWrite(rgb_output.pins[0], HIGH);
-  if (has_pixels) {
-    for (unsigned int i=0; i < pixels.numPixels(); i++) 
-      pixels.setPixelRGB(i, 255, 0, 0);  
-    pixels.update();
   }
-
-  delay(1000);
-
-  DEBUG1_PRINTLN("Green");
-  digitalWrite(rgb_output.pins[0], LOW);
-  digitalWrite(rgb_output.pins[1], HIGH);
-  if (has_pixels) {
-    for (unsigned int i=0; i < pixels.numPixels(); i++) 
-      pixels.setPixelRGB(i, 0, 255, 0);  
-    pixels.update();
-  }
-
-  delay(1000);
-
-  DEBUG1_PRINTLN("Blue");
-  digitalWrite(rgb_output.pins[1], LOW);
-  digitalWrite(rgb_output.pins[2], HIGH);
-  if (has_pixels) {
-    for (unsigned int i=0; i < pixels.numPixels(); i++) 
-      pixels.setPixelRGB(i, 0, 0, 255);  
-    pixels.update();
-  }
-
-  delay(1000);
-
-  if (has_pixels) {
-    for (unsigned int i=0; i < pixels.numPixels(); i++) 
-      pixels.setPixelRGB(i, 200, 0, 255);  
-    pixels.update();
-    delay(1000);
-  }
-
-  digitalWrite(rgb_output.pins[2], LOW);
 }
