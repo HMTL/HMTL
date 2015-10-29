@@ -22,6 +22,7 @@
 
 #include "Socket.h"
 #include "RS485Utils.h"
+#include "XBee.h"
 #include "XBeeSocket.h"
 
 /******/
