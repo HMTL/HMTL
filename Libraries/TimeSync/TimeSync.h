@@ -43,7 +43,7 @@ class TimeSync {
   byte state;
   unsigned long last_msg_time;
 
-  void sendSyncMsg(Socket *socket, socket_addr_t target, byte phase);
+  void sendSyncMsg(Socket *socket, socket_addr_t target, byte phase, int adjustment);
 };
 
 /*******************************************************************************

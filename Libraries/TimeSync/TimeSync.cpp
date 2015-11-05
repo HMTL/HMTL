@@ -74,7 +74,7 @@ unsigned long TimeSync::s() {
   return ms() / 1000;
 }
 
-void TimeSync::sendSyncMsg(Socket *socket, socket_addr_t target, byte phase) {
+void TimeSync::sendSyncMsg(Socket *socket, socket_addr_t target, byte phase, int adjustment = 0) {
   if (socket->send_data_size < HMTL_MSG_SIZE(msg_time_sync_t)) {
     DEBUG1_VALUELN("sync buf too small: ", socket->send_data_size);
     //    DEBUG_ERR("startsync to small");
@@ -84,7 +84,7 @@ void TimeSync::sendSyncMsg(Socket *socket, socket_addr_t target, byte phase) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)socket->send_buffer;
   msg_time_sync_t *msg_time = (msg_time_sync_t *)(msg_hdr + 1);
   msg_time->sync_phase = phase;
-  msg_time->timestamp = ms();
+  msg_time->timestamp = ms() + adjustment;
 
   hmtl_msg_fmt(msg_hdr, target, HMTL_MSG_SIZE(msg_time_sync_t), MSG_TYPE_TIMESYNC);
   socket->sendMsgTo(target, socket->send_buffer, HMTL_MSG_SIZE(msg_time_sync_t));
@@ -125,78 +125,81 @@ boolean TimeSync::synchronize(Socket *socket,
     msg_time_sync_t *msg_time = (msg_time_sync_t *)(msg_hdr + 1);
     socket_addr_t source = socket->sourceFromData(msg_hdr);
 
-    if (msg_time->sync_phase == TIMESYNC_CHECK) {
-      unsigned long local_now = ms();
+    switch (msg_time->sync_phase) {
+      case TIMESYNC_CHECK: {
+        unsigned long local_now = ms();
 
-      DEBUG3_VALUE("CHECK from:", source);
-      DEBUG3_VALUE(" ts:", msg_time->timestamp);
-      DEBUG3_VALUE(" ms:", local_now);
-      DEBUG3_VALUE(" diff:", (long)(msg_time->timestamp + latency - local_now));
-      sendSyncMsg(socket, source, TIMESYNC_ACK);
-    } else {
-    
-    switch (state) {
-      case STATE_IDLE:
-      case STATE_SYNCED: {
-        if (msg_time->sync_phase == TIMESYNC_SYNC) {
-          // Record the timestamp to compute the latency
-          DEBUG3_VALUE("SYNC from:", source);
-          latency = now;
+        DEBUG3_VALUE("CHECK from:", source);
+        DEBUG3_VALUE(" ts:", msg_time->timestamp);
+        DEBUG3_VALUE(" ms:", local_now);
+        DEBUG3_VALUE(" diff:", (long)(msg_time->timestamp + latency - local_now));
+        sendSyncMsg(socket, source, TIMESYNC_ACK, latency);
+        break;
+      }
 
-          // Reply with ack
-          sendSyncMsg(socket, source, TIMESYNC_ACK);
-          state = STATE_AWAITING_SET;
-        } else if (msg_time->sync_phase == TIMESYNC_RESYNC) {
-          if (state == STATE_SYNCED) {
-            delta = (msg_time->timestamp + latency) - now;
-            DEBUG3_VALUE("RESYNC from:", source);
-            DEBUG3_VALUE(" delta:", delta);
+      case TIMESYNC_SYNC: {
+        switch (state) {
+          case STATE_IDLE:
+          case STATE_SYNCED: {
+            // Record the timestamp to compute the latency
+            DEBUG3_VALUE("SYNC from:", source);
+            latency = now;
+
+            // Reply with ack
+            sendSyncMsg(socket, source, TIMESYNC_ACK);
+            state = STATE_AWAITING_SET;
+            break;
           }
+        }
+
+        break;
+      }
+
+      case TIMESYNC_RESYNC: {
+        if (state == STATE_SYNCED) {
+          delta = (msg_time->timestamp + latency) - now;
+          DEBUG3_VALUE("RESYNC from:", source);
+          DEBUG3_VALUE(" delta:", delta);
+        }
+        break;
+      }
+
+      case TIMESYNC_ACK: {
+        // TODO: Check if this is a response to the message we sent
+
+        DEBUG3_VALUE("ACK from:", source);
+        if (state == STATE_AWAITING_ACK) {
+          // Send TIMESYNC_SET
+          sendSyncMsg(socket, source, TIMESYNC_SET);
+          state = STATE_IDLE;
         } else {
-          // TODO: What to do with other time sync messages
+          unsigned long local_now = ms();
+          DEBUG3_VALUE(" ts:", msg_time->timestamp);
+          DEBUG3_VALUE(" ms:", local_now);
+          DEBUG3_VALUE(" diff:", (long)(local_now - msg_time->timestamp));
         }
         break;
       }
 
-      case STATE_AWAITING_ACK: {
-        if (msg_hdr != NULL) {
-          // Check if this is a response to the message we sent
-          if (msg_time->sync_phase == TIMESYNC_ACK) {
-            // Send TIMESYNC_SET
-            DEBUG3_VALUE("ACK from:", source);
-            sendSyncMsg(socket, source, TIMESYNC_SET);
-            state = STATE_IDLE;
-          } else {
-            // TODO: What to do with other time sync messages?
-          }
+      case TIMESYNC_SET: {
+        if (state == STATE_AWAITING_SET) {
+          /*
+           * Set the latecy to 1/2 the time between sending the ack and receiving
+           * this message, and then use that latecy to compute the delta from
+           * the sender's time.
+           */
+          DEBUG3_VALUE("SET from:", source);
+          DEBUG3_VALUE(" ts:", msg_time->timestamp);
+
+          latency = (now - latency) / 2;
+          delta = (msg_time->timestamp + latency) - now;
+          state = STATE_SYNCED;
+
+          DEBUG3_VALUE(" lat:", latency);
+          DEBUG3_VALUE(" delta:", delta);
         }
         break;
       }
-
-      case STATE_AWAITING_SET: {
-        if (msg_hdr != NULL) {
-          if (msg_time->sync_phase == TIMESYNC_SET) {
-            /*
-             * Set the latecy to 1/2 the time between sending the ack and receiving
-             * this message, and then use that latecy to compute the delta from
-             * the sender's time.
-             */
-            DEBUG3_VALUE("SET from:", source);
-            DEBUG3_VALUE(" ts:", msg_time->timestamp);
-
-            latency = (now - latency) / 2;
-            delta = (msg_time->timestamp + latency) - now;
-            state = STATE_SYNCED;
-
-            DEBUG3_VALUE(" lat:", latency);
-            DEBUG3_VALUE(" delta:", delta);
-          } else {
-            // TODO: What to do with other time sync messages?
-          }
-        }
-        break;
-      }
-    }
     }
     DEBUG_PRINT_END();
   }
