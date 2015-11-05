@@ -56,6 +56,14 @@ TimeSync::TimeSync() {
 }
 
 /*
+ * Set the delta to make the indicated time current
+ */
+void TimeSync::set(unsigned long time) {
+  delta = time - millis();
+  DEBUG3_VALUELN("TimeSet:", delta);
+}
+
+/*
  * Return the current time adjusted based on the derived time delta
  */
 unsigned long TimeSync::ms() {
@@ -68,7 +76,9 @@ unsigned long TimeSync::s() {
 
 void TimeSync::sendSyncMsg(Socket *socket, socket_addr_t target, byte phase) {
   if (socket->send_data_size < HMTL_MSG_SIZE(msg_time_sync_t)) {
-    DEBUG_ERR("startsync to small");
+    DEBUG1_VALUELN("sync buf too small: ", socket->send_data_size);
+    //    DEBUG_ERR("startsync to small");
+    return;
   }
 
   msg_hdr_t *msg_hdr = (msg_hdr_t *)socket->send_buffer;
@@ -79,6 +89,8 @@ void TimeSync::sendSyncMsg(Socket *socket, socket_addr_t target, byte phase) {
   hmtl_msg_fmt(msg_hdr, target, HMTL_MSG_SIZE(msg_time_sync_t), MSG_TYPE_TIMESYNC);
   socket->sendMsgTo(target, socket->send_buffer, HMTL_MSG_SIZE(msg_time_sync_t));
 
+  DEBUG3_VALUE(" phase:", phase);
+  DEBUG3_VALUE(" time:", msg_time->timestamp);
 }
 
 /*
@@ -112,13 +124,23 @@ boolean TimeSync::synchronize(Socket *socket,
     unsigned long now = millis();
     msg_time_sync_t *msg_time = (msg_time_sync_t *)(msg_hdr + 1);
     socket_addr_t source = socket->sourceFromData(msg_hdr);
+
+    if (msg_time->sync_phase == TIMESYNC_CHECK) {
+      unsigned long local_now = ms();
+
+      DEBUG3_VALUE("CHECK from:", source);
+      DEBUG3_VALUE(" ts:", msg_time->timestamp);
+      DEBUG3_VALUE(" ms:", local_now);
+      DEBUG3_VALUE(" diff:", (long)(msg_time->timestamp + latency - local_now));
+      sendSyncMsg(socket, source, TIMESYNC_ACK);
+    } else {
     
     switch (state) {
       case STATE_IDLE:
       case STATE_SYNCED: {
         if (msg_time->sync_phase == TIMESYNC_SYNC) {
           // Record the timestamp to compute the latency
-          DEBUG3_VALUE("SYNC from", source);
+          DEBUG3_VALUE("SYNC from:", source);
           latency = now;
 
           // Reply with ack
@@ -126,9 +148,9 @@ boolean TimeSync::synchronize(Socket *socket,
           state = STATE_AWAITING_SET;
         } else if (msg_time->sync_phase == TIMESYNC_RESYNC) {
           if (state == STATE_SYNCED) {
-            delta = now - (msg_time->timestamp + latency);
-            DEBUG3_VALUE("RESYNC from", source);
-            DEBUG3_VALUELN(" delta:", delta);
+            delta = (msg_time->timestamp + latency) - now;
+            DEBUG3_VALUE("RESYNC from:", source);
+            DEBUG3_VALUE(" delta:", delta);
           }
         } else {
           // TODO: What to do with other time sync messages
@@ -141,7 +163,7 @@ boolean TimeSync::synchronize(Socket *socket,
           // Check if this is a response to the message we sent
           if (msg_time->sync_phase == TIMESYNC_ACK) {
             // Send TIMESYNC_SET
-            DEBUG3_VALUELN("ACK from:", source);
+            DEBUG3_VALUE("ACK from:", source);
             sendSyncMsg(socket, source, TIMESYNC_SET);
             state = STATE_IDLE;
           } else {
@@ -160,12 +182,14 @@ boolean TimeSync::synchronize(Socket *socket,
              * the sender's time.
              */
             DEBUG3_VALUE("SET from:", source);
+            DEBUG3_VALUE(" ts:", msg_time->timestamp);
+
             latency = (now - latency) / 2;
-            delta = now - (msg_time->timestamp + latency);
+            delta = (msg_time->timestamp + latency) - now;
             state = STATE_SYNCED;
 
             DEBUG3_VALUE(" lat:", latency);
-            DEBUG3_VALUELN(" delta:", delta);
+            DEBUG3_VALUE(" delta:", delta);
           } else {
             // TODO: What to do with other time sync messages?
           }
@@ -173,6 +197,8 @@ boolean TimeSync::synchronize(Socket *socket,
         break;
       }
     }
+    }
+    DEBUG_PRINT_END();
   }
 
  EXIT:
@@ -184,4 +210,11 @@ boolean TimeSync::synchronize(Socket *socket,
  */
 void TimeSync::resynchronize(Socket *socket, socket_addr_t target) {
   sendSyncMsg(socket, target, TIMESYNC_RESYNC);
+}
+
+/*
+ * Send a time check message
+ */
+void TimeSync::check(Socket *socket, socket_addr_t target) {
+  sendSyncMsg(socket, target, TIMESYNC_CHECK);
 }

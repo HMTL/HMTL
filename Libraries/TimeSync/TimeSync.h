@@ -28,13 +28,14 @@ class TimeSync {
    */
   unsigned long ms();
   unsigned long s();
+  void set(unsigned long time);
 
   boolean synchronize(Socket *socket,
                       socket_addr_t target,
                       msg_hdr_t *msg_hdr);
   void resynchronize(Socket *socket,
                      socket_addr_t target);
-
+  void check(Socket *socket, socket_addr_t target);
 
  private:
   unsigned long latency;
@@ -52,6 +53,7 @@ class TimeSync {
 #define TIMESYNC_ACK    0x2
 #define TIMESYNC_SET    0x3
 #define TIMESYNC_RESYNC 0x4
+#define TIMESYNC_CHECK  0x5
 
 typedef struct {
   byte sync_phase;
