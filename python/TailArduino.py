@@ -6,10 +6,12 @@
 from __future__ import print_function
 
 import argparse
-import time
 
 import hmtl.portscan as portscan
 from hmtl.SerialBuffer import SerialBuffer
+from hmtl.StdinBuffer import StdinBuffer
+from hmtl.TimedLogger import TimedLogger
+
 
 def handle_args():
     parser = argparse.ArgumentParser()
@@ -24,8 +26,9 @@ def handle_args():
                         action="store_true",
                         help="Print timestamps", default=False)
 
-    parser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
-                        help="Verbose output", default=False)
+    parser.add_argument("-i", "--input", dest="input",
+                        action="store_true",
+                        help="Resend stdin to the serial device", default=False)
 
     options = parser.parse_args()
 
@@ -42,30 +45,42 @@ def handle_args():
 def main():
     options = handle_args()
 
-    reader = SerialBuffer(options.device, options.baud, verbose=False)
-    reader.start()
+    serial = SerialBuffer(options.device, options.baud, verbose=False)
+    stdin = StdinBuffer(verbose=False)
 
-    buff = reader.get_buffer()
+    serial.start()
+    stdin.start()
 
-    start_time = time.time()
+    logger = TimedLogger()
     while True:
-        # Wait for items to show up on the que
-        item = buff.get()
+        # Check the stdin buffer for data
+        item = stdin.get(0)
+        if item:
+            data = item.data.strip()
+            if options.input:
+                # Resend the input over the serial connection
+                logger.log("RESEND: %s" % data, color=TimedLogger.RED)
+                serial.connection.write(data + "\n")
+            else:
+                logger.log("READ: %s" % data, color=TimedLogger.CYAN)
+
+        # Check the serial queue for data
+        item = serial.get(0.1)
         if not item:
             continue
 
         data = item.data.strip()
-        if options.timestamp:
-            # Add a beginning of line timestamp
-            print("\033[91m[%.3f]\033[97m " % (item.timestamp - start_time),
-                  end="")
-
         try:
             # Attempt to print the item as ascii
-            print("%s" % (data.decode()))
+            text = data.decode()
         except UnicodeDecodeError:
             # Failing that, print raw data
-            print("'%s'" % data)
+            text = "'%s'" % data
+
+        if options.timestamp:
+            logger.log(text)
+        else:
+            print(text)
 
 if __name__ == '__main__':
     main()

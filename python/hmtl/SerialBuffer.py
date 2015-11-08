@@ -1,16 +1,21 @@
+#
+# This class reads from a serial device into a circular message buffer.  The
+# data read can either be line terminated ('\n') or as HMTL messages
+#
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2015
+#
+
 from __future__ import print_function
 
-from binascii import hexlify
 import serial
-import threading
-import time
 
-from CircularBuffer import CircularBuffer
 from TimedLogger import TimedLogger
-import HMTLprotocol
+from InputBuffer import InputBuffer
 
 
-class SerialBuffer(threading.Thread):
+class SerialBuffer(InputBuffer):
     """
     This class reads from a serial port into a circular buffer.  It reads
     until it gets to the end of a line or the end of an HMTL message.
@@ -19,118 +24,18 @@ class SerialBuffer(threading.Thread):
     # Default logging color
     LOGGING_COLOR = TimedLogger.CYAN
 
-    def __init__(self, device, baud=9600, timeout=0.1, bufflen=1000, verbose=True):
-        threading.Thread.__init__(self)
-
-        self.verbose = verbose
-
-        self.last_received = 0
-        self.total_received = 0
-
-        # Create the buffer for storing serial data
-        self.buff = CircularBuffer(bufflen)
+    def __init__(self, device, baud=9600, timeout=0.1, bufflen=1000,
+                 verbose=True):
+        InputBuffer.__init__(self, bufflen, verbose)
 
         # Open the serial connection
         self.connection = serial.Serial(device, baud, timeout=timeout)
+        self.logger.log("SerialBuffer: connected to %s" % device,
+                        color=TimedLogger.CYAN)
 
-        self.start_time = time.time()
-        self.logger = TimedLogger(self.start_time, textcolor=self.LOGGING_COLOR)
-
-        self.logger.log("SerialBuffer: connected to %s" % device, color=TimedLogger.CYAN)
-
-        # Set as a daemon so that this thread will exit correctly
-        # when the parent receives a kill signal
-        self.daemon = True
-
-    def get_buffer(self):
-        return self.buff
-
-    def get(self, wait=None):
-        return self.buff.get(wait=wait)
+    def get_reader(self):
+        return self.connection
 
     def stop(self):
-        self._Thread__stop()
-
-    def run(self):
-        while True:
-            data = ""
-            is_html = False
-            hdr = None
-            while True:
-                char = self.connection.read(1)
-
-                if len(char) == 0:
-                    break
-
-                self.total_received += 1
-
-                if ord(char) == HMTLprotocol.MsgHdr.STARTCODE:
-                    # This is the start of an HMTL data message
-                    is_html = True
-                if is_html:
-                    data += char
-
-                    if len(data) == HMTLprotocol.MsgHdr.length():
-                        # Received enough data for a full message header
-                        hdr = HMTLprotocol.MsgHdr.from_data(data)
-
-                        # TODO: Perform basic header validation here
-                    if hdr:
-                        if len(data) >= hdr.length:
-                            # Reached end of message
-                            break
-                else:
-                    # Arduino print output lines are terminated with \r\n
-                    if char == '\r':
-                        continue
-                    if char == '\n':
-                        break
-                    data += char
-
-            if data and len(data):
-                self.last_received = time.time()
-                item = SerialItem(data, self.last_received, is_html)
-                self.buff.put(item)
-
-                if self.verbose:
-                    item.print(self.logger)
-
-
-class SerialItem:
-    """
-    Class containing data from a single serial item
-    """
-
-    def __init__(self, data, timestamp, is_hmtl=False):
-        self.data = data
-        self.timestamp = timestamp
-        self.is_hmtl = is_hmtl
-        self.hdr = HMTLprotocol.MsgHdr.from_data(data) if is_hmtl else None
-
-    @staticmethod
-    def from_data(data, timestamp=None):
-        if not timestamp:
-            timestamp = time.time()
-
-        if len(data) == 0:
-            return None
-
-        if ord(data[0]) == HMTLprotocol.MsgHdr.STARTCODE:
-            is_hmtl = True
-            # TODO: Perform validation here
-        else:
-            is_hmtl = False
-
-        return SerialItem(data, timestamp, is_hmtl)
-
-    def __str__(self):
-        if self.is_hmtl:
-            return "(%s) '%s'" % (self.hdr.msg_type(), hexlify(self.data))
-        else:
-            try:
-                return self.data.decode()
-            except UnicodeDecodeError:
-                return "(raw) '%s'" % (hexlify(self.data))
-
-    def print(self, logger, color=None):
-        logger.log(str(self), self.timestamp, color)
+        self.connection.close()
+        InputBuffer.stop()
