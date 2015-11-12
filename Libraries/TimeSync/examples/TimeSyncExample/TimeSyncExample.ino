@@ -121,16 +121,16 @@ void cliHandler(char **tokens, byte numtokens) {
     }
 
     case 't': {
-      if (numtokens < 2) return;
-      uint16_t address = atoi(tokens[1]);
+      if (numtokens < 1) return;
+      uint16_t address = (numtokens >= 2 ? atoi(tokens[1]) : SOCKET_ADDR_ANY); 
       DEBUG1_VALUE("* Time sync to: ", address);
       time.synchronize(&rs485, address, NULL);
       break;
     }
 
     case 'r': {
-      if (numtokens < 2) return;
-      uint16_t address = atoi(tokens[1]);
+      if (numtokens < 1) return;
+      uint16_t address = (numtokens >= 2 ? atoi(tokens[1]) : SOCKET_ADDR_ANY); 
       DEBUG1_VALUE("* Time resync to: ", address);
       time.resynchronize(&rs485, address);
       break;
@@ -145,8 +145,8 @@ void cliHandler(char **tokens, byte numtokens) {
     }
 
     case 'c': {
-      if (numtokens < 2) return;
-      uint16_t address = atoi(tokens[1]);
+      if (numtokens < 1) return;
+      uint16_t address = (numtokens >= 2 ? atoi(tokens[1]) : SOCKET_ADDR_ANY); 
       DEBUG1_VALUE("* Time check to: ", address);
       time.check(&rs485, address);
       break;
