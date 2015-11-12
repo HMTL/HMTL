@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Author: Adam Phelps
+ * License: MIT
+ * Copyright: 2014
+ *
+ * Bringup code for generic HMTL boards
+ */
 
 #define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"

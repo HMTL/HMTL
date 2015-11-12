@@ -6,6 +6,7 @@
  * This sketch, when paired with HMTLConfig.py, is used to configure the EEPROM 
  * configuration of an HMTL based device from data received over serial.
  */
+#include "Arduino.h"
 
 #define DEBUG_LEVEL DEBUG_MID
 #include "Debug.h"
