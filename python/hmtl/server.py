@@ -2,7 +2,7 @@ from multiprocessing.connection import Listener
 import threading
 
 from HMTLSerial import *
-from SerialBuffer import SerialItem
+from InputBuffer import InputItem
 from TimedLogger import TimedLogger
 
 SERVER_ACK = "ack"
@@ -73,7 +73,7 @@ class HMTLServer():
         while not self.terminate:
             try:
                 data = self.conn.recv()
-                item = SerialItem.from_data(data)
+                item = InputItem.from_data(data)
 
                 self.logger.log("Received: %s" % item)
                 self.handle_msg(item)

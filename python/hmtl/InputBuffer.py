@@ -97,14 +97,14 @@ class InputBuffer(threading.Thread):
 
             if data and len(data):
                 self.last_received = time.time()
-                item = SerialItem(data, self.last_received, is_html)
+                item = InputItem(data, self.last_received, is_html)
                 self.buff.put(item)
 
                 if self.verbose:
                     item.print(self.logger)
 
 
-class SerialItem:
+class InputItem:
     """
     Class containing data from a single serial item
     """
@@ -129,7 +129,7 @@ class SerialItem:
         else:
             is_hmtl = False
 
-        return SerialItem(data, timestamp, is_hmtl)
+        return InputItem(data, timestamp, is_hmtl)
 
     def __str__(self):
         if self.is_hmtl:
