@@ -29,6 +29,7 @@
 
 #include "HMTLTypes.h"
 #include "HMTLMessaging.h"
+#include "HMTLPrograms.h"
 #include "HMTLProtocol.h"
 
 #include "PixelUtil.h"
@@ -43,7 +44,7 @@
 #include "TimeSync.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 27 // %META INCR
+#define HMTL_MODULE_BUILD 28 // %META INCR
 
 #define TYPE_HMTL_MODULE 0x1
 
