@@ -1,9 +1,6 @@
 HMTL TODO LIST
 --------------
 
-* Put protocol stuff for python in library rather than with python config code
-
 ** Add a config file that allows the serial interfaces to be named
 
-* Create a sync program message (synchronize timing)
 
