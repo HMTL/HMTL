@@ -273,7 +273,7 @@ boolean program_timed_change(output_hdr_t *output, void *object,
     hmtl_set_output_rgb(output, object, state->msg.stop_value);
 
     // Disable the program
-    tracker->done = true;
+    tracker->flags |= PROGRAM_TRACKER_DONE;
     changed = true;
   }
 
@@ -330,7 +330,7 @@ boolean program_fade(output_hdr_t *output, void *object,
     unsigned int elapsed = now - state->start_time;
     if (elapsed >= state->msg.period) {
       // Disable the program
-      tracker->done = true;
+      tracker->flags |= PROGRAM_TRACKER_DONE;
       elapsed = state->msg.period;
     }
     fract8 fraction = map(elapsed, 0, state->msg.period, 0, 255);

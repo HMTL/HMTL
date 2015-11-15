@@ -30,10 +30,11 @@ typedef struct {
 } hmtl_program_t;
 
 /* Structure used to track the state of currently active programs */
+#define PROGRAM_TRACKER_DONE 0x1
 struct program_tracker {
   hmtl_program_t *program;
   void *state;
-  boolean done;
+  byte flags;
 };
 
 

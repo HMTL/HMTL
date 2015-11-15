@@ -31,6 +31,7 @@
 #include "HMTLMessaging.h"
 #include "HMTLPrograms.h"
 #include "HMTLProtocol.h"
+#include "ProgramManager.h"
 
 #include "PixelUtil.h"
 
@@ -39,8 +40,6 @@
 #include "XBeeSocket.h"
 #include "MPR121.h"
 
-#include "HMTL_Module.h"
-
 #include "TimeSync.h"
 
 /* Auto update build number */
@@ -48,12 +47,10 @@
 
 #define TYPE_HMTL_MODULE 0x1
 
-// XXX - Remove from here
 
-/* Track the currently active programs */
-program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
-
-// YYY - Remove to here
+/*
+ * Communications
+ */
 
 #define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
 
@@ -104,10 +101,8 @@ hmtl_program_t program_functions[] = {
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
-//ProgramManager manager(outputs, HMTL_MAX_OUTPUTS,
-//                       program_functions, NUM_PROGRAMS);
-
-
+program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
+ProgramManager manager;
 
 
 void setup() {
@@ -115,9 +110,8 @@ void setup() {
   //  Serial.begin(115200);
   Serial.begin(57600);
 
-  for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
-    active_programs[i] = NULL;
-  }
+  manager = ProgramManager(outputs, active_programs, HMTL_MAX_OUTPUTS,
+                           program_functions, NUM_PROGRAMS);
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      outputs, objects, HMTL_MAX_OUTPUTS,
@@ -316,7 +310,7 @@ void loop() {
   }
 
   /* Execute any active programs */
-  if (run_programs(outputs, objects, active_programs)) {
+  if (manager.run(objects)) {
     update = true;
   }
 
@@ -359,8 +353,7 @@ boolean process_msg(msg_hdr_t *msg_hdr, Socket *src, boolean forwarded) {
       case MSG_TYPE_OUTPUT: {
         output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
         if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-          // TODO: This program stuff should be moved into the framework
-          setup_program(outputs, active_programs, (msg_program_t *)out_hdr);
+          manager.handle_msg((msg_program_t *)out_hdr);
         } else {
           hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
         }
@@ -517,103 +510,6 @@ void process_sensor_data(msg_sensor_data_t *sensor) {
   }
 }
 
-/*******************************************************************************
- * Code for program execution
- */
-
-/* Setup a program from a HMTL program message */
-boolean setup_program(output_hdr_t *outputs[],
-                      program_tracker_t *trackers[],
-                      msg_program_t *msg) {
-
-  DEBUG4_VALUE("setup_program: program=", msg->type);
-  DEBUG4_VALUELN(" output=", msg->hdr.output);
-
-  /* Find the program to be executed */ 
-  hmtl_program_t *program = NULL;
-  for (byte i = 0; i < NUM_PROGRAMS; i++) {
-    if (program_functions[i].type == msg->type) {
-      program = &program_functions[i];
-      break;
-    }
-  }
-  if (program == NULL) {
-    DEBUG1_VALUELN("setup_program: invalid type: ",
-		  msg->type);
-    return false;
-  }
-
-   /* Setup the tracker */
-  if (msg->hdr.output > HMTL_MAX_OUTPUTS) {
-    DEBUG1_VALUELN("setup_program: invalid output: ",
-		  msg->hdr.output);
-    return false;
-  }
-  if (outputs[msg->hdr.output] == NULL) {
-    DEBUG1_VALUELN("setup_program: NULL output: ",
-		  msg->hdr.output);
-    return false;
-  }
-
-  program_tracker_t *tracker = trackers[msg->hdr.output];
-
-  if (program->type == HMTL_PROGRAM_NONE) {
-    free_tracker(trackers, msg->hdr.output);
-    return true;
-  }
-
-  if (tracker != NULL) {
-    DEBUG5_PRINTLN("setup_program: reusing old tracker");
-    if (tracker->state) {
-      DEBUG5_PRINTLN("setup_program: deleting old state");
-      free(tracker->state);
-    }
-  } else {
-    tracker = (program_tracker_t *)malloc(sizeof (program_tracker_t));
-    trackers[msg->hdr.output] = tracker;
-  }
-
-  tracker->program = program;
-  tracker->done = false;
-  tracker->program->setup(msg, tracker);
-
-  return true;
-}
-
-/* Free a single program tracker */
-void free_tracker(program_tracker_t *trackers[], int index) {
-  program_tracker_t *tracker = trackers[index];
-  if (tracker != NULL) {
-      DEBUG3_VALUELN("free_tracker: clearing program for ", 
-		    index);
-      if (tracker->state) free(tracker->state);
-      free(tracker);
-    }
-    trackers[index] = NULL;
-}
-
-/* Execute all active programs */
-boolean run_programs(output_hdr_t *outputs[],
-                     void *objects[],
-                     program_tracker_t *trackers[]) {
-  boolean updated = false;
-
-  for (byte i = 0; i < HMTL_MAX_OUTPUTS; i++) {
-    program_tracker_t *tracker = trackers[i];
-    if (tracker != NULL) {
-      if (tracker->done) {
-        free_tracker(trackers, i);
-        continue;
-      }
-
-      if (tracker->program->program(outputs[i], objects[i], tracker)) {
-        updated = true;
-      }
-    }
-  }
-
-  return updated;
-}
 
 
 
