@@ -2,7 +2,7 @@
     "info": "This config is for the 2nd revision (HMTL v8.1) of the 1284P based board",
     "header": {
 	      "protocol_version": 3,
-	      "hardware_version": 8,
+	      "hardware_version": 9,
 	      "baud": 9600,
 	      "device_id": 44,
 	      "address": 44,
