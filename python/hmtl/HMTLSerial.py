@@ -69,19 +69,23 @@ class HMTLSerial():
                 raise Exception("Timed out waiting for ready signal")
 
     # Send terminated data and wait for (N)ACK
-    def send_and_confirm(self, data, terminated):
+    def send_and_confirm(self, data, terminated, timeout=10):
         """Send a command and wait for the ACK"""
 
         self.serial.connection.write(data)
         if (terminated):
             self.serial.connection.write(HMTLprotocol.HMTL_TERMINATOR)
 
+        start_wait = time.time()
         while True:
             item = self.get_message()
             if item.data == HMTLprotocol.HMTL_CONFIG_ACK:
                 return True
             if item.data == HMTLprotocol.HMTL_CONFIG_FAIL:
                 raise HMTLConfigException("Configuration command failed")
+            if (time.time() - start_wait) > timeout:
+                raise Exception("Timed out waiting for ACK signal")
+
 
 # XXX: Here we need a method of getting data back from poll or the like
 
