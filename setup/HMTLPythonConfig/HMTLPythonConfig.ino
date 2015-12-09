@@ -8,7 +8,7 @@
  */
 #include "Arduino.h"
 
-#define DEBUG_LEVEL DEBUG_MID
+#define DEBUG_LEVEL DEBUG_HIGH
 #include "Debug.h"
 
 #include "HMTLProtocol.h"

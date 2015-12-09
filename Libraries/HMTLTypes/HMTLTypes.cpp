@@ -419,7 +419,7 @@ boolean hmtl_validate_rgb(config_rgb_t *rgb) {
   uint32_t pinbit;
 
   for (int pin = 0; pin < 3; pin++) {
-    if (rgb->pins[pin] > 13) return false;
+    if (rgb->pins[pin] > 23) return false;
     pinbit = (1 << rgb->pins[pin]);
     if (pinmap & pinbit) return false;
     pinmap |= pinbit;
