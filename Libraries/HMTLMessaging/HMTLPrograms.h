@@ -9,45 +9,22 @@
 #ifndef HMTLPROGRAMS_H
 #define HMTLPROGRAMS_H
 
-#include "TimeSync.h"
-extern TimeSync time;
-
-/*******************************************************************************
- * Function prototypes for a HMTL program and program configuration
- */
-typedef struct program_tracker program_tracker_t;
-
-typedef boolean (*hmtl_program_func)(output_hdr_t *outputs,
-                                     void *object,
-                                     program_tracker_t *tracker);
-typedef boolean (*hmtl_program_setup)(msg_program_t *msg,
-                                      program_tracker_t *tracker);
-
-typedef struct {
-  byte type;
-  hmtl_program_func program;
-  hmtl_program_setup setup;
-} hmtl_program_t;
-
-/* Structure used to track the state of currently active programs */
-#define PROGRAM_TRACKER_DONE 0x1
-struct program_tracker {
-  hmtl_program_t *program;
-  void *state;
-  byte flags;
-};
-
+#include "ProgramManager.h"
 
 /*******************************************************************************
  * HMTL Programs message formats
  */
 
-#define HMTL_PROGRAM_NONE         0x0
-#define HMTL_PROGRAM_BLINK        0x1
-#define HMTL_PROGRAM_TIMED_CHANGE 0x2
-#define HMTL_PROGRAM_LEVEL_VALUE  0x3
-#define HMTL_PROGRAM_SOUND_VALUE  0x4
-#define HMTL_PROGRAM_FADE         0x5
+// 1 byte value
+#define HMTL_PROGRAM_NONE         0x00
+#define HMTL_PROGRAM_BLINK        0x01
+#define HMTL_PROGRAM_TIMED_CHANGE 0x02
+#define HMTL_PROGRAM_LEVEL_VALUE  0x03
+#define HMTL_PROGRAM_SOUND_VALUE  0x04
+#define HMTL_PROGRAM_FADE         0x05
+
+#define PROGRAM_SENSOR_DATA       0x10
+
 
 /*
  * Program to blink between two colors

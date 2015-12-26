@@ -9,6 +9,7 @@
 #ifndef HMTLMESSAGING_H
 #define HMTLMESSAGING_H
 
+#include "Socket.h"
 #include "RS485Utils.h"
 #include "HMTLTypes.h"
 
@@ -48,7 +49,7 @@ typedef struct {
   // This address is redundant with the address in the RS485 socket header,
   // however it is necessary for messages received from other sources (such as
   // serial).
-  uint16_t address;
+  socket_addr_t address;
 
 } msg_hdr_t;
 
@@ -108,7 +109,7 @@ typedef struct {
 
 typedef struct {
   uint16_t device_id;
-  uint16_t address;
+  socket_addr_t address;
 } msg_set_addr_t;
 #define HMTL_MSG_SET_ADDR_LEN (sizeof (msg_hdr_t) + sizeof (msg_set_addr_t))
 
@@ -146,54 +147,56 @@ uint16_t hmtl_msg_size(output_hdr_t *output);
 
 /* Process a HMTL formatted message */
 int hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
-			   config_hdr_t *config_hdr, output_hdr_t *outputs[],
-			   void *objects[] = NULL);
+                           byte num_objects,
+                           output_hdr_t *outputs[],
+                           void *objects[] = NULL);
 
 /* Receive a message over the serial interface */
 boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 
 /* Receive a message over the rs485 interface */
 msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
-                             uint16_t address = SOCKET_ADDR_INVALID);
+                             socket_addr_t address = SOCKET_ADDR_INVALID);
 msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
-                             uint16_t address = SOCKET_ADDR_INVALID);
+                             socket_addr_t address = SOCKET_ADDR_INVALID);
 
 
 /*******************************************************************************
  * Formatting for individual messages
  */
-void hmtl_msg_fmt(msg_hdr_t *msg_hdr, uint16_t address, uint8_t length, 
+void hmtl_msg_fmt(msg_hdr_t *msg_hdr, socket_addr_t address, uint8_t length,
                   uint8_t type, uint8_t flags = 0);
 
 uint16_t hmtl_value_fmt(byte *buffer, uint16_t buffsize,
-			uint16_t address, uint8_t output, int value);
+			socket_addr_t address, uint8_t output, int value);
 uint16_t hmtl_rgb_fmt(byte *buffer, uint16_t buffsize,
-		      uint16_t address, uint8_t output, 
-		      uint8_t r, uint8_t g, uint8_t b);
-uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                      socket_addr_t address, uint8_t output,
+                      uint8_t r, uint8_t g, uint8_t b);
+uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, socket_addr_t address,
                        byte flags, uint16_t object_type,
                        config_hdr_t *config, output_hdr_t *outputs[],
                        uint16_t recv_buffer_size);
-uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
-                           uint16_t device_id, uint16_t new_address);
-uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize,
+                           socket_addr_t address,
+                           uint16_t device_id, socket_addr_t new_address);
+uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, socket_addr_t address,
                          uint8_t datalen, uint8_t **data_ptr);
 
 /*******************************************************************************
  * Wrapper functions for sending HMTL Messages 
  */
 void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
-		     uint16_t address, uint8_t output, int value);
+                     socket_addr_t address, uint8_t output, int value);
 
 void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
-		   uint16_t address, uint8_t output, 
-		   uint8_t r, uint8_t g, uint8_t b);
+                   socket_addr_t address, uint8_t output,
+                   uint8_t r, uint8_t g, uint8_t b);
 
 void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
-                            uint16_t address);
+                            socket_addr_t address);
 
 void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
-                              uint16_t address);
+                              socket_addr_t address);
 
 /*******************************************************************************
  * Data processing helper functions

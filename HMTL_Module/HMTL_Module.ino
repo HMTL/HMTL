@@ -17,8 +17,6 @@
 #include "Wire.h"
 #include "XBee.h"
 
-
-
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_HIGH
 #endif
@@ -43,10 +41,7 @@
 #include "TimeSync.h"
 
 /* Auto update build number */
-#define HMTL_MODULE_BUILD 28 // %META INCR
-
-#define TYPE_HMTL_MODULE 0x1
-
+#define HMTL_MODULE_BUILD 29 // %META INCR
 
 /*
  * Communications
@@ -98,20 +93,18 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
   { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
+  { PROGRAM_SENSOR_DATA, process_sensor_data, NULL }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
 program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
 ProgramManager manager;
-
+MessageHandler handler;
 
 void setup() {
 
   //  Serial.begin(115200);
   Serial.begin(57600);
-
-  manager = ProgramManager(outputs, active_programs, HMTL_MAX_OUTPUTS,
-                           program_functions, NUM_PROGRAMS);
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      outputs, objects, HMTL_MAX_OUTPUTS,
@@ -148,6 +141,16 @@ void setup() {
     has_xbee = false;
   }
 
+  if (serial_socket == NULL) {
+    DEBUG_ERR("No sockets configured");
+    DEBUG_ERR_STATE(2);
+  }
+
+  /* Setup the program manager */
+  manager = ProgramManager(outputs, active_programs, objects, HMTL_MAX_OUTPUTS,
+                           program_functions, NUM_PROGRAMS);
+
+  handler = MessageHandler(config.address, &manager);
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
@@ -199,7 +202,7 @@ void startup_commands() {
       forwarded = check_and_forward(startupmsg[i], &xbee);
     }
 
-    process_msg(startupmsg[i], NULL, forwarded);
+    handler.process_msg(startupmsg[i], NULL, serial_socket, &config);
   }
 
   /* Free the startup messages */
@@ -263,8 +266,7 @@ void loop() {
       forwarded = check_and_forward(msg_hdr, &xbee);
     }
 
-
-    if (process_msg(msg_hdr, NULL, forwarded)) {
+    if (handler.process_msg(msg_hdr, NULL, serial_socket, &config)) {
       update = true;
     }
 
@@ -275,7 +277,7 @@ void loop() {
   if (has_rs485) {
     /* Check for message over RS485 */
     unsigned int msglen;
-    msg_hdr = hmtl_socket_getmsg(&rs485, &msglen, config.address);
+    msg_hdr = hmtl_socket_getmsg(&rs485, &msglen);
     if (msg_hdr != NULL) {
       DEBUG5_VALUE("Received rs485 msg len=", msglen);
       DEBUG5_PRINT(" ");
@@ -284,7 +286,7 @@ void loop() {
                      );
       DEBUG_PRINT_END();
 
-      if (process_msg(msg_hdr, &rs485, false)) {
+      if (handler.process_msg(msg_hdr, &rs485, serial_socket, &config)) {
         update = true;
       }
     }
@@ -293,7 +295,7 @@ void loop() {
   if (has_xbee) {
     /* Check for message over Xbee */
     unsigned int msglen;
-    msg_hdr = hmtl_socket_getmsg(&xbee, &msglen, config.address);
+    msg_hdr = hmtl_socket_getmsg(&xbee, &msglen);
     if (msg_hdr != NULL) {
       DEBUG5_VALUE("Received XBee msg len=", msglen);
       DEBUG5_PRINT(" ");
@@ -302,15 +304,14 @@ void loop() {
                      );
       DEBUG_PRINT_END();
       
-      if (process_msg(msg_hdr, &xbee, false)) {
+      if (handler.process_msg(msg_hdr, &xbee, serial_socket, &config)) {
         update = true;
       }
     }
-
   }
 
   /* Execute any active programs */
-  if (manager.run(objects)) {
+  if (manager.run()) {
     update = true;
   }
 
@@ -322,129 +323,9 @@ void loop() {
   }
 }
 
-/* Process a message if it is for this module */
-boolean process_msg(msg_hdr_t *msg_hdr, Socket *src, boolean forwarded) {
-  if (msg_hdr->version != HMTL_MSG_VERSION) {
-    DEBUG_ERR("Invalid message version");
-    return false;
-  }
-
-  if ((msg_hdr->address == config.address) ||
-      (msg_hdr->address == SOCKET_ADDR_ANY)) {
-
-    if ((msg_hdr->flags & MSG_FLAG_ACK) && 
-        (msg_hdr->address != SOCKET_ADDR_ANY)) {
-      /* 
-       * This is an ack message that is not for us, resend it over serial in
-       * case that was the original source.
-       * TODO: Maybe this should check address as well, and serial needs to be
-       * assigned an address?
-       */
-      DEBUG4_PRINTLN("Forwarding ack to serial");
-      Serial.write((byte *)msg_hdr, msg_hdr->length);
-
-      if (msg_hdr->type != MSG_TYPE_SENSOR) { // Sensor broadcasts are for everyone
-        return false;
-      }
-    }
-
-    switch (msg_hdr->type) {
-
-      case MSG_TYPE_OUTPUT: {
-        output_hdr_t *out_hdr = (output_hdr_t *)(msg_hdr + 1);
-        if (out_hdr->type == HMTL_OUTPUT_PROGRAM) {
-          manager.handle_msg((msg_program_t *)out_hdr);
-        } else {
-          hmtl_handle_output_msg(msg_hdr, &config, outputs, objects);
-        }
-
-        return true;
-      }
-
-      case MSG_TYPE_POLL: {
-        // TODO: This should be in framework as well
-        uint16_t source_address = 0;
-        uint16_t recv_buffer_size = 0;
-        Socket *sock;
-
-        if (src != NULL) {
-          // The response will be going over a socket, get the source address
-          source_address = src->sourceFromData(msg_hdr);
-          recv_buffer_size = src->recvLimit;
-          sock = src;
-        } else {
-          recv_buffer_size = MSG_MAX_SZ;
-          sock = serial_socket;
-        }
-
-        DEBUG3_VALUELN("Poll req src:", source_address);
-
-        // Format the poll response
-        uint16_t len = hmtl_poll_fmt(sock->send_buffer, sock->send_data_size,
-                                     source_address,
-                                     msg_hdr->flags, TYPE_HMTL_MODULE,
-                                     &config, outputs, recv_buffer_size);
-
-        // Respond to the appropriate source
-        if (src != NULL) {
-          if (msg_hdr->address == SOCKET_ADDR_ANY) {
-            // If this was a broadcast address then do not respond immediately,
-            // delay for time based on our address.
-            int delayMs = config.address * 2;
-            DEBUG3_VALUELN("Delay resp: ", delayMs)
-              delay(delayMs);
-          }
-
-          src->sendMsgTo(source_address, sock->send_buffer, len);
-        } else {
-          Serial.write(sock->send_buffer, len);
-        }
-
-        break;
-      }
-
-      case MSG_TYPE_SET_ADDR: {
-        /* Handle an address change message */
-        msg_set_addr_t *set_addr = (msg_set_addr_t *)(msg_hdr + 1);
-        if ((set_addr->device_id == 0) ||
-            (set_addr->device_id == config.device_id)) {
-          config.address = set_addr->address;
-          src->sourceAddress = config.address;
-          DEBUG2_VALUELN("Address changed to ", config.address);
-        }
-        break;
-      }
-
-      case MSG_TYPE_SENSOR: {
-        if (msg_hdr->flags & MSG_FLAG_ACK) {
-          /*
-           * This is a sensor response, record relevant values for usage
-           * elsewhere.
-           */
-          msg_sensor_data_t *sensor = NULL;
-          while ((sensor = hmtl_next_sensor(msg_hdr, sensor))) {
-            process_sensor_data(sensor);
-          }
-          DEBUG_PRINT_END();
-        }
-        break;
-      }
-    }
-  }
-
-  if (forwarded) {
-    // Special handling for messages that we've forwarded along
-    if (msg_hdr->flags & MSG_FLAG_RESPONSE) {
-      // The sender expects a response
-    }
-    // TODO: Why is this section here?
-  }
-
-  return false;
-}
 
 /*
- * Check if a message should be forwarded and transmit it over the
+ * Check if a message should be forwarded and transmit it over
  * a socket if so.
  */
 boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
@@ -468,10 +349,14 @@ boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
   return false;
 }
 
+
 /*
  * Record relevant sensor data for programatic usage
  */
-void process_sensor_data(msg_sensor_data_t *sensor) {
+boolean process_sensor_data(output_hdr_t *output,
+                            void *object,
+                            program_tracker_t *tracker) {
+  msg_sensor_data_t *sensor = (msg_sensor_data_t *)object;
   void *data = (void *)&sensor->data;
 
   switch (sensor->sensor_type) {
@@ -491,20 +376,24 @@ void process_sensor_data(msg_sensor_data_t *sensor) {
                        DEBUG4_HEXVAL(" ", sound_data[i]);
                      }
                      );
+      return true;
       break;
     }
     case HMTL_SENSOR_LIGHT: {
       light_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LIGHT:", light_data);
+      return true;
       break;
     }
     case HMTL_SENSOR_POT: {
       level_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LEVEL:", level_data);
+      return true;
       break;
     }
     default: {
       DEBUG1_PRINT(" ERROR: UNKNOWN TYPE");
+      return false;
       break;
     }
   }
