@@ -32,8 +32,9 @@
 #include "XBee.h"
 #include "XBeeSocket.h"
 
+#include "HMTLProtocol.h"
 #include "HMTLMessaging.h"
-
+#include "HMTLPrograms.h"
 
 /******/
 

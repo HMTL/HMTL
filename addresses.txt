@@ -18,10 +18,10 @@ NA	*32/0x20	2            Taller stand (Board v4)
 36  36/0x24   3            Icohedron (Board v4, XLR)
 40  37/0x25   3            Icohedron w/4x Triggers (Board v4, XLR)
 
-41  41/0x26   3            Board v8.1 (1284p)
+41  41/0x26   3            Board v8.0 (1284p)
 42  42/0x27   3            Icohedron (Board v5-green, XLR)
-42  43/0x28   3            ?? (Board v5-purple, XLR)
-
+43  43/0x28   3            ?? (Board v5-purple, XLR)
+44  44/0x29   3            Board v8.1 (1284p)
 
 ==Trigger boards==
 64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)

@@ -8,7 +8,9 @@
  */
 #include "Arduino.h"
 
-#define DEBUG_LEVEL DEBUG_HIGH
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_HIGH
+#endif
 #include "Debug.h"
 
 #include "HMTLProtocol.h"
@@ -69,7 +71,7 @@ void print_ready() {
 
 void loop()
 {
-  send_ready();
+  print_ready();
   
   if (receive_command()) {
     digitalWrite(DEBUG_PIN, HIGH);
