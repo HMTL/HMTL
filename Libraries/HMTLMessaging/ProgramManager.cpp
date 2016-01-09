@@ -227,7 +227,7 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
       }
 
       case MSG_TYPE_POLL: {
-        // TODO: This should be in framework as well
+        // Generate a response to a poll message
         uint16_t source_address = 0;
         Socket *sock;
 
@@ -245,10 +245,13 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
         DEBUG3_VALUELN("Poll req src:", source_address);
 
         // Format the poll response
-        uint16_t len = hmtl_poll_fmt(sock->send_buffer, sock->send_data_size,
+        uint16_t len = hmtl_poll_fmt(sock->send_buffer,
+                                     sock->send_data_size,
                                      source_address,
                                      msg_hdr->flags, OBJECT_TYPE,
-                                     config, manager->outputs, sock->recvLimit);
+                                     config,
+                                     manager->outputs, 
+                                     sock->recvLimit);
 
         // Respond to the appropriate source
         if (src != NULL) {

@@ -65,11 +65,8 @@ def handle_args():
                       help="Send address setting command")
     parser.add_option_group(group)
 
-
     # Command options
     group = OptionGroup(parser, "Command Options")
-    group.add_option("--period", dest="period", type="float",
-                      help="Sleep period between changes")
     group.add_option("-O", "--output", dest="output", type="int",
                       help="Number of the output to be set", default=None)
     group.add_option("-C", "--command", dest="commandvalue", action="store",
