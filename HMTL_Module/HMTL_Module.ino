@@ -59,6 +59,9 @@ byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
 Socket *serial_socket = NULL;
 
+#define NUM_SOCKETS 2
+Socket *sockets[NUM_SOCKETS] = { NULL, NULL };
+
 config_hdr_t config;
 output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
 config_max_t readoutputs[HMTL_MAX_OUTPUTS];
@@ -127,6 +130,7 @@ void setup() {
     rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
     has_rs485 = true;
     serial_socket = &rs485;
+    sockets[0] = &rs485;
   } else {
     has_rs485 = false;
   }
@@ -137,6 +141,7 @@ void setup() {
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
     has_xbee = true;
     serial_socket = &xbee;
+    sockets[1] = &xbee;
   } else {
     has_xbee = false;
   }
@@ -158,6 +163,7 @@ void setup() {
   //startup_commands();
 }
 
+#if 0
 /*******************************************************************************
  * Execute any startup commands
  */
@@ -210,15 +216,12 @@ void startup_commands() {
     free(startupmsg[i]);
   }
 }
+#endif
 
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
-byte offset = 0;
+byte serial_offset = 0;
 
-#define READY_THRESHOLD 10000
-#define READY_RESEND_PERIOD 1000
-unsigned long last_serial_ms = 0;
-unsigned long last_ready_ms = 0;
 
 /*******************************************************************************
  * The main event loop
@@ -228,85 +231,24 @@ unsigned long last_ready_ms = 0;
  * - Updates any outputs
  */
 void loop() {
-  unsigned long now = time.ms();
   boolean update = false;
 
-  if ((now - last_serial_ms > READY_THRESHOLD) && 
-      (now - last_ready_ms > READY_RESEND_PERIOD)) {
-    /*
-     * If the module has never received a message (last_serial_ms == 0) or it has
-     * been a long time since the last message, itermittently resend the 'ready'
-     * message.  This allows for connection methods that may miss the first
-     * 'ready' to catch this one (such as Bluetooth).
-     */
-    Serial.println(F(HMTL_READY));
-    last_ready_ms = now;
+  // Check and send a serial-ready message if needed
+  handler.serial_ready();
+
+  /*
+   * Check the serial device for messages, forwarding them over the other
+   * other sockets.
+   */
+  if (handler.check_serial(sockets, 2, &config)) {
+    update = true;
   }
-  
-  /* Check for messages on the serial interface */
-  msg_hdr_t *msg_hdr = (msg_hdr_t *)msg;
-  if (hmtl_serial_getmsg(msg, MSG_MAX_SZ, &offset)) {
-    boolean forwarded = false;
 
-    /* Received a complete message */
-    DEBUG5_VALUE("Received msg len=", offset);
-    DEBUG5_PRINT(" ");
-    DEBUG5_COMMAND(
-                  print_hex_string(msg, offset)
-                  );
-    DEBUG_PRINT_END();
-    Serial.println(F(HMTL_ACK));
-
-    if (has_rs485) {
-      /* Forward the message over RS485 if needed */
-      forwarded = check_and_forward(msg_hdr, &rs485);
-    }
-    if (has_xbee) {
-      /* Forward the message over XBee if needed */
-      forwarded = check_and_forward(msg_hdr, &xbee);
-    }
-
-    if (handler.process_msg(msg_hdr, NULL, serial_socket, &config)) {
+  /* Check the configured sockets for messages */
+  for (uint8_t i; i < NUM_SOCKETS; i++) {
+    if ((sockets[i] != NULL) &&
+            (handler.check_socket(sockets[i], serial_socket, &config))) {
       update = true;
-    }
-
-    offset = 0;
-    last_serial_ms = now;
-  }
-
-  if (has_rs485) {
-    /* Check for message over RS485 */
-    unsigned int msglen;
-    msg_hdr = hmtl_socket_getmsg(&rs485, &msglen);
-    if (msg_hdr != NULL) {
-      DEBUG5_VALUE("Received rs485 msg len=", msglen);
-      DEBUG5_PRINT(" ");
-      DEBUG5_COMMAND(
-                     print_hex_string((byte *)msg_hdr, msglen)
-                     );
-      DEBUG_PRINT_END();
-
-      if (handler.process_msg(msg_hdr, &rs485, serial_socket, &config)) {
-        update = true;
-      }
-    }
-  }
-
-  if (has_xbee) {
-    /* Check for message over Xbee */
-    unsigned int msglen;
-    msg_hdr = hmtl_socket_getmsg(&xbee, &msglen);
-    if (msg_hdr != NULL) {
-      DEBUG5_VALUE("Received XBee msg len=", msglen);
-      DEBUG5_PRINT(" ");
-      DEBUG5_COMMAND(
-                     print_hex_string((byte *)msg_hdr, msglen)
-                     );
-      DEBUG_PRINT_END();
-      
-      if (handler.process_msg(msg_hdr, &xbee, serial_socket, &config)) {
-        update = true;
-      }
     }
   }
 
@@ -321,32 +263,6 @@ void loop() {
       hmtl_update_output(outputs[i], objects[i]);
     }
   }
-}
-
-
-/*
- * Check if a message should be forwarded and transmit it over
- * a socket if so.
- */
-boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
-  if ((msg_hdr->address != config.address) ||
-      (msg_hdr->address == SOCKET_ADDR_ANY)) {
-    /*
-     * Messages that are not to this module's address or are on the broadcast
-     * address should be forwarded.
-     */
-    if (msg_hdr->length > socket->send_data_size) {
-      DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
-    } else {
-      DEBUG4_HEXVALLN("Forwarding serial msg to ", msg_hdr->address);
-      memcpy(socket->send_buffer, msg_hdr, msg_hdr->length);
-      socket->sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
-      return true;
-    }
-  }
-
-  // The message was not forwarded over the socket
-  return false;
 }
 
 

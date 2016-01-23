@@ -46,6 +46,7 @@ struct program_tracker {
  */
 class ProgramManager {
  public:
+
   ProgramManager();
   ProgramManager(output_hdr_t **_outputs,
                  program_tracker_t **_trackers,
@@ -96,20 +97,73 @@ class MessageHandler {
   MessageHandler();
   MessageHandler(socket_addr_t _address, ProgramManager *_manager);
 
-  /* 
-   * Process a single message
-   *  src -> Socket the message came in on, or NULL if message was from the
-   *    serial port.
-   *  serial_socket -> If a response to the Serial device is required then this
-   *    socket's data buffer is used to construct the response.
-   *  config -> The device configuration
+  /*
+   * Check is a serial-ready messages should be sent over the serial port
    */
-  boolean process_msg(msg_hdr_t *msg_hdr, Socket *src, Socket *serial_socket,
+  void serial_ready();
+
+  /*
+   * Process a single message
+   *   msg_hdr: The message to be processed
+   *   src: Socket the message came in on, or NULL if message was from the
+   *        serial port.
+   *   serial_socket: If a response to the Serial device is required then this
+   *                  socket's data buffer is used to construct the response.
+   *   config: The device configuration
+   *
+   * Returns true if processing the message resulted in some change that may
+   * require the device's outputs to be updated.
+   */
+  boolean process_msg(msg_hdr_t *msg_hdr, Socket *src,
+                      Socket *serial_socket,
                       config_hdr_t *config);
 
- private:
+  /*
+   * Check for messages over the Serial port.  If a message is received,
+   * forward it over other sockets if it isn't for this device or is a broacast
+   * message, and then process the message if it is for this device.
+   *
+   * Returns true if processing the message resulted in some change that may
+   * require the device's outputs to be updated.
+   */
+  boolean check_serial(Socket *sockets[], uint8_t num_sockets,
+                       config_hdr_t *config);
+
+  /*
+   * Check for messages over the indicated socket and handle any messages
+   * received.
+   *
+   * Returns true if processing the message resulted in some change that may
+   * require the device's outputs to be updated.
+   */
+  boolean check_socket(Socket *socket,
+                       Socket *serial_socket,
+                       config_hdr_t *config);
+
+  /*
+   * Check if a message should be forwarded and transmit it over
+   * the indicated socket if so.
+   */
+  boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket);
+
+private:
   ProgramManager *manager;
   socket_addr_t address;
+
+  /*
+   * Messages from a serial interface may come in across multiple calls to
+   * check serial and so must be buffered.
+   */
+  static const uint8_t MSG_MAX_SZ = (sizeof(msg_hdr_t) + sizeof(msg_max_t));
+  byte serial_msg[MSG_MAX_SZ];
+  byte serial_msg_offset;
+
+  static const uint16_t READY_THRESHOLD = 10000;
+  static const uint16_t READY_RESEND_PERIOD = 1000;
+
+  unsigned long last_serial_ms;
+  unsigned long last_ready_ms;
+
 };
 
 #endif
