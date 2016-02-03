@@ -30,6 +30,7 @@
 #include "HMTLPrograms.h"
 #include "HMTLProtocol.h"
 #include "ProgramManager.h"
+#include "MessageHandler.h"
 
 #include "PixelUtil.h"
 
