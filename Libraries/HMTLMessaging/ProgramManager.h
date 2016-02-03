@@ -95,12 +95,45 @@ typedef struct {
 class MessageHandler {
  public:
   MessageHandler();
-  MessageHandler(socket_addr_t _address, ProgramManager *_manager);
+  MessageHandler(socket_addr_t _address, ProgramManager *_manager,
+                 Socket *_sockets[], uint8_t _num_sockets);
 
   /*
-   * Check is a serial-ready messages should be sent over the serial port
+   * Check if a serial-ready messages should be sent over the serial port
    */
   void serial_ready();
+
+  /*
+   * Check the serial device and all sockets for messages.
+   *
+   * Returns true if processing the message resulted in some change that may
+   * require the device's outputs to be updated.
+   */
+  boolean check(config_hdr_t *config);
+
+private:
+  ProgramManager *manager;
+  socket_addr_t address;
+  Socket **sockets;
+  uint8_t num_sockets;
+
+  /*
+   * Messages from a serial interface may come in across multiple calls to
+   * check serial and so must be buffered.
+   */
+  static const uint8_t MSG_MAX_SZ = (sizeof(msg_hdr_t) + sizeof(msg_max_t));
+  byte serial_msg[MSG_MAX_SZ];
+  byte serial_msg_offset;
+
+  /*
+   * Parameters for determining if a "ready" message should be sent to the
+   * serial port.
+   */
+  static const uint16_t READY_THRESHOLD = 10000;
+  static const uint16_t READY_RESEND_PERIOD = 1000;
+
+  unsigned long last_serial_ms;
+  unsigned long last_ready_ms;
 
   /*
    * Process a single message
@@ -126,8 +159,7 @@ class MessageHandler {
    * Returns true if processing the message resulted in some change that may
    * require the device's outputs to be updated.
    */
-  boolean check_serial(Socket *sockets[], uint8_t num_sockets,
-                       config_hdr_t *config);
+  boolean check_serial(config_hdr_t *config);
 
   /*
    * Check for messages over the indicated socket and handle any messages
@@ -145,24 +177,6 @@ class MessageHandler {
    * the indicated socket if so.
    */
   boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket);
-
-private:
-  ProgramManager *manager;
-  socket_addr_t address;
-
-  /*
-   * Messages from a serial interface may come in across multiple calls to
-   * check serial and so must be buffered.
-   */
-  static const uint8_t MSG_MAX_SZ = (sizeof(msg_hdr_t) + sizeof(msg_max_t));
-  byte serial_msg[MSG_MAX_SZ];
-  byte serial_msg_offset;
-
-  static const uint16_t READY_THRESHOLD = 10000;
-  static const uint16_t READY_RESEND_PERIOD = 1000;
-
-  unsigned long last_serial_ms;
-  unsigned long last_ready_ms;
 
 };
 

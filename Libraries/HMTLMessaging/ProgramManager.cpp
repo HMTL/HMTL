@@ -179,9 +179,12 @@ MessageHandler::MessageHandler() {
   address = SOCKET_ADDR_INVALID;
 }
 
-MessageHandler::MessageHandler(socket_addr_t _address, ProgramManager *_manager) {
+MessageHandler::MessageHandler(socket_addr_t _address, ProgramManager *_manager,
+                               Socket *_sockets[], uint8_t _num_sockets) {
   address = _address;
   manager = _manager;
+  sockets = _sockets;
+  num_sockets = _num_sockets;
 
   serial_msg_offset = 0;
   last_serial_ms = 0;
@@ -337,15 +340,12 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
  * Returns true if processing the message resulted in some change that may
  * require the device's outputs to be updated.
  */
-boolean MessageHandler::check_serial(Socket *sockets[], uint8_t num_sockets,
-                                     config_hdr_t *config) {
+boolean MessageHandler::check_serial(config_hdr_t *config) {
   boolean update = false;
 
   /* Check for messages on the serial interface */
   msg_hdr_t *msg_hdr = (msg_hdr_t *)serial_msg;
   if (hmtl_serial_getmsg(serial_msg, MSG_MAX_SZ, &serial_msg_offset)) {
-    boolean forwarded = false;
-
     /* Received a complete message */
     DEBUG5_VALUE("Received msg len=", serial_offset);
     DEBUG5_PRINT(" ");
@@ -358,7 +358,7 @@ boolean MessageHandler::check_serial(Socket *sockets[], uint8_t num_sockets,
     /* Check if the message should be forwarded to any sockets */
     for (uint8_t i = 0; i < num_sockets; i++) {
       if (sockets[i] != NULL) {
-        forwarded = check_and_forward(msg_hdr, sockets[i]);
+         check_and_forward(msg_hdr, sockets[i]);
       }
     }
 
@@ -398,6 +398,26 @@ boolean MessageHandler::check_socket(Socket *socket, Socket *serial_socket,
   }
 
   return false;
+}
+
+/*
+ * Check the serial device and all sockets for messsages
+ */
+boolean MessageHandler::check(config_hdr_t *config) {
+  boolean update = false;
+
+  if (check_serial(config)) {
+    update = true;
+  }
+
+  for (uint8_t socket = 0; socket < num_sockets; socket++) {
+    if ((sockets[socket] != NULL) &&
+            (check_socket(sockets[socket], sockets[socket], config))) {
+      update = true;
+    }
+  }
+
+  return update;
 }
 
 /*

@@ -16,9 +16,6 @@
 #include "SPI.h"
 #include "FastLED.h"
 
-#define DEBUG_LEVEL DEBUG_HIGH
-#include "Debug.h"
-
 #include "GeneralUtils.h"
 #include "EEPromUtils.h"
 #include "HMTLTypes.h"

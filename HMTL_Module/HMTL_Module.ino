@@ -49,11 +49,9 @@
 
 #define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
 
-boolean has_rs485;
 RS485Socket rs485;
 byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
-boolean has_xbee;
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
@@ -128,22 +126,16 @@ void setup() {
     /* Setup the RS485 connection */  
     rs485.setup();
     rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
-    has_rs485 = true;
     serial_socket = &rs485;
     sockets[0] = &rs485;
-  } else {
-    has_rs485 = false;
   }
 
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
     /* Setup the RS485 connection */  
     xbee.setup();
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
-    has_xbee = true;
     serial_socket = &xbee;
     sockets[1] = &xbee;
-  } else {
-    has_xbee = false;
   }
 
   if (serial_socket == NULL) {
@@ -155,7 +147,7 @@ void setup() {
   manager = ProgramManager(outputs, active_programs, objects, HMTL_MAX_OUTPUTS,
                            program_functions, NUM_PROGRAMS);
 
-  handler = MessageHandler(config.address, &manager);
+  handler = MessageHandler(config.address, &manager, sockets, NUM_SOCKETS);
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
@@ -231,26 +223,15 @@ byte serial_offset = 0;
  * - Updates any outputs
  */
 void loop() {
-  boolean update = false;
 
   // Check and send a serial-ready message if needed
   handler.serial_ready();
 
   /*
-   * Check the serial device for messages, forwarding them over the other
-   * other sockets.
+   * Check the serial device and all sockets for messages, forwarding them and
+   * processing them if they are for this module.
    */
-  if (handler.check_serial(sockets, 2, &config)) {
-    update = true;
-  }
-
-  /* Check the configured sockets for messages */
-  for (uint8_t i; i < NUM_SOCKETS; i++) {
-    if ((sockets[i] != NULL) &&
-            (handler.check_socket(sockets[i], serial_socket, &config))) {
-      update = true;
-    }
-  }
+  boolean update = handler.check(&config);
 
   /* Execute any active programs */
   if (manager.run()) {
