@@ -428,7 +428,7 @@ boolean hmtl_validate_rgb(config_rgb_t *rgb) {
 }
 
 boolean hmtl_validate_pixels(config_pixels_t *pixels) {
-  if (pixels->clockPin > 25) return false;
+  if ((pixels->clockPin > 25) && (pixels->clockPin != (uint8_t)-1)) return false;
   if (pixels->dataPin > 25) return false;
   if (pixels->clockPin == pixels->dataPin) return false;
   return true;
