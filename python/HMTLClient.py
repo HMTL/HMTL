@@ -67,8 +67,8 @@ def handle_args():
 
     # Command options
     group = OptionGroup(parser, "Command Options")
-    group.add_option("-O", "--output", dest="output", type="int",
-                      help="Number of the output to be set", default=None)
+    group.add_option("-O", "--output", dest="output", type="string",
+                      help="Number of the output to be set", default=HMTLprotocol.OUTPUT_ALL_OUTPUTS)
     group.add_option("-C", "--command", dest="commandvalue", action="store",
                       default = None)
     parser.add_option_group(group)
@@ -76,15 +76,19 @@ def handle_args():
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 
-    # Need some argument validation
-    if ((options.output == None) and not (options.commandtype in [None, "poll", "setaddr", "none"])):
-        print("Must specify an outout number")
-        sys.exit(1)
-
-
     if ((options.commandvalue == None) and not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue"])):
         print("Must specify a command value")
         sys.exit(1)
+
+    if options.output != HMTLprotocol.OUTPUT_ALL_OUTPUTS:
+        if options.output == 'all':
+            options.output = HMTLprotocol.OUTPUT_ALL_OUTPUTS
+        else:
+            try:
+                options.output = int(options.output)
+            except:
+                print("Unable to convert %s to output value" % options.output)
+                sys.exit(1)
 
     return (options, args)
  

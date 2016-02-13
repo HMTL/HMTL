@@ -57,6 +57,8 @@ OUTPUT_MPR121_FMT = '<BB' + 'B'*12
 OUTPUT_RS485_FMT = '<BBB'
 OUTPUT_XBEE_FMT = '<BB'
 
+OUTPUT_ALL_OUTPUTS = 254
+
 
 UPDATE_ADDRESS_FMT = '<H'
 UPDATE_DEVICE_ID_FMT = '<H'
@@ -393,6 +395,9 @@ class MsgHdr(Msg):
 
     def msg_type(self):
         """Return the string of the header's message type"""
+        if self.mtype not in MSG_TYPES:
+            print("ERROR: No message type %d" % self.mtype)
+            return None
         return MSG_TYPES[self.mtype]
         
 

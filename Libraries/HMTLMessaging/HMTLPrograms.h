@@ -46,7 +46,8 @@ void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
 		     uint16_t on_period, uint32_t on_color,
 		     uint16_t off_period, uint32_t off_color);
 
-boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker);
+boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
+                           output_hdr_t *output);
 boolean program_blink(output_hdr_t *output, void *object,
                       program_tracker_t *tracker);
 
@@ -82,7 +83,8 @@ typedef struct {
 } state_timed_change_t;
 
 boolean program_timed_change_init(msg_program_t *msg,
-                                  program_tracker_t *tracker);
+                                  program_tracker_t *tracker,
+                                  output_hdr_t *output);
 boolean program_timed_change(output_hdr_t *output, void *object,
                              program_tracker_t *tracker);
 
@@ -102,7 +104,8 @@ uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
                                uint32_t start_color,
                                uint32_t stop_color,
                                uint8_t flags);
-boolean program_fade_init(msg_program_t *msg, program_tracker_t *tracker);
+boolean program_fade_init(msg_program_t *msg, program_tracker_t *tracker,
+                          output_hdr_t *output);
 boolean program_fade(output_hdr_t *output, void *object,
                      program_tracker_t *tracker);
 

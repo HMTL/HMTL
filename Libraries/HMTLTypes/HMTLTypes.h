@@ -95,10 +95,15 @@ typedef struct {
 #define HMTL_OUTPUT_RS485   0x6
 #define HMTL_OUTPUT_XBEE    0x7
 
+#define IS_HMTL_RGB_OUTPUT(out) \
+  ((out == HMTL_OUTPUT_VALUE) || \
+   (out == HMTL_OUTPUT_RGB) || \
+   (out == HMTL_OUTPUT_PIXELS))
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
 
 #define HMTL_NO_OUTPUT (uint8_t)-1
+#define HMTL_ALL_OUTPUTS (uint8_t)-2
 
 typedef struct {
   byte type;

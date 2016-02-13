@@ -7,6 +7,7 @@
  ******************************************************************************/
 
 #include <Arduino.h>
+#include <HMTLTypes.h>
 
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_ERROR
@@ -183,7 +184,12 @@ void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
 /*******************************************************************************
  * Program function to turn an output on and off
  */
-boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker) {
+boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
+                           output_hdr_t *output) {
+  if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
+    return false;
+  }
+
   DEBUG3_PRINT("Initializing blink program state");
 
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));
@@ -238,7 +244,12 @@ boolean program_blink(output_hdr_t *output, void *object,
  * value.
  */
 boolean program_timed_change_init(msg_program_t *msg,
-				  program_tracker_t *tracker) {
+				                          program_tracker_t *tracker,
+                                  output_hdr_t *output) {
+  if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
+    return false;
+  }
+
   DEBUG3_PRINT("Initializing timed change program");
 
   state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));
@@ -285,7 +296,12 @@ boolean program_timed_change(output_hdr_t *output, void *object,
  */
 
 boolean program_fade_init(msg_program_t *msg,
-                          program_tracker_t *tracker) {
+                          program_tracker_t *tracker,
+                          output_hdr_t *output) {
+  if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
+    return false;
+  }
+
   DEBUG3_PRINT("Initializing fade program:");
 
   state_fade_t *state = (state_fade_t *)malloc(sizeof (state_fade_t));

@@ -18,7 +18,7 @@
 
 #include "HMTLPrograms.h"
 #include "ProgramManager.h"
-
+#include "GeneralUtils.h"
 
 #ifndef OBJECT_TYPE
   #define OBJECT_TYPE 0
@@ -196,10 +196,10 @@ boolean MessageHandler::check_serial(config_hdr_t *config) {
   msg_hdr_t *msg_hdr = (msg_hdr_t *)serial_msg;
   if (hmtl_serial_getmsg(serial_msg, MSG_MAX_SZ, &serial_msg_offset)) {
     /* Received a complete message */
-    DEBUG5_VALUE("Received msg len=", serial_offset);
+    DEBUG5_VALUE("Received msg len=", serial_msg_offset);
     DEBUG5_PRINT(" ");
     DEBUG5_COMMAND(
-            print_hex_string(msg, serial_offset)
+            print_hex_string((byte *)msg_hdr, serial_msg_offset)
     );
     DEBUG_PRINT_END();
     Serial.println(F(HMTL_ACK));
@@ -283,7 +283,7 @@ boolean MessageHandler::check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
     if (msg_hdr->length > socket->send_data_size) {
       DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
     } else {
-      DEBUG4_HEXVALLN("Forwarding serial msg to ", msg_hdr->address);
+      DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
       memcpy(socket->send_buffer, msg_hdr, msg_hdr->length);
       socket->sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
       return true;

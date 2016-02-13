@@ -308,7 +308,12 @@ typedef struct {
 } state_level_value_t;
 
 boolean program_level_value_init(msg_program_t *msg,
-                                 program_tracker_t *tracker) {
+                                 program_tracker_t *tracker,
+                                 output_hdr_t *output) {
+  if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
+    return false;
+  }
+
   DEBUG3_PRINTLN("Initializing level value state");
 
   state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t));
@@ -347,7 +352,12 @@ typedef struct {
 } state_sound_value_t;
 
 boolean program_sound_value_init(msg_program_t *msg,
-                                 program_tracker_t *tracker) {
+                                 program_tracker_t *tracker,
+                                 output_hdr_t *output) {
+  if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
+    return false;
+  }
+
   DEBUG3_PRINTLN("Initializing sound value state");
 
   state_sound_value_t *state = (state_sound_value_t *)malloc(sizeof (state_sound_value_t));

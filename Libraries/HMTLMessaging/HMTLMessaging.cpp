@@ -7,6 +7,7 @@
  ******************************************************************************/
 
 #include <Arduino.h>
+#include <HMTLTypes.h>
 
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_ERROR
@@ -60,18 +61,36 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
   DEBUG4_VALUE("hmtl_handle_msg: type=", msg->type);
   DEBUG4_VALUELN(" out=", msg->output);
 
-  if (msg->output >= num_outputs) {
+  byte starting_output, stop_output;
+
+  if (msg->output == HMTL_ALL_OUTPUTS) {
+    // This should be applied to all outputs that can handle the message type
+    starting_output = 0;
+    stop_output = num_outputs;
+  } else if (msg->output >= num_outputs) {
     DEBUG_ERR("hmtl_handle_msg: output over max");
     return -1;
+  } else {
+    // Only apply to the specified output
+    starting_output = msg->output;
+    stop_output = starting_output + 1;
   }
 
-  output_hdr_t *out = outputs[msg->output];
-  void *data = (objects != NULL ? objects[msg->output] : NULL);
+  for (byte output = starting_output; output < stop_output; output++) {
 
-  switch (msg->type) {
-    case HMTL_OUTPUT_VALUE:
-      {
-        msg_value_t *msg2 = (msg_value_t *)msg;
+    output_hdr_t *out = outputs[output];
+    if (out == NULL)
+      continue;
+
+    void *data = (objects != NULL ? objects[output] : NULL);
+
+    switch (msg->type) {
+      case HMTL_OUTPUT_VALUE: {
+        if ((msg->output == HMTL_ALL_OUTPUTS) &&
+                (!IS_HMTL_RGB_OUTPUT(out->type))) {
+          continue;
+        }
+        msg_value_t *msg2 = (msg_value_t *) msg;
         uint8_t values[3];
         for (byte i = 0; i < 3; i++) {
           values[i] = msg2->value;
@@ -80,16 +99,22 @@ hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
         break;
       }
 
-    case HMTL_OUTPUT_RGB:
-      {
-        msg_rgb_t *msg2 = (msg_rgb_t *)msg;
+      case HMTL_OUTPUT_RGB: {
+        if ((msg->output == HMTL_ALL_OUTPUTS) &&
+            (!IS_HMTL_RGB_OUTPUT(out->type))) {
+          continue;
+        }
+
+        msg_rgb_t *msg2 = (msg_rgb_t *) msg;
         hmtl_set_output_rgb(out, data, msg2->values);
         break;
       }
-    default: {
-      // Unknown output type
-      DEBUG_ERR("Unhandled output type");
-      return -1;
+
+      default: {
+        // Unknown output type
+        DEBUG_ERR("Unhandled output type");
+        return -1;
+      }
     }
   }
 

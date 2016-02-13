@@ -76,39 +76,60 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
   }
 
    /* Setup the tracker */
-  if (msg->hdr.output > num_outputs) {
+  byte starting_output, stop_output;
+
+  if (msg->hdr.output == HMTL_ALL_OUTPUTS) {
+    /* This should be applied to all outputs that can handle the message type */
+    starting_output = 0;
+    stop_output = num_outputs;
+  } else if (msg->hdr.output > num_outputs) {
     DEBUG1_VALUELN("handle_msg: invalid output: ",
-		  msg->hdr.output);
+                   msg->hdr.output);
     return false;
-  }
-  if (outputs[msg->hdr.output] == NULL) {
-    DEBUG1_VALUELN("handle_msg: NULL output: ",
-		  msg->hdr.output);
+  } else if (outputs[msg->hdr.output] == NULL) {
+    DEBUG1_VALUELN("handle_msg: NULL output: ", msg->hdr.output);
     return false;
-  }
-
-  program_tracker_t *tracker = trackers[msg->hdr.output];
-
-  if (program->type == HMTL_PROGRAM_NONE) {
-    /* This is a message to clear the existing program so free the tracker */
-    free_tracker(msg->hdr.output);
-    return true;
-  }
-
-  if (tracker != NULL) {
-    DEBUG5_PRINTLN("handle_msg: reusing old tracker");
-    if (tracker->state) {
-      DEBUG5_PRINTLN("handle_msg: deleting old state");
-      free(tracker->state);
-    }
   } else {
-    tracker = (program_tracker_t *)malloc(sizeof (program_tracker_t));
-    trackers[msg->hdr.output] = tracker;
+    /* Only apply to the specified output */
+    starting_output = msg->hdr.output;
+    stop_output = starting_output + 1;
   }
 
-  tracker->program = program;
-  tracker->flags = 0x0;
-  tracker->program->setup(msg, tracker);
+  for (byte output = starting_output; output < stop_output; output++) {
+
+    if (outputs[output] == NULL)
+      continue;
+
+    program_tracker_t *tracker = trackers[output];
+
+    if (program->type == HMTL_PROGRAM_NONE) {
+      /* This is a message to clear the existing program so free the tracker */
+      free_tracker(output);
+      continue;
+    }
+
+    if (tracker != NULL) {
+      DEBUG5_PRINTLN("handle_msg: reusing old tracker");
+      if (tracker->state) {
+        DEBUG5_PRINTLN("handle_msg: deleting old state");
+        free(tracker->state);
+      }
+    } else {
+      tracker = (program_tracker_t *)malloc(sizeof(program_tracker_t));
+      trackers[output] = tracker;
+    }
+
+    tracker->program = program;
+    tracker->flags = 0x0;
+    boolean success = tracker->program->setup(msg, tracker, outputs[output]);
+    if (!success) {
+      DEBUG3_VALUELN("handle_msg: NA on ", output);
+      free_tracker(output);
+      trackers[output] = NULL;
+      continue;
+    }
+    DEBUG3_VALUELN("handle_msg: setup on ", output);
+  }
 
   return true;
 }

@@ -25,7 +25,8 @@ typedef boolean (*hmtl_program_func)(output_hdr_t *output,
                                      void *object,
                                      program_tracker_t *tracker);
 typedef boolean (*hmtl_program_setup)(msg_program_t *msg,
-                                      program_tracker_t *tracker);
+                                      program_tracker_t *tracker,
+                                      output_hdr_t *output);
 
 typedef struct {
   byte type;
