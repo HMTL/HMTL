@@ -21,6 +21,9 @@
  * Program tracking, configuration, etc
  */
 
+/* Provide access to a time synchronization object */
+TimeSync time;
+
 ProgramManager::ProgramManager() {
 };
 
@@ -70,8 +73,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
   /* Find the program to be executed */
   hmtl_program_t *program = lookup_function(msg->type);
   if (program == NULL) {
-    DEBUG1_VALUELN("handle_msg: invalid type: ",
-		  msg->type);
+    DEBUG1_VALUELN("handle_msg: invalid type: ", msg->type);
     return false;
   }
 

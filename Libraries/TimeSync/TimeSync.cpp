@@ -15,10 +15,10 @@
  * Synchronization:
  *   1) M initiates time synchronization
  *     - M sends sync initiation message (SYNC), 
- *     - M enters hot-wait mode
+ *     - M enters hot-wait mode // TODO: hot-wait not implemented
  *   2) S receives SYNC
  *     - S sends SYNC_ACK at time=t_a
- *     - S enters hot-wait mode
+ *     - S enters hot-wait mode // TODO: hot-wait not implemented
  *   3) M receives SYNC_ACK
  *     - M sends SYNC set with time=t_s
  *     - M exits hot wait

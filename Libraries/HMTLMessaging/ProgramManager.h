@@ -45,6 +45,7 @@ struct program_tracker {
 /*******************************************************************************
  * Program tracking, configuration, etc
  */
+
 class ProgramManager {
  public:
 
@@ -61,8 +62,6 @@ class ProgramManager {
 
   boolean run();
 
-  TimeSync time;
-
   output_hdr_t **outputs;
   void **objects;
   byte num_outputs;
@@ -78,5 +77,8 @@ class ProgramManager {
 
   program_tracker_t **trackers;
 };
+
+/* Provide access to a time synchronization object */
+extern TimeSync time;
 
 #endif

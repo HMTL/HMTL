@@ -78,9 +78,6 @@ byte sound_channels = 0;
 #define SOUND_CHANNELS 8
 uint16_t sound_data[SOUND_CHANNELS] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-// Time synchronization
-TimeSync time = TimeSync();
-
 /*
  * Program management
  */

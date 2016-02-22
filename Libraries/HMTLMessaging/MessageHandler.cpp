@@ -175,6 +175,14 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
         }
         break;
       }
+
+      case MSG_TYPE_TIMESYNC: {
+        /*
+         * This is a time synchronization message, send to the ProgramManager's
+         * TimeSync object.
+         */
+        time.synchronize(src, SOCKET_ADDR_INVALID, msg_hdr);
+      }
     }
   }
 

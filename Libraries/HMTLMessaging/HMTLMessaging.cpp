@@ -159,7 +159,7 @@ hmtl_socket_getmsg(Socket *socket, unsigned int *msglen, uint16_t address) {
   return NULL;
 }
 
-/* Backwards compatibility function for RS485 */
+/* DEPRECATED: Backwards compatibility function for RS485 */
 msg_hdr_t *
 hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
   return hmtl_socket_getmsg(rs485, msglen, address);
