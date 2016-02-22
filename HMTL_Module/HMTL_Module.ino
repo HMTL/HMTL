@@ -56,10 +56,8 @@ byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
-Socket *serial_socket = NULL;
-
-#define NUM_SOCKETS 2
-Socket *sockets[NUM_SOCKETS] = { NULL, NULL };
+#define MAX_SOCKETS 2
+Socket *sockets[MAX_SOCKETS] = { NULL, NULL };
 
 config_hdr_t config;
 output_hdr_t *outputs[HMTL_MAX_OUTPUTS];
@@ -92,10 +90,11 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_NONE, NULL, NULL},
   { HMTL_PROGRAM_BLINK, program_blink, program_blink_init },
   { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init },
+  { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
+
   { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
-  { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
-  { PROGRAM_SENSOR_DATA, process_sensor_data, NULL }
+  { PROGRAM_SENSOR_DATA, process_sensor_data, program_sensor_data_init }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -123,23 +122,23 @@ void setup() {
     DEBUG_ERR_STATE(1);
   }
 
+  byte num_sockets = 0;
+
   if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
     /* Setup the RS485 connection */  
     rs485.setup();
     rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
-    serial_socket = &rs485;
-    sockets[0] = &rs485;
+    sockets[num_sockets++] = &rs485;
   }
 
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
     /* Setup the RS485 connection */  
     xbee.setup();
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
-    serial_socket = &xbee;
-    sockets[1] = &xbee;
+    sockets[num_sockets++] = &xbee;
   }
 
-  if (serial_socket == NULL) {
+  if (num_sockets == 0) {
     DEBUG_ERR("No sockets configured");
     DEBUG_ERR_STATE(2);
   }
@@ -148,7 +147,7 @@ void setup() {
   manager = ProgramManager(outputs, active_programs, objects, HMTL_MAX_OUTPUTS,
                            program_functions, NUM_PROGRAMS);
 
-  handler = MessageHandler(config.address, &manager, sockets, NUM_SOCKETS);
+  handler = MessageHandler(config.address, &manager, sockets, num_sockets);
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
   Serial.println(F(HMTL_READY));
@@ -248,9 +247,17 @@ void loop() {
 }
 
 
-/*
- * Record relevant sensor data for programatic usage
+/*******************************************************************************
+ * Program handler for processing incoming sensor data
  */
+
+boolean program_sensor_data_init(msg_program_t *msg,
+                                 program_tracker_t *tracker,
+                                 output_hdr_t *output) {
+  DEBUG3_PRINTLN("Initializing sensor data handler");
+  return true;
+}
+
 boolean process_sensor_data(output_hdr_t *output,
                             void *object,
                             program_tracker_t *tracker) {
@@ -267,7 +274,7 @@ boolean process_sensor_data(output_hdr_t *output,
       }
 
       memcpy(sound_data, data, copy_len);
-      sound_channels = sensor->data_len / sizeof (uint16_t);
+      sound_channels = sensor->data_len / (byte)sizeof (uint16_t);
       DEBUG4_COMMAND(
                      DEBUG4_VALUE(" SOUND:", sound_channels);
                      for (byte i = 0; i < sound_channels; i++) {
