@@ -109,23 +109,20 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     }
 
     if (tracker != NULL) {
-      DEBUG5_PRINTLN("handle_msg: reusing old tracker");
-      if (tracker->state) {
-        DEBUG5_PRINTLN("handle_msg: deleting old state");
-        free(tracker->state);
-      }
-    } else {
-      tracker = (program_tracker_t *)malloc(sizeof(program_tracker_t));
-      trackers[output] = tracker;
+      /* If there was an active program on this output then clear the tracker */
+      free_tracker(output);
     }
 
+    /* Allocate a new tracker for this program */
+    tracker = new_tracker(output);
     tracker->program = program;
     tracker->flags = 0x0;
+
+    /* Attempt to setup the program */
     boolean success = tracker->program->setup(msg, tracker, outputs[output]);
     if (!success) {
       DEBUG3_VALUELN("handle_msg: NA on ", output);
       free_tracker(output);
-      trackers[output] = NULL;
       continue;
     }
     DEBUG3_VALUELN("handle_msg: setup on ", output);
@@ -135,17 +132,27 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 }
 
 /*
+ * Allocate a new program tracker
+ */
+program_tracker_t * ProgramManager::new_tracker(int index) {
+  program_tracker_t *tracker = (program_tracker_t *)malloc(sizeof(program_tracker_t));
+  tracker->state = NULL;
+
+  trackers[index] = tracker;
+  return tracker;
+}
+
+/*
  * Free a single program tracker
  */
 void ProgramManager::free_tracker(int index) {
   program_tracker_t *tracker = trackers[index];
   if (tracker != NULL) {
-      DEBUG3_VALUELN("free_tracker: clearing program for ",
-		    index);
-      if (tracker->state) free(tracker->state);
-      free(tracker);
-    }
-    trackers[index] = NULL;
+    DEBUG3_VALUELN("free_tracker: clearing program for ", index);
+    if (tracker->state) free(tracker->state);
+    free(tracker);
+  }
+  trackers[index] = NULL;
 }
 
 /*

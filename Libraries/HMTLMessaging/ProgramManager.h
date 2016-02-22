@@ -68,7 +68,9 @@ class ProgramManager {
   byte num_outputs;
 
  private:
+  program_tracker_t* new_tracker(int index);
   void free_tracker(int index);
+
   hmtl_program_t *lookup_function(byte type);
 
   hmtl_program_t *functions;

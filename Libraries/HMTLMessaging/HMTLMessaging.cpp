@@ -295,7 +295,7 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   msg_poll_response_t *msg_poll = (msg_poll_response_t *)(msg_hdr + 1);
 
   if (buffsize < HMTL_MSG_POLL_MIN_LEN) {
-    DEBUG_ERR("hmtl_poll_fmt: too small size");
+    DEBUG_ERR("hmtl_poll_fmt: buff too small");
     DEBUG_ERR_STATE(1);
   }
 
