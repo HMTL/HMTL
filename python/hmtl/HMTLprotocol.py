@@ -121,7 +121,8 @@ MSG_PROGRAM_FADE_TYPE = 5
 MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'B' # Msg + padding XXXXXX
 
 MODULE_TYPES = {
-    1 : "HMTL_Module"
+    1 : "HMTL_Module",
+    2 : "WirelessPendant"
 }
 
 #
@@ -430,7 +431,14 @@ class PollHdr(Msg):
         return "%-8s %-8s %-8s %-8s %-8s %-8s %-8s" % ("device", "address", "protocol", "hardware", "baud", "outputs", "type")
 
     def dump(self):
-        return "%-8d %-8d %-8d %-8d %-8d %-8d %-8s" % (self.device_id, self.address, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, MODULE_TYPES[self.object_type])
+        if self.object_type in MODULE_TYPES:
+            module_type = MODULE_TYPES[self.object_type]
+        else:
+            module_type = "unknown(%s)" % self.object_type
+        return "%-8d %-8d %-8d %-8d %-8d %-8d %-8s" % \
+               (self.device_id, self.address, self.protocol_version,
+                self.hardware_version, byte_to_baud(self.baud),
+                self.num_outputs, module_type)
 
 class SetAddress(Msg):
     TYPE = "SETADDR"
@@ -484,20 +492,29 @@ class ProgramHdr(Msg):
     def from_data(cls, data, offset=0):
         raise Exception("From data needs to be defined for ProgramHdr")
 
-class ProgramLevelValue(Msg):
+class ProgramGeneric(Msg):
+    """Generic program data message"""
+    TYPE = "PROGRAMGENERIC"
+    FORMAT = '<BBBBBBBBBBBB'
+#    FORMAT='x'*12
+
+    def __init__(self, values=None):
+        if values:
+            print("TEST: values=%s" % (values))
+            self.values = [int(values[i]) if i < len(values) else 0 for i in range(12)]
+            print("TEST: self.values=%s" % (self.values))
+        else:
+            self.values = [0 for _ in range(12)]
+        pass
+
+    def pack(self):
+        return struct.pack(self.FORMAT, *self.values)
+
+class ProgramLevelValue(ProgramGeneric):
     TYPE = "PROGRAMLEVELVALUE"
-    FORMAT = "x"*12
 
-    def pack(self):
-        return struct.pack(self.FORMAT)
-
-
-class ProgramSoundValue(Msg):
+class ProgramSoundValue(ProgramGeneric):
     TYPE = "PROGRAMSOUNDVALUE"
-    FORMAT = "x"*12
-
-    def pack(self):
-        return struct.pack(self.FORMAT)
 
 class ProgramFade(Msg):
     TYPE = "PROGRAMFADE"
@@ -550,3 +567,12 @@ def get_program_fade_msg(address, output,
     fadehdr = ProgramFade(change_period, start_values, stop_values, 0)
 
     return hdr.pack() + programhdr.pack() + fadehdr.pack()
+
+def get_program_generic(address, output, program, data):
+    hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                 mtype = MSG_TYPE_OUTPUT,
+                 address = address)
+    programhdr = ProgramHdr(program, output)
+    datahdr = ProgramGeneric(data)
+
+    return hdr.pack() + programhdr.pack() + datahdr.pack()

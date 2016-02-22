@@ -53,11 +53,14 @@ def handle_args():
                       dest="commandtype", const="fade",
                       help="Send program to fade between two values")
 
+    group.add_option("-P", "--program", dest="program", type="int",
+                      help="Send program of indicated type")
+
     group.add_option("-N", "--none", action="store_const",
                       dest="commandtype", const="none",
                       help="Send program reset command")
 
-    group.add_option("-P", "--poll", action="store_const",
+    group.add_option("--poll", action="store_const",
                       dest="commandtype", const="poll",
                       help="Send module polling command")
     group.add_option("--setaddr", action="store_const",
@@ -76,7 +79,11 @@ def handle_args():
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 
-    if ((options.commandvalue == None) and not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue"])):
+    if options.program:
+        options.commandtype = "program"
+
+    if ((options.commandvalue == None) and
+            not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue", "program"])):
         print("Must specify a command value")
         sys.exit(1)
 
@@ -168,7 +175,14 @@ def main():
                                         int(a),
                                         [int(b),int(c),int(d)],
                                         [int(e),int(f),int(g)])
-
+    elif (options.commandtype == "program"):
+        commandvalues = options.commandvalue.split(",") if options.commandvalue else None
+        print("Sending generic program message. Address=%d Output=%d data=%s" %
+                (options.hmtladdress, options.output, commandvalues))
+        msg = HMTLprotocol.get_program_generic(options.hmtladdress,
+                                               options.output,
+                                               options.program,
+                                               commandvalues)
 
     if (msg != None):
         starttime = time.time()
