@@ -37,9 +37,9 @@ typedef struct {
 /* Structure used to track the state of currently active programs */
 #define PROGRAM_TRACKER_DONE 0x1
 struct program_tracker {
-  hmtl_program_t *program;
-  void *state;
+  byte program_index;
   byte flags;
+  void *state;
 };
 
 /*******************************************************************************
@@ -48,6 +48,7 @@ struct program_tracker {
 
 class ProgramManager {
  public:
+  static const byte NO_PROGRAM = (byte)-1;
 
   ProgramManager();
   ProgramManager(output_hdr_t **_outputs,
@@ -70,7 +71,7 @@ class ProgramManager {
   program_tracker_t* new_tracker(int index);
   void free_tracker(int index);
 
-  hmtl_program_t *lookup_function(byte type);
+  byte lookup_function(byte type);
 
   hmtl_program_t *functions;
   byte num_programs;

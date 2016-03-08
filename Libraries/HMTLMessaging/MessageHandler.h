@@ -43,30 +43,6 @@ public:
    */
   boolean check(config_hdr_t *config);
 
-private:
-  ProgramManager *manager;
-  socket_addr_t address;
-  Socket **sockets;
-  uint8_t num_sockets;
-
-  /*
-   * Messages from a serial interface may come in across multiple calls to
-   * check serial and so must be buffered.
-   */
-  static const uint8_t MSG_MAX_SZ = (sizeof(msg_hdr_t) + sizeof(msg_max_t));
-  byte serial_msg[MSG_MAX_SZ];
-  byte serial_msg_offset;
-
-  /*
-   * Parameters for determining if a "ready" message should be sent to the
-   * serial port.
-   */
-  static const uint16_t READY_THRESHOLD = 10000;
-  static const uint16_t READY_RESEND_PERIOD = 1000;
-
-  unsigned long last_serial_ms;
-  unsigned long last_ready_ms;
-
   /*
    * Process a single message
    *   msg_hdr: The message to be processed
@@ -109,6 +85,31 @@ private:
    * the indicated socket if so.
    */
   boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket);
+
+private:
+  ProgramManager *manager;
+  socket_addr_t address;
+  Socket **sockets;
+  uint8_t num_sockets;
+
+  /*
+   * Messages from a serial interface may come in across multiple calls to
+   * check serial and so must be buffered.
+   */
+  static const uint8_t MSG_MAX_SZ = (sizeof(msg_hdr_t) + sizeof(msg_max_t));
+  byte serial_msg[MSG_MAX_SZ];
+  byte serial_msg_offset;
+
+  /*
+   * Parameters for determining if a "ready" message should be sent to the
+   * serial port.
+   */
+  static const uint16_t READY_THRESHOLD = 10000;
+  static const uint16_t READY_RESEND_PERIOD = 1000;
+
+  unsigned long last_serial_ms;
+  unsigned long last_ready_ms;
+
 
 };
 

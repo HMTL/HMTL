@@ -53,14 +53,14 @@ ProgramManager::ProgramManager(output_hdr_t **_outputs,
 /*
  * Lookup a program in the manager based on its ID
  */
-hmtl_program_t *ProgramManager::lookup_function(byte id) {
+byte ProgramManager::lookup_function(byte id) {
   /* Find the program to be executed */
   for (byte i = 0; i < num_programs; i++) {
     if (functions[i].type == id) {
-      return &functions[i];
+      return i;
     }
   }
-  return NULL;
+  return NO_PROGRAM;
 }
 
 /*
@@ -71,8 +71,8 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
   DEBUG4_VALUELN(" output=", msg->hdr.output);
 
   /* Find the program to be executed */
-  hmtl_program_t *program = lookup_function(msg->type);
-  if (program == NULL) {
+  byte program = lookup_function(msg->type);
+  if (program == NO_PROGRAM) {
     DEBUG1_VALUELN("handle_msg: invalid type: ", msg->type);
     return false;
   }
@@ -104,7 +104,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 
     program_tracker_t *tracker = trackers[output];
 
-    if (program->type == HMTL_PROGRAM_NONE) {
+    if (msg->type == HMTL_PROGRAM_NONE) {
       /* This is a message to clear the existing program so free the tracker */
       free_tracker(output);
       continue;
@@ -116,12 +116,13 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     }
 
     /* Allocate a new tracker for this program */
-    tracker = new_tracker(output);
-    tracker->program = program;
+    tracker = new_tracker(output);  // XXX: This is bad, don't allocate repeatedly, free memory is not like you're used to.  Allocate once.  Set in init?
+    tracker->program_index = program;
     tracker->flags = 0x0;
 
     /* Attempt to setup the program */
-    boolean success = tracker->program->setup(msg, tracker, outputs[output]);
+    boolean success = functions[tracker->program_index].setup(msg, tracker,
+                                                              outputs[output]);
     if (!success) {
       DEBUG3_VALUELN("handle_msg: NA on ", output);
       free_tracker(output);
@@ -173,7 +174,9 @@ boolean ProgramManager::run() {
         continue;
       }
 
-      if (tracker->program->program(outputs[i], objects[i], tracker)) {
+      if (functions[tracker->program_index].program(outputs[i],
+                                                    objects[i],
+                                                    tracker)) {
         updated = true;
       }
     }
@@ -188,9 +191,10 @@ boolean ProgramManager::run() {
  * external functions.
  */
 boolean ProgramManager::run_program(byte type, void *arg) {
-  hmtl_program_t *program = lookup_function(type);
-
-  program->program(NULL, arg, NULL);
+  byte program = lookup_function(type);
+  if (program != NO_PROGRAM) {
+    functions[program].program(NULL, arg, NULL);
+  }
 
   return false;
 }
