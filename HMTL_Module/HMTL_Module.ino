@@ -321,6 +321,8 @@ boolean program_level_value_init(msg_program_t *msg,
   DEBUG3_PRINTLN("Initializing level value state");
 
   state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t));
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+
   state->value = 0;
   
   tracker->state = state;

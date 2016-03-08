@@ -193,6 +193,8 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
   DEBUG3_PRINT("Initializing blink program state");
 
   state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->on = false;
   state->next_change = time.ms();
@@ -253,6 +255,7 @@ boolean program_timed_change_init(msg_program_t *msg,
   DEBUG3_PRINT("Initializing timed change program");
 
   state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
 
   DEBUG3_VALUE(" msgsz=", sizeof (state->msg));
 
@@ -305,6 +308,7 @@ boolean program_fade_init(msg_program_t *msg,
   DEBUG3_PRINT("Initializing fade program:");
 
   state_fade_t *state = (state_fade_t *)malloc(sizeof (state_fade_t));
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
   memcpy(&state->msg, msg->values, sizeof (state->msg));
   tracker->state = state;
 

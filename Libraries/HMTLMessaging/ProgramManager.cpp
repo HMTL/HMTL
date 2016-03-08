@@ -138,11 +138,16 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
  * Allocate a new program tracker
  */
 program_tracker_t * ProgramManager::new_tracker(int index) {
-  program_tracker_t *tracker = (program_tracker_t *)malloc(sizeof(program_tracker_t));
-  tracker->state = NULL;
+  if (trackers[index] == NULL) {
+    DEBUG3_VALUELN("new_tracker:", index);
+    program_tracker_t *tracker = (program_tracker_t *) malloc(
+            sizeof(program_tracker_t));
+    trackers[index] = tracker;
+  }
 
-  trackers[index] = tracker;
-  return tracker;
+  memset(trackers[index], 0, sizeof (program_tracker_t));
+
+  return trackers[index];
 }
 
 /*
@@ -151,11 +156,16 @@ program_tracker_t * ProgramManager::new_tracker(int index) {
 void ProgramManager::free_tracker(int index) {
   program_tracker_t *tracker = trackers[index];
   if (tracker != NULL) {
-    DEBUG3_VALUELN("free_tracker: clearing program for ", index);
-    if (tracker->state) free(tracker->state);
-    free(tracker);
+    DEBUG3_VALUELN("free_tracker:", index);
+    if (tracker->flags & PROGRAM_DEALLOC_STATE) {
+      /*
+       * If the tracker's flags indicate that the state should be deallocated
+       * then do so now.
+       */
+      if (tracker->state) free(tracker->state);
+    }
+    tracker->program_index = NO_PROGRAM;
   }
-  trackers[index] = NULL;
 }
 
 /*

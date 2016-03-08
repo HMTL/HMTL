@@ -34,8 +34,12 @@ typedef struct {
   hmtl_program_setup setup;
 } hmtl_program_t;
 
+#define PROGRAM_TRACKER_DONE  0x1 // The running program has completed
+
+// The program state should be deallocated when done
+#define PROGRAM_DEALLOC_STATE 0x2
+
 /* Structure used to track the state of currently active programs */
-#define PROGRAM_TRACKER_DONE 0x1
 struct program_tracker {
   byte program_index;
   byte flags;
