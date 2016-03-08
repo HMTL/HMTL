@@ -127,12 +127,12 @@ boolean TimeSync::synchronize(Socket *socket,
 
     switch (msg_time->sync_phase) {
       case TIMESYNC_CHECK: {
-        unsigned long local_now = ms();
-
-        DEBUG3_VALUE("CHECK from:", source);
-        DEBUG3_VALUE(" ts:", msg_time->timestamp);
-        DEBUG3_VALUE(" ms:", local_now);
-        DEBUG3_VALUE(" diff:", (long)(msg_time->timestamp + latency - local_now));
+        DEBUG3_COMMAND(unsigned long local_now = ms();
+          DEBUG3_VALUE("CHECK from:", source);
+          DEBUG3_VALUE(" ts:", msg_time->timestamp);
+          DEBUG3_VALUE(" ms:", local_now);
+          DEBUG3_VALUE(" diff:", (long)(msg_time->timestamp + latency - local_now));
+        );
         sendSyncMsg(socket, source, TIMESYNC_ACK, latency);
         break;
       }
@@ -173,10 +173,11 @@ boolean TimeSync::synchronize(Socket *socket,
           sendSyncMsg(socket, source, TIMESYNC_SET);
           state = STATE_IDLE;
         } else {
-          unsigned long local_now = ms();
-          DEBUG3_VALUE(" ts:", msg_time->timestamp);
-          DEBUG3_VALUE(" ms:", local_now);
-          DEBUG3_VALUE(" diff:", (long)(local_now - msg_time->timestamp));
+          DEBUG3_COMMAND(unsigned long local_now = ms();
+            DEBUG3_VALUE(" ts:", msg_time->timestamp);
+            DEBUG3_VALUE(" ms:", local_now);
+            DEBUG3_VALUE(" diff:", (long)(local_now - msg_time->timestamp));
+          );
         }
         break;
       }
