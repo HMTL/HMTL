@@ -106,17 +106,16 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 
     if (msg->type == HMTL_PROGRAM_NONE) {
       /* This is a message to clear the existing program so free the tracker */
+      DEBUG3_VALUELN("handle_msg: clear ", output);
       free_tracker(output);
       continue;
     }
 
-    if (tracker != NULL) {
-      /* If there was an active program on this output then clear the tracker */
-      free_tracker(output);
-    }
+    /* If there was an active program on this output then clear the tracker */
+    free_tracker(output);
 
-    /* Allocate a new tracker for this program */
-    tracker = new_tracker(output);  // XXX: This is bad, don't allocate repeatedly, free memory is not like you're used to.  Allocate once.  Set in init?
+    /* Setup a tracker for this program */
+    tracker = new_tracker(output);
     tracker->program_index = program;
     tracker->flags = 0x0;
 
@@ -124,7 +123,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     boolean success = functions[tracker->program_index].setup(msg, tracker,
                                                               outputs[output]);
     if (!success) {
-      DEBUG3_VALUELN("handle_msg: NA on ", output);
+      DEBUG4_VALUELN("handle_msg: NA on ", output);
       free_tracker(output);
       continue;
     }
@@ -140,6 +139,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 program_tracker_t * ProgramManager::new_tracker(int index) {
   if (trackers[index] == NULL) {
     DEBUG3_VALUELN("new_tracker:", index);
+    // TODO: Should these be allocated or assigned when manager is initialized?
     program_tracker_t *tracker = (program_tracker_t *) malloc(
             sizeof(program_tracker_t));
     trackers[index] = tracker;
@@ -151,19 +151,24 @@ program_tracker_t * ProgramManager::new_tracker(int index) {
 }
 
 /*
- * Free a single program tracker
+ * Free a single program tracker.  This
  */
 void ProgramManager::free_tracker(int index) {
   program_tracker_t *tracker = trackers[index];
-  if (tracker != NULL) {
+  if (IS_RUNNING_PROGRAM(tracker)) {
     DEBUG3_VALUELN("free_tracker:", index);
     if (tracker->flags & PROGRAM_DEALLOC_STATE) {
       /*
        * If the tracker's flags indicate that the state should be deallocated
        * then do so now.
        */
-      if (tracker->state) free(tracker->state);
+      if (tracker->state) {
+        free(tracker->state);
+      }
     }
+
+    /* Clear the tracker and set its program to NO_PROGRAM */
+    memset(tracker, 0, sizeof (program_tracker_t));
     tracker->program_index = NO_PROGRAM;
   }
 }
@@ -176,7 +181,7 @@ boolean ProgramManager::run() {
 
   for (byte i = 0; i < num_outputs; i++) {
     program_tracker_t *tracker = trackers[i];
-    if (tracker != NULL) {
+    if (IS_RUNNING_PROGRAM(tracker)) {
 
       if (tracker->flags & PROGRAM_TRACKER_DONE) {
         /* If this program has been set as done then free its tracker */

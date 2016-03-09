@@ -46,6 +46,9 @@ struct program_tracker {
   void *state;
 };
 
+#define IS_RUNNING_PROGRAM(tracker) \
+  ((tracker != NULL) && (tracker->program_index != NO_PROGRAM))
+
 /*******************************************************************************
  * Program tracking, configuration, etc
  */
