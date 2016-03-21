@@ -1,11 +1,11 @@
-#
-# This class reads from a serial device into a circular message buffer.  The
-# data read can either be line terminated ('\n') or as HMTL messages
-#
+################################################################################
 # Author: Adam Phelps
 # License: MIT
 # Copyright: 2015
 #
+# This class reads from a serial device into a circular message buffer.  The
+# data read can either be line terminated ('\n') or as HMTL messages
+################################################################################
 
 from __future__ import print_function
 

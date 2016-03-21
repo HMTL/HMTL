@@ -1,12 +1,13 @@
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2015
 #
 # This abstract class reads from a generic reader into a circular message
 # buffer.  The data read can either be line terminated ('\n') or as HMTL
 # messages.
 #
-# Author: Adam Phelps
-# License: MIT
-# Copyright: 2015
-#
+################################################################################
 
 from __future__ import print_function
 

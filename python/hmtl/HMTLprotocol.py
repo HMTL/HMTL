@@ -1,7 +1,11 @@
-#!/usr/local/bin/python3
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2014
 #
 # Definitions of protocol for talking to HMTL modules via serial
 #
+################################################################################
 
 """HMTL Protocol definitions module"""
 

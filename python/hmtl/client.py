@@ -24,7 +24,7 @@ class HMTLClient():
     def __init__(self, options):
         if (options.hmtladdress != None):
             self.address = options.hmtladdress
-        if (options.verbose):
+        if options.verbose:
             self.verbose = True
         if (options.port):
             port = options.port

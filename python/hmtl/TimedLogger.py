@@ -1,3 +1,12 @@
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2015
+#
+# Logging class that prints a color timestamp before each log line
+#
+################################################################################
+
 from __future__ import print_function
 
 import time

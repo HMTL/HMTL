@@ -1,3 +1,13 @@
+################################################################################
+# Author: Adam Phelps
+# License: MIT
+# Copyright: 2014
+#
+# Class that maintains a connection to an HMTL device and listens for commands
+# over an IP port.
+#
+################################################################################
+
 from multiprocessing.connection import Listener
 import threading
 
