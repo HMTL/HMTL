@@ -349,7 +349,7 @@ def decode_msg(data):
 #
 
 # Abstract class for all message types
-class Msg():
+class Msg(object):
     @classmethod
     def from_data(cls, data, offset=0):
         header = struct.unpack_from(cls.FORMAT, data, offset)

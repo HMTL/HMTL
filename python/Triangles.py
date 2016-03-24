@@ -5,6 +5,7 @@
 import sys, os
 import time
 import struct
+from abc import ABCMeta, abstractmethod
 
 import hmtl.HMTLprotocol as HMTLprotocol
 from hmtl.client import HMTLClient
@@ -41,6 +42,9 @@ def parse_options():
     group.add_argument("-S", "--static", action="store_const",
                        dest="commandtype", const="static",
                        help="Static noise")
+    group.add_argument("-T", "--snake", action="store_const",
+                       dest="commandtype", const="snake",
+                       help="Snake")
     group.add_argument("-N", "--none", action="store_const",
                      dest="commandtype", const="none",
                      help="Send program reset command")
@@ -59,6 +63,9 @@ def parse_options():
     group.add_argument("-t", "--threshold", type=int,
                        default=75,
                        help="Set a threshold value")
+    group.add_argument("-c", "--colormode", type=int,
+                       default=0,
+                       help="Set a color mode")
 
     return parser.parse_args()
 
@@ -83,7 +90,7 @@ def main():
 
     if options.commandtype == "static":
         if not options.foreground or not options.background or not options.period or (options.threshold == None):
-            print("STATIC command requires foreground, background, and period")
+            print("STATIC command requires foreground, background, period, and threshold")
             exit(1)
         fg = [ int(x) for x in options.foreground.split(",") ]
         bg = [ int(x) for x in options.background.split(",") ]
@@ -93,6 +100,19 @@ def main():
         static = TriangleStatic(options.period, fg, bg,
                                 options.threshold)
         msg = static.msg(options.hmtladdress, options.output)
+
+    elif options.commandtype == "snake":
+        if not options.background or not options.period or \
+                (options.colormode == None):
+            print("SNAKE command requires background, colormode, and period")
+            exit(1)
+        bg = [ int(x) for x in options.background.split(",") ]
+        print("Sending STATIC message.  Address=%d Output=%d period=%d bg=%s colormode=%d" %
+              (options.hmtladdress, options.output, options.period, bg,
+               options.colormode))
+        snake = TriangleSnake(options.period, bg, options.colormode)
+        msg = snake.msg(options.hmtladdress, options.output)
+
 
     elif options.commandtype == "none":
         print("Sending NONE message.  Output=%d" % (options.output))
@@ -111,7 +131,29 @@ def main():
     exit(0)
 
 
-class TriangleStatic(HMTLprotocol.Msg):
+class TriangleProgram(HMTLprotocol.Msg):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def pack(self):
+        pass
+
+    def get_code(self):
+        return self.PROGRAM_CODE
+
+    def msg(self, address, output):
+        hdr = HMTLprotocol.MsgHdr(length=HMTLprotocol.MsgHdr.LENGTH + HMTLprotocol.ProgramHdr.LENGTH,
+                                  mtype=HMTLprotocol.MSG_TYPE_OUTPUT,
+                                  address=address)
+        program_hdr = HMTLprotocol.ProgramHdr(self.get_code(), output)
+
+        return hdr.pack() + program_hdr.pack() + self.pack()
+
+
+class TriangleStatic(TriangleProgram):
     PROGRAM_CODE = 33
     TYPE = "TRIANGLE_STATIC"
     FORMAT = "<H" + "BBB" + "BBB" + "B" + "xxx"
@@ -133,13 +175,24 @@ class TriangleStatic(HMTLprotocol.Msg):
                            self.foreground[2],
                            self.threshold)
 
-    def msg(self, address, output):
-        hdr = HMTLprotocol.MsgHdr(length=HMTLprotocol.MsgHdr.LENGTH + HMTLprotocol.ProgramHdr.LENGTH,
-                                  mtype=HMTLprotocol.MSG_TYPE_OUTPUT,
-                                  address=address)
-        program_hdr = HMTLprotocol.ProgramHdr(self.PROGRAM_CODE, output)
 
-        return hdr.pack() + program_hdr.pack() + self.pack()
+class TriangleSnake(TriangleProgram):
+    PROGRAM_CODE = 34
+    TYPE = "TRIANGLE_SNAKE"
+    FORMAT = "<H" + "BBB" + "B" + "xxxxxx"
+
+    def __init__(self, period, background, colormode):
+        self.period = period
+        self.background = background
+        self.colormode = colormode
+
+    def pack(self):
+        return struct.pack(self.FORMAT,
+                           self.period,
+                           self.background[0],
+                           self.background[1],
+                           self.background[2],
+                           self.colormode)
 
 
 if __name__ == '__main__':
