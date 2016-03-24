@@ -90,9 +90,9 @@ def main():
         print("Sending STATIC message.  Address=%d Output=%d period=%d fg=%s bg=%s threshold=%d" %
               (options.hmtladdress, options.output, options.period, fg, bg,
                options.threshold))
-        msg = get_triangle_static_msg(options.hmtladdress,
-                                      options.output, options.period, fg, bg,
-                                      options.threshold)
+        static = TriangleStatic(options.period, fg, bg,
+                                options.threshold)
+        msg = static.msg(options.hmtladdress, options.output)
 
     elif options.commandtype == "none":
         print("Sending NONE message.  Output=%d" % (options.output))
@@ -112,6 +112,7 @@ def main():
 
 
 class TriangleStatic(HMTLprotocol.Msg):
+    PROGRAM_CODE = 33
     TYPE = "TRIANGLE_STATIC"
     FORMAT = "<H" + "BBB" + "BBB" + "B" + "xxx"
 
@@ -132,15 +133,14 @@ class TriangleStatic(HMTLprotocol.Msg):
                            self.foreground[2],
                            self.threshold)
 
+    def msg(self, address, output):
+        hdr = HMTLprotocol.MsgHdr(length=HMTLprotocol.MsgHdr.LENGTH + HMTLprotocol.ProgramHdr.LENGTH,
+                                  mtype=HMTLprotocol.MSG_TYPE_OUTPUT,
+                                  address=address)
+        program_hdr = HMTLprotocol.ProgramHdr(self.PROGRAM_CODE, output)
 
-def get_triangle_static_msg(address, output,
-                            period, foreground, background, threshold):
-    hdr = HMTLprotocol.MsgHdr(length=HMTLprotocol.MsgHdr.LENGTH + HMTLprotocol.ProgramHdr.LENGTH,
-                              mtype=HMTLprotocol.MSG_TYPE_OUTPUT,
-                              address=address)
-    program_hdr = HMTLprotocol.ProgramHdr(33, output)
-    static_hdr = TriangleStatic(period, foreground, background, threshold)
+        return hdr.pack() + program_hdr.pack() + self.pack()
 
-    return hdr.pack() + program_hdr.pack() + static_hdr.pack()
 
-main()
+if __name__ == '__main__':
+    main()
