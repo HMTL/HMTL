@@ -74,8 +74,10 @@ class ProgramManager {
   void **objects;
   byte num_outputs;
 
+  byte program_from_tracker(program_tracker_t *tracker);
+
  private:
-  program_tracker_t* new_tracker(int index);
+  program_tracker_t* get_tracker(int index);
   void free_tracker(int index);
 
   byte lookup_function(byte type);

@@ -11,6 +11,10 @@
 #include <HMTLProtocol.h>
 #include "MessageHandler.h"
 
+#ifdef DEBUG_LEVEL_MESSAGEHANDLER
+#define DEBUG_LEVEL DEBUG_LEVEL_MESSAGEHANDLER
+#endif
+
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL DEBUG_ERROR
 #endif
@@ -137,11 +141,12 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
             // delay for time based on our address.
             int delayMs = address * 2;
             DEBUG3_VALUELN("Delay resp: ", delayMs)
-            delay(delayMs);
+            delay(delayMs); // TODO: This blocks any running program?  Use a timer
           }
 
           src->sendMsgTo(source_address, sock->send_buffer, len);
         } else {
+          // Send the response on the serial device
           Serial.write(sock->send_buffer, len);
         }
 

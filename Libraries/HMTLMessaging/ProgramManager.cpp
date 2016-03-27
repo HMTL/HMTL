@@ -64,6 +64,13 @@ byte ProgramManager::lookup_function(byte id) {
 }
 
 /*
+ * Return the program ID from a tracker
+ */
+byte ProgramManager::program_from_tracker(program_tracker_t *tracker) {
+  return functions[tracker->program_index].type;
+}
+
+/*
  * Process a program configuration message
  */
 boolean ProgramManager::handle_msg(msg_program_t *msg) {
@@ -115,7 +122,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     free_tracker(output);
 
     /* Setup a tracker for this program */
-    tracker = new_tracker(output);
+    tracker = get_tracker(output);
     tracker->program_index = program;
     tracker->flags = 0x0;
 
@@ -136,9 +143,9 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 /*
  * Allocate a new program tracker
  */
-program_tracker_t * ProgramManager::new_tracker(int index) {
+program_tracker_t * ProgramManager::get_tracker(int index) {
   if (trackers[index] == NULL) {
-    DEBUG3_VALUELN("new_tracker:", index);
+    DEBUG3_VALUELN("get_tracker:", index);
     // TODO: Should these be allocated or assigned when manager is initialized?
     program_tracker_t *tracker = (program_tracker_t *) malloc(
             sizeof(program_tracker_t));
