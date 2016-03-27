@@ -16,12 +16,15 @@ from binascii import hexlify
 
 import HMTLprotocol
 import server
+from TimedLogger import TimedLogger
 
 class HMTLClient():
     address = HMTLprotocol.BROADCAST
     verbose = False
 
     def __init__(self, options):
+        self.logger = TimedLogger()
+
         if (options.hmtladdress != None):
             self.address = options.hmtladdress
         if options.verbose:
@@ -43,14 +46,14 @@ class HMTLClient():
 
     def send(self, msg):
         if (self.verbose):
-            print(" - Sending %s" % (hexlify(msg)))
+            self.logger.log(" - Sending %s" % (hexlify(msg)))
 
         self.conn.send(msg)
 
     def get_ack(self):
         msg = self.conn.recv()
         if (self.verbose):
-            print(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
+            self.logger.log(" - Received: '%s' '%s'" % (msg, hexlify(msg)))
         if (msg == server.SERVER_ACK):
             return True
         else:
@@ -62,17 +65,17 @@ class HMTLClient():
 
         # Wait for message acknowledgement
         if (self.verbose):
-            print(" - Waiting on ack")
+            self.logger.log(" - Waiting on ack")
         while True:
             if self.get_ack():
                 if (expect_response):
                     # Request response data
                     msg = self.get_response_data()
                     if (msg):
-                        print(" - Received data response: '%s':\n%s" % 
+                        self.logger.log(" - Received data response: '%s':\n%s" %
                               (hexlify(msg), HMTLprotocol.decode_data(msg)))
                     else:
-                        print(" - Failed to receive data response")
+                        self.logger.log(" - Failed to receive data response")
                     return msg
                 else:
                     break

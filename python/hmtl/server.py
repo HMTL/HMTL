@@ -106,13 +106,13 @@ class HMTLServer():
             self.conn.close()
         self.terminate = True
 
-    def get_data_msg(self):
+    def get_data_msg(self, timeout=0.25):
         """Listen on the serial device for a properly formatted data message"""
 
         self.serial_cv.acquire()
         self.logger.log("Starting data request")
         
-        time_limit = time.time() + 0.5
+        time_limit = time.time() + timeout
         item = None
         while True:
             # Try to get a message with low timeout

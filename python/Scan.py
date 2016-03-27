@@ -4,6 +4,8 @@
 
 import hmtl.HMTLprotocol as HMTLprotocol
 from hmtl.client import HMTLClient
+from hmtl.TimedLogger import TimedLogger
+
 
 from optparse import OptionParser, OptionGroup
 
@@ -36,8 +38,7 @@ def handle_args():
 
     # General options
     parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
-                      help="Address to which messages are sent [default=BROADCAST]", 
-                      default=HMTLprotocol.BROADCAST)
+                      help="Address to which messages are sent [default=BROADCAST]")
 
     # Scan options
     parser.add_option("-e", "--scanevery", dest="scanevery", action="store_true",
@@ -45,29 +46,31 @@ def handle_args():
 
 
     (options, args) = parser.parse_args()
-    print("options:" + str(options) + " args:" + str(args))
+    logger.log("options:" + str(options) + " args:" + str(args))
 
     return (options, args)
 
 def handle_poll_resp(data, modules):
     (text, msg) = HMTLprotocol.decode_msg(data)
     if (isinstance(msg, HMTLprotocol.PollHdr)):
-        print("Poll response: dev=%d addr=%d" % (msg.device_id, msg.address))
+        logger.log("Poll response: dev=%d addr=%d" % (msg.device_id, msg.address))
         modules.append(msg)
     else:
-        print("Not a poll response, class: %s " % (msg.__class__.__name__))
+        logger.log("Not a poll response, class: %s " % (msg.__class__.__name__))
+
+def poll_one(client, modules, hmtladdress):
+    logger.log("Polling address: %d" % (hmtladdress))
+    msg = HMTLprotocol.get_poll_msg(hmtladdress)
+    ret = client.send_and_ack(msg, True)
+    if (ret):
+        handle_poll_resp(ret, modules)
+    else:
+        logger.log("No response from: %d" % (hmtladdress))
 
 def scan_every(client):
     modules = []
     for address in range(0,128):
-        print("Polling address: %d" % (address))
-        msg = HMTLprotocol.get_poll_msg(address)
-        ret = client.send_and_ack(msg, True)
-        if (ret):
-            handle_poll_resp(ret, modules)
-        else:
-            print("No response from: %d" % (address))
-
+        poll_one(client, modules, address)
     return modules
 
 def scan_broadcast(client):
@@ -86,21 +89,27 @@ def scan_broadcast(client):
     
 
 def main():
+    global logger
+    logger = TimedLogger()
+
     (options, args) = handle_args()
 
     client = HMTLClient(options)
 
-    if options.scanevery:
+    if options.hmtladdress:
+        modules = []
+        poll_one(client, modules, options.hmtladdress)
+    elif options.scanevery:
         modules = scan_every(client)
     else:
         modules = scan_broadcast(client)
 
     client.close()
 
-    print("\nFound %d modules:" % (len(modules)))
-    print("  %s" % (HMTLprotocol.PollHdr.headers()))
+    logger.log("\nFound %d modules:" % (len(modules)))
+    logger.log("  %s" % (HMTLprotocol.PollHdr.headers()))
     for m in modules:
-        print("  %s" % (m.dump()))
+        logger.log("  %s" % (m.dump()))
 
     exit(0)
 

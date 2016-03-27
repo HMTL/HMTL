@@ -126,7 +126,8 @@ MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'B' # Msg + padding XXXXXX
 
 MODULE_TYPES = {
     1 : "HMTL_Module",
-    2 : "WirelessPendant"
+    2 : "WirelessPendant",
+    3 : "TriangleLightModule",
 }
 
 #
