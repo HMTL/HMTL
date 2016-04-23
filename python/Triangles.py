@@ -31,7 +31,7 @@ def parse_options():
     group.add_argument("-A", "--hmtladdress", type=int,
                       help="Address to which messages are sent [default=BROADCAST]",
                       default=HMTLprotocol.BROADCAST)
-    group.add_argument("-O", "--output", action="store",
+    group.add_argument("-O", "--output", action="store", type=int,
                        help="Number of the output to be set",
                        default=HMTLprotocol.OUTPUT_ALL_OUTPUTS)
 
@@ -72,7 +72,10 @@ def parse_options():
 def main():
     options = parse_options()
 
-    client = HMTLClient(options)
+    client = HMTLClient(address=options.address,
+                        port=options.port,
+                        hmtladdress=options.hmtladdress,
+                        verbose=options.verbose)
 
     msg = None
     expect_response = False

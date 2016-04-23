@@ -22,24 +22,19 @@ class HMTLClient():
     address = HMTLprotocol.BROADCAST
     verbose = False
 
-    def __init__(self, options):
+    def __init__(self, address='localhost', port=6000, hmtladdress=None, verbose=False):
         self.logger = TimedLogger()
 
-        if (options.hmtladdress != None):
-            self.address = options.hmtladdress
-        if options.verbose:
-            self.verbose = True
-        if (options.port):
-            port = options.port
-        else:
-            port = 6000
+        self.address = hmtladdress
+        self.verbose = verbose
 
-        address = (options.address, port)
+        address = (address, port)
         try:
             self.conn = Client(address, authkey=b'secret password')
         except Exception as e:
             raise Exception("Failed to connect to '%s'" % (str(address)))
         random.seed()
+        print("HMTLClient initialized")
 
     def close(self):
         self.conn.close()
@@ -83,6 +78,7 @@ class HMTLClient():
     def get_response_data(self):
         '''Request and attempt to retrieve response data'''
         self.conn.send(server.SERVER_DATA_REQ)
+        #TODO: This should pickle some object with parameters like timeout
         msg = self.conn.recv()
         return msg
         

@@ -103,7 +103,7 @@ def main():
 
     handle_args()
 
-    client = HMTLClient(options)
+    client = HMTLClient(options.address, options.port, options.hmtladdress, options.verbose)
 
     msg = None
     expect_response = False

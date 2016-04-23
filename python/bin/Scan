@@ -94,7 +94,7 @@ def main():
 
     (options, args) = handle_args()
 
-    client = HMTLClient(options)
+    client = HMTLClient(address=options.address, port=options.port, hmtladdress=options.hmtladdress)
 
     if options.hmtladdress:
         modules = []
