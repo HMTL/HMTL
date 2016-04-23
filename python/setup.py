@@ -3,6 +3,7 @@
 import os
 import stat
 
+VERSION="0.1.2"
 
 # Get an array of all scripts in a directory
 def list_scripts(directory):
@@ -20,7 +21,7 @@ def list_scripts(directory):
 from setuptools import setup
 setup(
     name='hmtl',
-    version='0.1.1',
+    version=VERSION,
     description='HMTL python library and scripts',
     long_description="Python libraries and scripts to interact with HMTL modules",
     url='https://github.com/aphelps/HTML',
