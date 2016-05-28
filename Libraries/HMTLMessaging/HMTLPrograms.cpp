@@ -366,3 +366,95 @@ boolean program_fade(output_hdr_t *output, void *object,
 
   return changed;
 }
+
+/*******************************************************************************
+ * Program to produce a colorful "sparkle" pattern
+ */
+
+boolean program_sparkle_init(msg_program_t *msg,
+                             program_tracker_t *tracker,
+                             output_hdr_t *output) {
+  if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
+    return false;
+  }
+
+  DEBUG3_PRINT("Initializing sparkle program:");
+
+  state_sparkle_t *state = (state_sparkle_t *)malloc(sizeof (state_sparkle_t));
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+  memcpy(&state->msg, msg->values, sizeof (state->msg));
+  tracker->state = state;
+
+  if (state->msg.sparkle_threshold == 0) state->msg.sparkle_threshold = 50;
+  if (state->msg.bg_threshold == 0) state->msg.bg_threshold = 20;
+  if (state->msg.hue_max == 0) state->msg.hue_max = 255;
+  if (state->msg.sat_max == 0) state->msg.sat_max = 255;
+  if (state->msg.val_max == 0) state->msg.val_max = 255;
+
+  DEBUG3_VALUE(" ", state->msg.period);
+  DEBUG3_VALUE(" ", state->msg.bgColor.r);
+  DEBUG3_VALUE(",", state->msg.bgColor.g);
+  DEBUG3_VALUE(",", state->msg.bgColor.b);
+  DEBUG3_VALUE(" ", state->msg.sparkle_threshold);
+  DEBUG3_VALUE(" ", state->msg.bg_threshold);
+  DEBUG3_VALUE(" ", state->msg.hue_max);
+  DEBUG3_VALUE(" ", state->msg.sat_min);
+  DEBUG3_VALUE(" ", state->msg.sat_max);
+  DEBUG3_VALUE(" ", state->msg.val_min);
+  DEBUG3_VALUELN(" ", state->msg.val_max);
+
+  // Combine the bg and sparkle threshold to get the true bgthreshold
+  state->msg.bg_threshold += state->msg.sparkle_threshold;
+
+  state->last_change_ms = millis();
+
+  return true;
+}
+
+boolean program_sparkle(output_hdr_t *output, void *object,
+                        program_tracker_t *tracker) {
+  unsigned long now = time.ms();
+  state_sparkle_t *state = (state_sparkle_t *)tracker->state;
+
+  if (now - state->last_change_ms >= state->msg.period) {
+    PixelUtil *pixels = (PixelUtil*)object;
+
+    state->last_change_ms = now;
+
+    for (byte led = 0; led < pixels->numPixels(); led++) {
+      byte rand = (byte)random(100);
+      if (rand <= state->msg.sparkle_threshold) {
+        CRGB color = CHSV((uint8_t)random(state->msg.hue_max),
+                          state->msg.sat_min +
+                                  (uint8_t)random(state->msg.sat_max - state->msg.sat_min),
+                          state->msg.val_min +
+                                  (uint8_t)random(state->msg.val_max - state->msg.val_min));
+        pixels->setPixelRGB(led, color);
+      } else if (rand <= state->msg.bg_threshold) {
+        pixels->setPixelRGB(led, state->msg.bgColor);
+      } // Otherwise leave as previous color
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+/*******************************************************************************
+ * Program to set the brightness of a pixel output.  This is an once-only
+ * command.
+ */
+boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
+                           output_hdr_t *output) {
+  if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
+    return false;
+  }
+
+  hmtl_program_brightness_t *bright = (hmtl_program_brightness_t *)msg->values;
+
+  DEBUG3_VALUELN("Brightness:", bright->value);
+  FastLED.setBrightness(bright->value);
+
+  return false;
+}

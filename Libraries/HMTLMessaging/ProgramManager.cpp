@@ -118,23 +118,33 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
       continue;
     }
 
-    /* If there was an active program on this output then clear the tracker */
-    free_tracker(output);
+    if (functions[tracker->program_index].program == NULL) {
+      /*
+       * This is an initialization-only command, set tracker to null
+       */
+      tracker = NULL;
+    } else {
+      /* If there was an active program on this output then clear the tracker */
+      free_tracker(output);
 
-    /* Setup a tracker for this program */
-    tracker = get_tracker(output);
-    tracker->program_index = program;
-    tracker->flags = 0x0;
+      /* Setup a tracker for this program */
+      tracker = get_tracker(output);
+      tracker->program_index = program;
+      tracker->flags = 0x0;
+    }
 
     /* Attempt to setup the program */
+    // TODO: Shouldn't this also send the object for this output?
     boolean success = functions[tracker->program_index].setup(msg, tracker,
                                                               outputs[output]);
     if (!success) {
-      DEBUG4_VALUELN("handle_msg: NA on ", output);
-      free_tracker(output);
+      if (tracker) {
+        DEBUG4_VALUELN("handle_msg: NA on ", output);
+        free_tracker(output);
+      }
       continue;
     }
-    DEBUG3_VALUELN("handle_msg: setup on ", output);
+    DEBUG4_VALUELN("handle_msg: setup on ", output);
   }
 
   return true;

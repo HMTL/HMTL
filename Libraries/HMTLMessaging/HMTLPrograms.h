@@ -9,6 +9,7 @@
 #ifndef HMTLPROGRAMS_H
 #define HMTLPROGRAMS_H
 
+#include "FastLED.h"
 #include "ProgramManager.h"
 
 /*******************************************************************************
@@ -22,8 +23,11 @@
 #define HMTL_PROGRAM_LEVEL_VALUE  0x03
 #define HMTL_PROGRAM_SOUND_VALUE  0x04
 #define HMTL_PROGRAM_FADE         0x05
+#define HMTL_PROGRAM_SPARKLE      0x06
 
 #define PROGRAM_SENSOR_DATA       0x10
+
+#define PROGRAM_BRIGHTNESS        0x30 // One-time only
 
 
 /*
@@ -113,6 +117,51 @@ typedef struct {
   hmtl_program_fade_t msg;
   unsigned long start_time;
 } state_fade_t;
+
+
+/*
+ * Program which generates a randomized sparkle pattern
+ */
+typedef struct {
+  uint16_t period;        //  2B
+  CRGB bgColor;           //  3B
+  byte sparkle_threshold; //  1B Percentage of pixels to change each iteration
+  byte bg_threshold;      //  1B Percentage of pixels to leave as background
+  byte hue_max;           //  1B
+  byte sat_min;           //  1B
+  byte sat_max;           //  1B
+  byte val_min;           //  1B
+  byte val_max;           //  1B
+
+                          // 11B Total
+} hmtl_program_sparkle_t;
+
+typedef struct {
+  hmtl_program_sparkle_t msg;
+  unsigned long last_change_ms;
+} state_sparkle_t;
+
+uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
+                           uint16_t address, uint8_t output,
+                           uint32_t period,
+                           CRGB bgColor);
+boolean program_sparkle_init(msg_program_t *msg, program_tracker_t *tracker,
+                          output_hdr_t *output);
+boolean program_sparkle(output_hdr_t *output, void *object,
+                     program_tracker_t *tracker);
+
+/*
+ * Program to set the brightness of a pixel output
+ */
+typedef struct {
+  uint8_t value;
+} hmtl_program_brightness_t;
+uint16_t program_brightness_fmt(byte *buffer, uint16_t buffsize,
+                             uint16_t address, uint8_t output,
+                             uint8_t value);
+boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
+                             output_hdr_t *output);
+
 
 
 /*******************************************************************************
