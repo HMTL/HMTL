@@ -27,8 +27,8 @@ NA	*32/0x20	2            Taller stand (Board v4)
 64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
 65	65/0x41	  3            Trigger Board v3 (stereo terminals, XLR)
 66	66/0x42	  3            Trigger Board v3 (stereo terminals, XLR)
-67	64/0x41		3            Trigger Board v3 (stereo terminals, XLR, Chad)
-68	64/0x41		3            Trigger Board v3 (stereo terminals, XLR, Chad)
+67	64/0x41	  3            Trigger Board v3 (stereo terminals, XLR, Chad)
+68	64/0x41	  3            Trigger Board v3 (stereo terminals, XLR, Chad)
 69  69/0x45   3            Trigger Board v4 (stereo terminals, XLR)
 70  70/0x46   3            Trigger Board v4 (stereo terminals, XLR)
 
@@ -44,5 +44,10 @@ NA	*32/0x20	2            Taller stand (Board v4)
 ==Wireless Pendants==
 
 0x0101 1/0x1  3            First assembled wireless pendant
+
+
+== OtherMill pendant==
+100 100/0x64  3  11        First milled module
+101 101/0x65  3  11
 
 (*) Not yet set
