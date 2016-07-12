@@ -9,6 +9,11 @@
 
 #include <Arduino.h>
 
+
+#ifdef DEBUG_LEVEL_PROGRAMMANAGER
+  #define DEBUG_LEVEL DEBUG_LEVEL_PROGRAMMANAGER
+#endif
+
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_ERROR
 #endif
@@ -84,7 +89,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     return false;
   }
 
-   /* Setup the tracker */
+  /* Setup the tracker */
   byte starting_output, stop_output;
 
   if (msg->hdr.output == HMTL_ALL_OUTPUTS) {
@@ -109,8 +114,6 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     if (outputs[output] == NULL)
       continue;
 
-    program_tracker_t *tracker = trackers[output];
-
     if (msg->type == HMTL_PROGRAM_NONE) {
       /* This is a message to clear the existing program so free the tracker */
       DEBUG3_VALUELN("handle_msg: clear ", output);
@@ -118,10 +121,12 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
       continue;
     }
 
-    if (functions[tracker->program_index].program == NULL) {
+    program_tracker_t *tracker;
+    if (functions[program].program == NULL) {
       /*
        * This is an initialization-only command, set tracker to null
        */
+      DEBUG4_PRINTLN("handle_msg: trackerless")
       tracker = NULL;
     } else {
       /* If there was an active program on this output then clear the tracker */
@@ -135,8 +140,8 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
 
     /* Attempt to setup the program */
     // TODO: Shouldn't this also send the object for this output?
-    boolean success = functions[tracker->program_index].setup(msg, tracker,
-                                                              outputs[output]);
+    boolean success = functions[program].setup(msg, tracker, outputs[output]);
+
     if (!success) {
       if (tracker) {
         DEBUG4_VALUELN("handle_msg: NA on ", output);
