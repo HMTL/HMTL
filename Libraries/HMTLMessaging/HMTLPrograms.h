@@ -168,6 +168,10 @@ boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
  * Additional helper messages
  */
 
+// Format a cancel message
+uint16_t hmtl_program_cancel_fmt(byte *buffer, uint16_t buffsize,
+                                 uint16_t address, uint8_t output);
+
 // Send a request to cancel any program running on an output
 void hmtl_send_cancel(RS485Socket *rs485, byte *buff, byte buff_len,
                       uint16_t address, uint8_t output);
