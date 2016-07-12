@@ -9,6 +9,10 @@
 #include <Arduino.h>
 #include <HMTLTypes.h>
 
+#ifdef DEBUG_LEVEL_HMTLPROGRAMS
+  #define DEBUG_LEVEL DEBUG_LEVEL_HMTLPROGRAMS
+#endif
+
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_ERROR
 #endif
@@ -106,6 +110,29 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
   return HMTL_MSG_PROGRAM_LEN;
 }
 
+/* Format a sparkle program message */
+uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
+                             uint16_t address, uint8_t output,
+                             uint32_t period,
+                             CRGB bgColor){
+
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_SPARKLE, buffsize);
+
+  hmtl_program_sparkle_t *program =
+          (hmtl_program_sparkle_t *)msg_program->values;
+
+  /* If the other values are set then don't memset */
+  memset(program, 0, MAX_PROGRAM_VAL);
+  program->period = period;
+  program->bgColor = bgColor;
+
+
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
+  return HMTL_MSG_PROGRAM_LEN;
+}
 
 /*******************************************************************************
  * Wrapper functions for sending HMTL program messages
@@ -146,7 +173,10 @@ void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
                             uint32_t start_color,
                             uint32_t stop_color) {
   DEBUG5_VALUE("hmtl_send_timed_change: addr:", address);
-  DEBUG5_VALUELN(" out:", output);
+  DEBUG5_VALUE(" out:", output);
+  DEBUG5_VALUE(" per:", change_period);
+  DEBUG5_HEXVAL(" start:", start_color);
+  DEBUG5_HEXVALLN(" stop:", stop_color);
 
   uint16_t len = hmtl_program_timed_change_fmt(buff, buff_len,
                                                address, output,
