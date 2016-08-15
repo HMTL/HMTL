@@ -16,8 +16,6 @@
 #include <Arduino.h>
 #include "Socket.h"
 
-#define POOFER_IGNITE_PERIOD 30000
-
 class Poofer {
 public:
   static const uint32_t IGNITE_PERIOD      = 30 * 1000;

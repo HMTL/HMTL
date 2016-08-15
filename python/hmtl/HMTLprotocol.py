@@ -128,6 +128,7 @@ MODULE_TYPES = {
     1 : "HMTL_Module",
     2 : "WirelessPendant",
     3 : "TriangleLightModule",
+    4 : "HMTL_Fire_Control"
 }
 
 #

@@ -17,6 +17,7 @@
 
 #include "HMTLPoofer.h"
 #include "HMTLMessaging.h"
+#include "HMTLPrograms.h"
 
 Poofer::Poofer(byte _id, 
                

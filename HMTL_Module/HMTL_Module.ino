@@ -40,6 +40,7 @@
 #include "MPR121.h"
 
 #include "TimeSync.h"
+#include "HMTL_Module.h"
 
 /* Auto update build number */
 #define HMTL_MODULE_BUILD 29 // %META INCR

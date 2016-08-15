@@ -92,8 +92,6 @@ class HMTLSerial():
     # Send a text command
     def send_command(self, command):
         self.logger.log("send_command: %s" % (command))
-        #    data = bytes(command, 'utf-8')
-        #    send_and_confirm(data)
         self.send_and_confirm(command, True)
 
     # Send a binary config update

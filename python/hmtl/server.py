@@ -43,6 +43,12 @@ class HMTLServer():
         self.conn = None
         self.listener = None
 
+        if (options.devicescan):
+            self.scanner = DeviceScanner(self, True)
+            self.scanner.start()
+        else:
+            self.scanner = None
+
     def get_connection(self):
         try:
             self.logger.log("Waiting for connection")
@@ -69,11 +75,17 @@ class HMTLServer():
         else:
             # Forward the message to the device
             self.serial_cv.acquire()
-            self.ser.send_and_confirm(item.data, False)
+            self.send_data(item.data)
             self.serial_cv.release()
 
             # Reply with acknowledgement
             self.conn.send(SERVER_ACK)
+
+    def send_data(self, data):
+            self.serial_cv.acquire()
+            self.ser.send_and_confirm(data, False)
+            self.serial_cv.release()
+
 
     # Wait for and handle incoming connections
     def listen(self):
@@ -131,3 +143,120 @@ class HMTLServer():
         self.serial_cv.release()
 
         return item
+
+
+class DeviceScanner(threading.Thread):
+    """
+    This class performs a background scan for HMTL devices and maintains a list
+    of discovered devices
+    """
+
+    def __init__(self, server, verbose=True, period=60.0):
+        threading.Thread.__init__(self)
+
+        self.server = server
+        self.verbose = verbose
+
+        self.logger = TimedLogger(self.server.ser.serial.start_time,
+                                  textcolor=TimedLogger.MAGENTA)
+        self.logger.log("Scanner initialized")
+
+        # Period between scans
+        self.scan_period = period
+
+        # Period between address
+        self.address_period = 0.25
+
+        self.address_range = [x for x in range(120, 140)]
+
+        # Set as a daemon so that this thread will exit correctly
+        # when the parent receives a kill signal
+        self.daemon = True
+
+        self.devices = {}
+
+    def get_devices(self):
+        return self.devices
+
+    def log(self, msg):
+        if self.verbose:
+            self.logger.log(msg)
+
+    def stop(self):
+        self._Thread__stop()
+
+    def run(self):
+        self.log("Scanner started")
+
+        while True:
+            self.log("Starting scan")
+
+            for address in self.address_range:
+                self.log("Polling address %d" % address)
+
+                msg = HMTLprotocol.get_poll_msg(address)
+
+                try:
+                    self.server.send_data(msg)
+                    item = self.server.get_data_msg()
+                    if item:
+                        (text, msg) = HMTLprotocol.decode_msg(item.data)
+                        if (isinstance(msg, HMTLprotocol.PollHdr)):
+                            self.log("Poll response: %s" % (msg.dump()))
+
+                            if self.devices[address]:
+                                # A device previously responded to this address
+                                self.devices[address].update(msg)
+                            else:
+                                # Create a new device on this address
+                                self.devices[address] = HMTLModule(msg)
+                        else:
+                            self.log("XXX: Wrong message type? %s" % (msg.dump()))
+                    elif self.devices[address]:
+                        # There was no response for a module we previously had configured
+                        self.log("No response for known address %d" % address)
+                        self.devices[address].set_active(False)
+                except Exception as e:
+                    print("Exception: %s" % e)
+                    pass
+
+                time.sleep(self.address_period)
+
+            self.log("Current devices:")
+            for deviceid in self.devices.keys():
+                self.log("  %s" % (self.devices[deviceid].dump()))
+
+            time.sleep(self.scan_period)
+
+
+class HMTLModule(object):
+
+    def __init__(self, pollhdr):
+        self.protocol_version = pollhdr.protocol_version
+        self.hardware_version = pollhdr.hardware_version
+        self.baud = pollhdr.baud
+        self.num_outputs = pollhdr.num_outputs
+        self.flags = pollhdr.flags
+        self.device_id = pollhdr.device_id
+        self.address = pollhdr.address
+
+        self.object_type = pollhdr.object_type
+        self.buffer_size = pollhdr.buffer_size
+        self.msg_version = pollhdr.msg_version
+
+        self.active = True
+        self.last_active = time.time()
+
+    def update(self, pollhdr):
+        """
+        Update an existing module based on a poll header
+        :param pollhdr:
+        :return:
+        """
+        self.set_active(True)
+        pass
+
+    def set_active(self, active):
+        self.active = active
+        if self.active:
+            self.last_active = time.time()
