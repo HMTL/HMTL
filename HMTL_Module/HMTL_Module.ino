@@ -102,6 +102,14 @@ program_tracker_t *active_programs[HMTL_MAX_OUTPUTS];
 ProgramManager manager;
 MessageHandler handler;
 
+#ifdef ENABLE_PUSH_BUTTON
+  #define PUSH_BUTTON_PIN 8
+#endif
+
+// Prototypes
+void additional_setup();
+void additional_loop();
+
 void setup() {
 
   //  Serial.begin(115200);
@@ -111,7 +119,7 @@ void setup() {
                                      outputs, objects, HMTL_MAX_OUTPUTS,
                                      &rs485, 
                                      &xbee,
-                                     &pixels, 
+                                     &pixels,
                                      NULL, // MPR121
                                      NULL, // RGB
                                      NULL, // Value
@@ -149,13 +157,31 @@ void setup() {
 
   handler = MessageHandler(config.address, &manager, sockets, num_sockets);
 
-  DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
-  Serial.println(F(HMTL_READY));
+  additional_setup();
 
-  //startup_commands();
+  DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
+
+  // Indicate that module is ready for action
+  Serial.println(F(HMTL_READY));
 }
 
-#if 0
+void additional_setup() {
+#ifdef ENABLE_PUSH_BUTTON
+  pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
+#endif
+
+#ifdef STARTUP_COMMANDS
+  startup_commands();
+#endif
+}
+
+#ifdef ENABLE_PUSH_BUTTON
+byte get_button_value() {
+  return digitalRead(PUSH_BUTTON_PIN);
+}
+#endif
+
+#ifdef STARTUP_COMMANDS
 /*******************************************************************************
  * Execute any startup commands
  */
@@ -208,7 +234,8 @@ void startup_commands() {
     free(startupmsg[i]);
   }
 }
-#endif
+#endif // STARTUP_COMMANDS
+
 
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
@@ -233,6 +260,8 @@ void loop() {
    */
   boolean update = handler.check(&config);
 
+  additional_loop();
+
   /* Execute any active programs */
   if (manager.run()) {
     update = true;
@@ -246,6 +275,25 @@ void loop() {
   }
 }
 
+void additional_loop() {
+#ifdef ENABLE_PUSH_BUTTON
+  //Use a push button to override a particular output
+  static byte prev_value = HIGH;
+  if (get_button_value() != prev_value) {
+    prev_value = get_button_value();
+    DEBUG1_VALUELN("Push button to ", prev_value);
+    if (prev_value == LOW) {
+      uint32_t value = (prev_value == LOW ? pixel_color(255,255,255) : 0);
+      hmtl_program_timed_change_fmt(rs485.send_buffer,  rs485.send_data_size,
+                             config.address, (byte)3,
+                             500, value,
+                             0);
+      handler.process_msg((msg_hdr_t *)rs485.send_buffer, &rs485, NULL, &config);
+
+    }
+  }
+#endif
+}
 
 /*******************************************************************************
  * Program handler for processing incoming sensor data
