@@ -1,0 +1,26 @@
+{
+    "info": "This config is for the iteration of circular LED pendants on the other mill, which have an ATMega328, 16LEDs, and possibly RS485",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 11,
+	      "baud": 9600,
+	      "device_id": 0,
+	      "address": 0,
+	      "flags": 0
+    },
+    "outputs": [
+	      {
+	          "type": "pixels",
+	          "clockpin": 255,
+	          "datapin": 9,
+	          "numpixels": 16,
+	          "rgbtype": 0
+	      },
+          {
+              "type": "rs485",
+              "recvpin": 4,
+              "xmitpin": 10,
+              "enablepin": 11
+          }
+    ]
+}

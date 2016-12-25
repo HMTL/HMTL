@@ -1,0 +1,43 @@
+{
+    "info": "This config is for the HMTL Fire Controller box",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 4,
+	      "address": 128,
+	      "device_id": 128,
+	      "baud": 57600,
+	      "flags": 0
+    },
+    "outputs": [
+	      {
+	          "type": "value",
+	          "pin": 13,
+	          "value": 0
+	      },
+	      {
+	          "type": "value",
+	          "pin": 11,
+	          "value": 0
+	      },
+	      {
+	          "type": "pixels",
+	          "clockpin": 8,
+	          "datapin": 12,
+	          "numpixels": 12,
+	          "rgbtype": 0
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 7,
+	          "enablepin": 2
+	      },
+	      {
+	          "type": "mpr121",
+	          "irqpin": 3,
+	          "useinterrupt": 0,
+	          "trigger": [ 4, 4, 4, 4,  6,  6,  6,  6,  8,  8,  8,  8 ],
+	          "release": [  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2 ]
+	      }
+    ]
+}
