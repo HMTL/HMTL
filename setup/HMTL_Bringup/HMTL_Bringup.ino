@@ -6,7 +6,9 @@
  * Bringup code for generic HMTL boards
  */
 
-#define DEBUG_LEVEL DEBUG_HIGH
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_HIGH
+#endif
 #include "Debug.h"
 
 #include "EEPROM.h"

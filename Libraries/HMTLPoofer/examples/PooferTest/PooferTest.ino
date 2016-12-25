@@ -25,6 +25,8 @@
 #include "EEPromUtils.h"
 #include "PixelUtil.h"
 
+#include "TimeSync.h"
+#include "HMTLProtocol.h"
 #include "HMTLTypes.h"
 #include "HMTLMessaging.h"
 

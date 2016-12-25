@@ -47,6 +47,7 @@ byte databuffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 byte *send_buffer;
 RS485Socket rs485;
 
+void cliHandler(char **tokens, byte numtokens);
 SerialCLI serialcli(64, cliHandler);
 
 config_hdr_t config;

@@ -10,7 +10,9 @@
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
 
-#define DEBUG_LEVEL 4
+#ifndef DEBUG_LEVEL
+  #define DEBUG_LEVEL DEBUG_HIGH
+#endif
 #include <Debug.h>
 
 #include "SerialCLI.h"
@@ -42,12 +44,12 @@
 #define NUM_OUTPUTS 3
 config_rgb_t rgb_output;
 
-
 #define SEND_BUFFER_SIZE 64
 byte databuffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 byte *send_buffer;
 RS485Socket rs485;
 
+void cliHandler(char **tokens, byte numtokens);
 SerialCLI serialcli(64, cliHandler);
 
 config_hdr_t config;

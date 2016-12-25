@@ -26,9 +26,6 @@
  * Program tracking, configuration, etc
  */
 
-/* Provide access to a time synchronization object */
-TimeSync time;
-
 ProgramManager::ProgramManager() {
 };
 
