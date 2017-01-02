@@ -47,6 +47,7 @@ config_pixels_t pixel_output;
 config_value_t value_output;
 config_rs485_t rs485_output;
 
+boolean has_rgb = false;
 boolean has_value = false;
 boolean has_pixels = false;
 boolean has_rs485 = false;
@@ -89,6 +90,10 @@ void setup() {
     has_value = true;
   }
 
+  if (outputs_found & (1 << HMTL_OUTPUT_RGB)) {
+    has_rgb = true;
+  }
+
   if (outputs_found & (1 << HMTL_OUTPUT_PIXELS)) {
     for (unsigned int i = 0; i < pixels.numPixels(); i++) {
       pixels.setPixelRGB(i, 0, 0, 0);
@@ -115,6 +120,7 @@ void loop() {
       case 0: {
         DEBUG1_PRINTLN("White");
         if (has_value) digitalWrite(value_output.pin, HIGH);
+        if (has_rgb) digitalWrite(rgb_output.pins[2], LOW);
         if (has_pixels) {
           for (unsigned int i=0; i < pixels.numPixels(); i++) 
             pixels.setPixelRGB(i, 255, 255, 255);  
@@ -126,7 +132,7 @@ void loop() {
       case 1: {
         DEBUG1_PRINTLN("Red");
         if (has_value) digitalWrite(value_output.pin, LOW);
-        digitalWrite(rgb_output.pins[0], HIGH);
+        if (has_rgb) digitalWrite(rgb_output.pins[0], HIGH);
         if (has_pixels) {
           for (unsigned int i=0; i < pixels.numPixels(); i++) 
             pixels.setPixelRGB(i, 255, 0, 0);  
@@ -137,8 +143,10 @@ void loop() {
 
       case 2: {
         DEBUG1_PRINTLN("Green");
-        digitalWrite(rgb_output.pins[0], LOW);
-        digitalWrite(rgb_output.pins[1], HIGH);
+        if (has_rgb) {
+          digitalWrite(rgb_output.pins[0], LOW);
+          digitalWrite(rgb_output.pins[1], HIGH);
+        }
         if (has_pixels) {
           for (unsigned int i=0; i < pixels.numPixels(); i++) 
             pixels.setPixelRGB(i, 0, 255, 0);  
@@ -149,8 +157,10 @@ void loop() {
 
       case 3: {
         DEBUG1_PRINTLN("Blue");
-        digitalWrite(rgb_output.pins[1], LOW);
-        digitalWrite(rgb_output.pins[2], HIGH);
+        if (has_rgb) {
+          digitalWrite(rgb_output.pins[1], LOW);
+          digitalWrite(rgb_output.pins[2], HIGH);
+        }
         if (has_pixels) {
           for (unsigned int i=0; i < pixels.numPixels(); i++) 
             pixels.setPixelRGB(i, 0, 0, 255);  
