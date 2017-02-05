@@ -504,11 +504,21 @@ class ProgramGeneric(Msg):
     FORMAT = '<BBBBBBBBBBBB'
 #    FORMAT='x'*12
 
+    NAME_MAP = {
+        "blink":   0x01,
+        "timed":   0x02,
+        "level":   0x03,
+        "sound":   0x04,
+        "fade":    0x05,
+        "sparkle": 0x06,
+
+        "brightness": 0x30
+    }
+
     def __init__(self, values=None):
         if values:
-            print("TEST: values=%s" % (values))
+            # Convert all values to ints and fill unspecified bytes as zero
             self.values = [int(values[i]) if i < len(values) else 0 for i in range(12)]
-            print("TEST: self.values=%s" % (self.values))
         else:
             self.values = [0 for _ in range(12)]
         pass

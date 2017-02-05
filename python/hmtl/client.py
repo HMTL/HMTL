@@ -66,11 +66,12 @@ class HMTLClient():
                 if (expect_response):
                     # Request response data
                     msg = self.get_response_data()
-                    if (msg):
-                        self.logger.log(" - Received data response: '%s':\n%s" %
-                              (hexlify(msg), HMTLprotocol.decode_data(msg)))
-                    else:
-                        self.logger.log(" - Failed to receive data response")
+                    if self.verbose:
+                        if msg:
+                                self.logger.log(" - Received data response: '%s':\n%s" %
+                                      (hexlify(msg), HMTLprotocol.decode_data(msg)))
+                        else:
+                            self.logger.log(" - Failed to receive data response")
                     return msg
                 else:
                     break

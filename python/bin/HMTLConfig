@@ -114,7 +114,7 @@ def main():
         config_data = HMTLjson.load_json(options.filename)
         if (config_data == None):
             print("ERROR: Exiting due to invalid configuration file")
-            exit(1)
+            sys.exit(1)
 
         if (options.address != None):
             # Set the address in the read config
