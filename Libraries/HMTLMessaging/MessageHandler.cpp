@@ -224,6 +224,8 @@ boolean MessageHandler::check_serial(config_hdr_t *config) {
       }
     }
 
+    // Todo: Should this really use the first socket's buffer?  What if there
+    // are no sockets configured?
     if (process_msg(msg_hdr, NULL, sockets[0], config)) {
       update = true;
     }
@@ -247,12 +249,19 @@ boolean MessageHandler::check_socket(Socket *socket, Socket *serial_socket,
   unsigned int msglen;
   msg_hdr_t *msg_hdr = hmtl_socket_getmsg(socket, &msglen);
   if (msg_hdr != NULL) {
-    DEBUG5_VALUE("Received rs485 msg len=", msglen);
+    DEBUG5_VALUE("Rcv socket msg len=", msglen);
     DEBUG5_PRINT(" ");
     DEBUG5_COMMAND(
             print_hex_string((byte *)msg_hdr, msglen)
     );
     DEBUG_PRINT_END();
+
+    /* Check if the message should be forwarded to any sockets */
+    for (uint8_t i = 0; i < num_sockets; i++) {
+      if ((sockets[i] != NULL) && (sockets[i] != socket)) {
+        check_and_forward(msg_hdr, sockets[i]);
+      }
+    }
 
     if (process_msg(msg_hdr, socket, serial_socket, config)) {
       return true;
@@ -296,7 +305,7 @@ boolean MessageHandler::check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
     if (msg_hdr->length > socket->send_data_size) {
       DEBUG1_VALUELN("Message larger than send buffer:", msg_hdr->length);
     } else {
-      DEBUG4_VALUELN("Forwarding serial msg to ", msg_hdr->address);
+      DEBUG4_VALUELN("Forwarding msg to ", msg_hdr->address);
       memcpy(socket->send_buffer, msg_hdr, msg_hdr->length);
       socket->sendMsgTo(msg_hdr->address, socket->send_buffer, msg_hdr->length);
       return true;
