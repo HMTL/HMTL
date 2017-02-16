@@ -12,6 +12,7 @@
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
 #include <SoftwareSerial.h>
+#include <HMTLTypes.h>
 #include "SPI.h"
 #include "FastLED.h"
 #include "Wire.h"
@@ -56,6 +57,28 @@ byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+
+#ifdef USE_RFM69
+#include "RFM69.h"
+#include "RFM69Socket.h"
+
+// TODO: This should be in the configuration
+#define NETWORK 100
+
+#ifndef IRQ_PIN
+#define IRQ_PIN 2
+#endif
+
+#ifndef IS_RFM69HW
+#define IS_RFM69HW true
+#endif
+// TODO: End of stuff for configuration
+
+RFM69Socket rfm69;
+#define RFM69_SEND_BUFFER_SIZE RFM69_DATA_LENGTH(RF69_MAX_DATA_LEN)
+byte databuffer[RF69_MAX_DATA_LEN];
+#endif
+
 
 #define MAX_SOCKETS 2
 Socket *sockets[MAX_SOCKETS] = { NULL, NULL };
@@ -125,11 +148,6 @@ void setup() {
                                      NULL, // Value
                                      NULL);
 
-  if (!(outputs_found & (1 << HMTL_OUTPUT_RS485))) {
-    DEBUG_ERR("No RS485 config found");
-    DEBUG_ERR_STATE(1);
-  }
-
   byte num_sockets = 0;
 
   if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
@@ -145,6 +163,16 @@ void setup() {
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &xbee;
   }
+
+#ifdef USE_RFM69
+  if (true) {
+    // XXX: RFM69!
+    rfm69.init(config.address, NETWORK, IRQ_PIN, IS_RFM69HW, RF69_915MHZ); // TODO: Put this in config
+    rfm69.setup();
+    rfm69.initBuffer(databuffer, RFM69_SEND_BUFFER_SIZE);
+    sockets[num_sockets++] = &rfm69;
+  }
+#endif
 
   if (num_sockets == 0) {
     DEBUG_ERR("No sockets configured");
