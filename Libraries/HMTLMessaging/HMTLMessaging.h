@@ -154,10 +154,10 @@ int hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 /* Receive a message over the serial interface */
 boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 
-/* Receive a message over the rs485 interface */
+/* Receive a message over the socket interface */
 msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
                              socket_addr_t address = SOCKET_ADDR_INVALID);
-msg_hdr_t *hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen,
+msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
                              socket_addr_t address = SOCKET_ADDR_INVALID);
 
 
@@ -185,17 +185,17 @@ uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, socket_addr_t address,
 /*******************************************************************************
  * Wrapper functions for sending HMTL Messages 
  */
-void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_value(Socket *socket, byte *buff, byte buff_len,
                      socket_addr_t address, uint8_t output, int value);
 
-void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_rgb(Socket *socket, byte *buff, byte buff_len,
                    socket_addr_t address, uint8_t output,
                    uint8_t r, uint8_t g, uint8_t b);
 
-void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_poll_request(Socket *socket, byte *buff, byte buff_len,
                             socket_addr_t address);
 
-void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_sensor_request(Socket *socket, byte *buff, byte buff_len,
                               socket_addr_t address);
 
 /*******************************************************************************

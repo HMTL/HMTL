@@ -188,7 +188,7 @@ void loop() {
      * Check for data over RS485
      */
     unsigned int msglen;
-    msg_hdr_t *msg = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
+    msg_hdr_t *msg = hmtl_socket_getmsg(&rs485, &msglen, config.address);
     if (msg != NULL) {
       DEBUG1_VALUE("Recieved rs485 msg len:", msglen);
       DEBUG1_VALUE(" src:", RS485_SOURCE_FROM_DATA(msg));

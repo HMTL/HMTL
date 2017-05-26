@@ -86,7 +86,7 @@ void loop() {
 
   /* Check for message over RS485 */
   unsigned int msglen;
-  msg_hdr_t *msg_hdr = hmtl_rs485_getmsg(&rs485, &msglen, config.address);
+  msg_hdr_t *msg_hdr = hmtl_socket_getmsg(&rs485, &msglen, config.address);
   if (msg_hdr != NULL) {
     process_message(msg_hdr, msglen);
   }

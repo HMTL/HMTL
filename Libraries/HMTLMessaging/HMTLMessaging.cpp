@@ -159,12 +159,6 @@ hmtl_socket_getmsg(Socket *socket, unsigned int *msglen, uint16_t address) {
   return NULL;
 }
 
-/* DEPRECATED: Backwards compatibility function for RS485 */
-msg_hdr_t *
-hmtl_rs485_getmsg(RS485Socket *rs485, unsigned int *msglen, uint16_t address) {
-  return hmtl_socket_getmsg(rs485, msglen, address);
-}
-
 /*
  * Read in a message structure from the serial interface
  */
@@ -355,7 +349,7 @@ uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
 /***** Wrapper functions for sending HMTL Messages ****************************/
 
 
-void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_value(Socket *socket, byte *buff, byte buff_len,
                      uint16_t address, uint8_t output, int value) {
   DEBUG5_VALUE("hmtl_send_value: addr:", address);
   DEBUG5_VALUE(" out:", output);
@@ -363,10 +357,10 @@ void hmtl_send_value(RS485Socket *rs485, byte *buff, byte buff_len,
 
   uint16_t len = hmtl_value_fmt(buff, buff_len,
                                 address, output, value);
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
-void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_rgb(Socket *socket, byte *buff, byte buff_len,
                    uint16_t address, uint8_t output, 
                    uint8_t r, uint8_t g, uint8_t b) {
   DEBUG5_VALUE("hmtl_send_rgb: addr:", address);
@@ -377,7 +371,7 @@ void hmtl_send_rgb(RS485Socket *rs485, byte *buff, byte buff_len,
 
   uint16_t len = hmtl_rgb_fmt(buff, buff_len,
                               address, output, r, g, b);
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
 
