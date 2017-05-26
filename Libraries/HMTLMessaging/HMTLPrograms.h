@@ -45,7 +45,7 @@ uint16_t hmtl_program_blink_fmt(byte *buffer, uint16_t buffsize,
 				uint32_t on_color,
 				uint16_t off_period,
 				uint32_t off_color);
-void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_blink(Socket *socket, byte *buff, byte buff_len,
 		     uint16_t address, uint8_t output,
 		     uint16_t on_period, uint32_t on_color,
 		     uint16_t off_period, uint32_t off_color);
@@ -75,7 +75,7 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 				       uint32_t change_period,
 				       uint32_t start_color,
 				       uint32_t stop_color);
-void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_timed_change(Socket *socket, byte *buff, byte buff_len,
 			    uint16_t address, uint8_t output,
 			    uint32_t change_period,
 			    uint32_t start_color,
@@ -163,7 +163,6 @@ boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
                              output_hdr_t *output);
 
 
-
 /*******************************************************************************
  * Additional helper messages
  */
@@ -173,7 +172,7 @@ uint16_t hmtl_program_cancel_fmt(byte *buffer, uint16_t buffsize,
                                  uint16_t address, uint8_t output);
 
 // Send a request to cancel any program running on an output
-void hmtl_send_cancel(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_cancel(Socket *socket, byte *buff, byte buff_len,
                       uint16_t address, uint8_t output);
 
 

@@ -1,6 +1,6 @@
 Assigned HMTL addresses:
 
-id	address		HTML_version description
+id	address		HTML_version Hdw_v description
 
 ==Cube Lights==
 NA	*16/0x10	2            Parents (Board v2)
@@ -42,12 +42,18 @@ NA	*32/0x20	2            Taller stand (Board v4)
 4   4/0x4     3            Power Unit (Board v2)
 
 ==Wireless Pendants==
-
 0x0101 1/0x1  3            First assembled wireless pendant
-
 
 == OtherMill pendant==
 100 100/0x64  3  11        First milled module
 101 101/0x65  3  11
+
+== Broken Wings ==
+140 140/0x8c  3   4        Prototype module, with testunit nano
+141 141       3   4        Prototype module with RFM69HW
+
+
+== Circular Controller ==
+160 160       3   128      Circular Controller, Moteino Mega
 
 (*) Not yet set

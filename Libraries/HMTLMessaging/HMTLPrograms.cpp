@@ -25,7 +25,7 @@
 #include "HMTLPrograms.h"
 
 #include "PixelUtil.h"
-#include "RS485Utils.h"
+#include "Socket.h"
 
 #include "TimeSync.h"
 
@@ -140,17 +140,17 @@ uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
 
 
 /* Send a message that clears any program for the output */
-void hmtl_send_cancel(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_cancel(Socket *socket, byte *buff, byte buff_len,
                             uint16_t address, uint8_t output) {
   DEBUG5_VALUE("hmtl_send_cancel: addr:", address);
   DEBUG5_VALUELN(" out:", output);
 
   uint16_t len = hmtl_program_cancel_fmt(buff, buff_len,
                                          address, output);
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
-void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_blink(Socket *socket, byte *buff, byte buff_len,
                      uint16_t address, uint8_t output,
                      uint16_t on_period, uint32_t on_color,
                      uint16_t off_period, uint32_t off_color) {
@@ -164,10 +164,10 @@ void hmtl_send_blink(RS485Socket *rs485, byte *buff, byte buff_len,
                                         on_color,
                                         off_period,
                                         off_color);
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
-void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_timed_change(Socket *socket, byte *buff, byte buff_len,
                             uint16_t address, uint8_t output,
                             uint32_t change_period,
                             uint32_t start_color,
@@ -183,11 +183,11 @@ void hmtl_send_timed_change(RS485Socket *rs485, byte *buff, byte buff_len,
                                                change_period,
                                                start_color,
                                                stop_color);
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
 /* Send a sensor data request to an address */
-void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_sensor_request(Socket *socket, byte *buff, byte buff_len,
                               uint16_t address) {
   DEBUG5_VALUELN("hmtl_send_sensor_request: addr:", address);
 
@@ -195,11 +195,11 @@ void hmtl_send_sensor_request(RS485Socket *rs485, byte *buff, byte buff_len,
   msg_hdr_t *msg = (msg_hdr_t *)buff;
   hmtl_msg_fmt(msg, address, len, MSG_TYPE_SENSOR, MSG_FLAG_RESPONSE);
 
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 }
 
 /* Send a poll request */
-void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
+void hmtl_send_poll_request(Socket *socket, byte *buff, byte buff_len,
                             uint16_t address) {
   DEBUG5_VALUELN("hmtl_poll_request: addr:", address);
 
@@ -207,7 +207,7 @@ void hmtl_send_poll_request(RS485Socket *rs485, byte *buff, byte buff_len,
   msg_hdr_t *msg = (msg_hdr_t *)buff;
   hmtl_msg_fmt(msg, address, len, MSG_TYPE_POLL, MSG_FLAG_RESPONSE);
 
-  rs485->sendMsgTo(address, buff, len);
+  socket->sendMsgTo(address, buff, len);
 
 }
 

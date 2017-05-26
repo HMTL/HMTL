@@ -73,6 +73,13 @@ int hmtl_output_size(output_hdr_t *output)
 }
 
 /*
+ * Read all data from EEProm and send back via Serial
+ */
+void hmtl_dump_config() {
+  EEPROM_dump(HMTL_CONFIG_ADDR);
+}
+
+/*
  * Read in the HMTL config, returning the EEProm address following
  * what was read.
  */
