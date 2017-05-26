@@ -193,6 +193,13 @@ void setup() {
   Serial.println(F(HMTL_READY));
 }
 
+#ifndef PLATFORMIO
+#define STARTUP_COMMANDS
+//#define STARTUP_BLINK
+//#define STARTUP_SPARKLE
+//#define STARTUP_VALUE
+#endif
+
 void additional_setup() {
 #ifdef ENABLE_PUSH_BUTTON
   pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
@@ -210,58 +217,69 @@ byte get_button_value() {
 #endif
 
 #ifdef STARTUP_COMMANDS
+
+/* Return the first output of the indicated type */
+uint8_t find_output_type(uint8_t type, uint8_t num = 0) {
+  byte count = 0;
+  for (byte i = 0; i < config.num_outputs; i++) {
+    if (outputs[i]->type == type) {
+      if (count == num) {
+        return i;
+      }
+      count++;
+    }
+  }
+  return HMTL_NO_OUTPUT;
+}
+
+
 /*******************************************************************************
  * Execute any startup commands
  */
 void startup_commands() {
-  // TODO: These should be stored in EEPROM
 
-  #define STARTUP_MSGS 4
-  msg_hdr_t *startupmsg[STARTUP_MSGS];
-
-  for (byte i = 0; i < STARTUP_MSGS; i++) {
-    byte length = sizeof (msg_hdr_t) + sizeof (msg_program_t);
-    startupmsg[i] = (msg_hdr_t *)malloc(length);
-
-    startupmsg[i]->version = HMTL_MSG_VERSION;
-    startupmsg[i]->type = MSG_TYPE_OUTPUT;
-    startupmsg[i]->flags = 0;
-    startupmsg[i]->address = 0; // XXX: This address?
-
-#if 1
-    msg_value_t *value = (msg_value_t *)(startupmsg[i] + 1);
-    value->hdr.type = HMTL_OUTPUT_VALUE;
-    value->hdr.output = i;
-    value->value = 128;
-#else
-    msg_program_t *program = (msg_program_t *)(startupmsg[i] + 1);
-    programs->hdr.type = HMTL_OUTPUT_PROGRAM;
-    programs->hdr.output = i;
-    programs->type = ;
-#endif
-  }
-
-  /* 
-   * Process the startup commands, forwarding them if they're broadcast or
-   * to some other address, and then apply them locally
+  /*
+   * TODO: This mechanism is overly hard-coded.  A method of adding commands in
+   * the EEPROM configuration would be much better, allowing for proper
+   * configuration.
    */
-  for (byte i = 0; i < STARTUP_MSGS; i++) {
-    boolean forwarded = false;
-    if (has_rs485) {
-      forwarded = check_and_forward(startupmsg[i], &rs485);
-    }
-    if (has_xbee) {
-      forwarded = check_and_forward(startupmsg[i], &xbee);
-    }
 
-    handler.process_msg(startupmsg[i], NULL, serial_socket, &config);
+#ifdef STARTUP_VALUE
+  byte num = 0;
+  byte output;
+  while ((output = find_output_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("Init: value ", output);
+    hmtl_set_output_rgb(outputs[output], objects[output],
+                        pixel_color(STARTUP_VALUE, STARTUP_VALUE, STARTUP_VALUE));
   }
+#endif
 
-  /* Free the startup messages */
-  for (byte i = 0; i < STARTUP_MSGS; i++) {
-    free(startupmsg[i]);
+#ifdef STARTUP_BLINK
+  // Go through the outputs and set them to blink
+  byte num = 0;
+  byte output;
+  while ((output = find_output_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
+    DEBUG3_VALUELN("Init: blink ", output);
+    num++;
+    hmtl_program_blink_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                           config.address, output,
+                           250*num, pixel_color(128,0,0),
+                           250, 0);
+    handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
   }
+#endif
+
+#ifdef STARTUP_SPARKLE
+  byte output = find_output_type(HMTL_OUTPUT_PIXELS);
+  DEBUG4_VALUELN("Init: sparkle ", output);
+  program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                      config.address, output,
+                      100, 0);
+  handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
+#endif
 }
+
+
 #endif // STARTUP_COMMANDS
 
 
