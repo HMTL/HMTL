@@ -50,27 +50,35 @@ def handle_args():
 
     return (options, args)
 
+
 def handle_poll_resp(data, modules):
     (text, msg) = HMTLprotocol.decode_msg(data)
     if (isinstance(msg, HMTLprotocol.PollHdr)):
-        logger.log("Poll response: dev=%d addr=%d" % (msg.device_id, msg.address))
+        logger.log("Poll response: dev=%d addr=%d msg=%s" % (msg.device_id, msg.address, HMTLprotocol.decode_data(data)
+))
         modules.append(msg)
     else:
         logger.log("Not a poll response, class: %s " % (msg.__class__.__name__))
 
-def poll_one(client, modules, hmtladdress):
-    logger.log("Polling address: %d" % (hmtladdress))
+
+def poll_one(client, modules, hmtladdress, verbose=True):
+    if verbose:
+        logger.log("Polling address: %d" % (hmtladdress))
     msg = HMTLprotocol.get_poll_msg(hmtladdress)
     ret = client.send_and_ack(msg, True)
     if (ret):
         handle_poll_resp(ret, modules)
+        return True
     else:
-        logger.log("No response from: %d" % (hmtladdress))
+        if verbose:
+            logger.log("No response from: %d" % (hmtladdress))
+        return False
 
 def scan_every(client):
     modules = []
-    for address in range(0,128):
-        poll_one(client, modules, address)
+    for address in range(0,255):
+        if poll_one(client, modules, address):
+            print("Modules: %s" % [(msg.device_id, msg.address) for msg in modules])
     return modules
 
 def scan_broadcast(client):
