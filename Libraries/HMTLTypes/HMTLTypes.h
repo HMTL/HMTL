@@ -163,6 +163,9 @@ typedef struct {
 
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
+/* Dump the entire raw configuration to serial */
+void hmtl_dump_config();
+
 int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
                      int max_outputs);
 
@@ -174,11 +177,8 @@ int32_t hmtl_setup(config_hdr_t *config,
                    int *configOffset);
 
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[]);
-void hmtl_default_config(config_hdr_t *hdr);
 int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data);
 int hmtl_update_output(output_hdr_t *hdr, void *data);
-int hmtl_test_output(output_hdr_t *hdr, void *data);
-int hmtl_test_output_car(output_hdr_t *hdr, void *data);
 
 // Set an output to a 3byte value
 void hmtl_set_output_rgb(output_hdr_t *output, void *object, uint8_t value[3]);

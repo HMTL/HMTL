@@ -18,6 +18,7 @@
 #define HMTL_CONFIG_READ  "read"
 #define HMTL_CONFIG_PRINT "print"
 #define HMTL_CONFIG_WRITE "write"
+#define HMTL_CONFIG_DUMP  "dump"
 
 #define HMTL_COMMAND_ADDRESS   0xE0
 #define HMTL_COMMAND_DEVICE_ID 0xE1

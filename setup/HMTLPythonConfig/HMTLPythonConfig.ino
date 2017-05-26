@@ -444,6 +444,11 @@ void handle_command(byte *cmd, byte len) {
       }
     }
 
+    else if (strcmp(str, HMTL_CONFIG_DUMP) == 0) {
+      DEBUG3_PRINTLN("Received command 'dump'");
+      hmtl_dump_config();
+    }
+
     else {
       DEBUG1_VALUELN("Received unknown command: ", str);
       goto FAIL;
