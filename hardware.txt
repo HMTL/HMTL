@@ -11,3 +11,4 @@ Version	 Description
 11   OtherMill circular pendant
 
 12   HTML v10.0 w/ATMEGA 328
+13   HMTL v10.0 w/ATMEGA 1284

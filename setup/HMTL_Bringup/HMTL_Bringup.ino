@@ -100,6 +100,8 @@ void setup() {
     }
     pixels.update();
     has_pixels = true;
+
+    FastLED.setBrightness(128);
   }
 }
 
