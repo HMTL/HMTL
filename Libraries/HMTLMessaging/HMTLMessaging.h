@@ -83,6 +83,7 @@ typedef struct {
 } msg_rgb_t;
 #define HMTL_MSG_RGB_LEN (sizeof (msg_hdr_t) + sizeof (msg_rgb_t))
 
+#define MAX_PROGRAM_VAL 32
 typedef struct {
   output_hdr_t hdr;
   uint8_t type;
@@ -155,8 +156,6 @@ int hmtl_handle_output_msg(msg_hdr_t *msg_hdr,
 boolean hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr);
 
 /* Receive a message over the socket interface */
-msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
-                             socket_addr_t address = SOCKET_ADDR_INVALID);
 msg_hdr_t *hmtl_socket_getmsg(Socket *socket, unsigned int *msglen,
                              socket_addr_t address = SOCKET_ADDR_INVALID);
 

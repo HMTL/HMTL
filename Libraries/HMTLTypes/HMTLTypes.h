@@ -123,12 +123,6 @@ typedef struct {
   byte values[3];
 } config_rgb_t;
 
-#define MAX_PROGRAM_VAL 12
-typedef struct {
-  output_hdr_t hdr;
-  int values[MAX_PROGRAM_VAL];
-} config_program_t; // XXX: Is this necessary?  Possibly for autodiscovery?
-
 typedef struct {
   output_hdr_t hdr;
   byte clockPin;

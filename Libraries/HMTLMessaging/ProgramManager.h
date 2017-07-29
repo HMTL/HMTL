@@ -22,11 +22,12 @@ extern TimeSync time;
 typedef struct program_tracker program_tracker_t;
 
 typedef boolean (*hmtl_program_func)(output_hdr_t *output,
-                                     void *object,
+                                     void *object, // TODO: This and output should go away
                                      program_tracker_t *tracker);
 typedef boolean (*hmtl_program_setup)(msg_program_t *msg,
                                       program_tracker_t *tracker,
-                                      output_hdr_t *output);
+                                      output_hdr_t *output,
+                                      void *object);
 
 typedef struct {
   byte type;
@@ -43,7 +44,9 @@ typedef struct {
 struct program_tracker {
   byte program_index;
   byte flags;
+  output_hdr_t *output;
   void *state;
+  void *object;
 };
 
 #define IS_RUNNING_PROGRAM(tracker) \

@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <HMTLTypes.h>
+#include <PixelUtil.h>
 
 #ifdef DEBUG_LEVEL_HMTLPROGRAMS
   #define DEBUG_LEVEL DEBUG_LEVEL_HMTLPROGRAMS
@@ -485,6 +486,27 @@ boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
 
   DEBUG3_VALUELN("Brightness:", bright->value);
   FastLED.setBrightness(bright->value);
+
+  return false;
+}
+
+/*
+ * Set a range of LEDs to an indicated color
+ */
+boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
+                      output_hdr_t *output, void *object) {
+  if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
+    return false;
+  }
+
+  hmtl_program_color_t *color = (hmtl_program_color_t *)msg->values;
+
+  DEBUG3_VALUE("Col:", color->color);
+  DEBUG3_VALUE("Ran:", color->range.start);
+  DEBUG3_VALUELN("-", color->range.start + color->range.length - 1);
+
+  PixelUtil *pixels = (PixelUtil*)object;
+  pixels->setRangeRGB(color->range, color->color);
 
   return false;
 }

@@ -10,6 +10,7 @@
 #define HMTLPROGRAMS_H
 
 #include "FastLED.h"
+#include "PixelUtil.h"
 #include "ProgramManager.h"
 
 /*******************************************************************************
@@ -28,6 +29,7 @@
 #define PROGRAM_SENSOR_DATA       0x10
 
 #define PROGRAM_BRIGHTNESS        0x30 // One-time only
+#define PROGRAM_COLOR             0x31
 
 
 /*
@@ -161,6 +163,39 @@ uint16_t program_brightness_fmt(byte *buffer, uint16_t buffsize,
                              uint8_t value);
 boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
                              output_hdr_t *output);
+
+/*
+ * Program that sets the color for a range of pixels
+ */
+typedef struct {
+  CRGB color;
+  pixel_range_t range;
+} hmtl_program_color_t;
+boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
+                      output_hdr_t *output, void *object);
+
+/*
+ * Program that sends a pattern on a circular loop of the available LEDs
+ */
+typedef struct {
+  uint16_t period;        // 2B
+  CRGB bgColor;           // 3B
+  uint8_t length;         // 1B
+} hmtl_program_circular_t;
+typedef struct {
+  hmtl_program_circular_t msg;
+  unsigned long last_change_ms;
+  uint16_t current;
+} state_circular_t;
+
+uint16_t program_circular_fmt(byte *buffer, uint16_t buffsize,
+                             uint16_t address, uint8_t output,
+                             uint32_t period,
+                             CRGB bgColor);
+boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
+                             output_hdr_t *output);
+boolean program_circular(output_hdr_t *output, void *object,
+                        program_tracker_t *tracker);
 
 
 /*******************************************************************************

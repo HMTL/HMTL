@@ -482,7 +482,8 @@ class OutputHdr(Msg):
 class ProgramHdr(Msg):
     TYPE = "PROGRAM"
     FORMAT = "<B"
-    LENGTH = OutputHdr.LENGTH + 1 + 12
+    MAX_DATA = 32 # Was 12
+    LENGTH = OutputHdr.LENGTH + 1 + MAX_DATA
 
     def __init__(self, program, output):
         self.outputHdr = OutputHdr(CONFIG_TYPES["program"], output)
@@ -502,7 +503,8 @@ class ProgramHdr(Msg):
 class ProgramGeneric(Msg):
     """Generic program data message"""
     TYPE = "PROGRAMGENERIC"
-    FORMAT = '<BBBBBBBBBBBB'
+    FORMAT = "<%s" % ('B' * ProgramHdr.MAX_DATA)
+#    FORMAT = '<BBBBBBBBBBBB'
 #    FORMAT='x'*12
 
     NAME_MAP = {
@@ -513,15 +515,16 @@ class ProgramGeneric(Msg):
         "fade":    0x05,
         "sparkle": 0x06,
 
-        "brightness": 0x30
+        "brightness": 0x30,
+        "color": 0x31,
     }
 
     def __init__(self, values=None):
         if values:
             # Convert all values to ints and fill unspecified bytes as zero
-            self.values = [int(values[i]) if i < len(values) else 0 for i in range(12)]
+            self.values = [int(values[i]) if i < len(values) else 0 for i in range(ProgramHdr.MAX_DATA)]
         else:
-            self.values = [0 for _ in range(12)]
+            self.values = [0 for _ in range(ProgramHdr.MAX_DATA)]
         pass
 
     def pack(self):

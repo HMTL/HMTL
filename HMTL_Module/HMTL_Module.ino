@@ -114,6 +114,7 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
   { HMTL_PROGRAM_SPARKLE, program_sparkle, program_sparkle_init },
   { PROGRAM_BRIGHTNESS, NULL,  program_brightness },
+  { PROGRAM_COLOR, NULL, program_color},
 
   { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },

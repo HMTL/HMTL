@@ -87,7 +87,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
   }
 
   /* Setup the tracker */
-  byte starting_output, stop_output;
+  int starting_output, stop_output;
 
   if (msg->hdr.output == HMTL_ALL_OUTPUTS) {
     /* This should be applied to all outputs that can handle the message type */
@@ -106,7 +106,7 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     stop_output = starting_output + 1;
   }
 
-  for (byte output = starting_output; output < stop_output; output++) {
+  for (int output = starting_output; output < stop_output; output++) {
 
     if (outputs[output] == NULL)
       continue;
@@ -135,9 +135,16 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
       tracker->flags = 0x0;
     }
 
+    if (tracker) {
+      // Record the output and object in the tracker
+      tracker->output = outputs[output];
+      tracker->object = objects[output];
+    }
+
     /* Attempt to setup the program */
-    // TODO: Shouldn't this also send the object for this output?
-    boolean success = functions[program].setup(msg, tracker, outputs[output]);
+
+
+    boolean success = functions[program].setup(msg, tracker, outputs[output], objects[output]);
 
     if (!success) {
       if (tracker) {
