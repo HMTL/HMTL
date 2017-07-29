@@ -3,8 +3,11 @@ Hardware versions
 Version	 Description
 5	 Trigger board - Arduino mini and 4-channel opto-isolator
 
+7    HMTL Board v1r9
 8    Initial 1284 based board - No RS485 (due to SoftwareSerial not working)
 9    2nd rev 1284 based board (r8.1) - RS485 as 2nd serial
 10   1st WirelessPendand board
 
 11   OtherMill circular pendant
+
+12   HTML v10.0 w/ATMEGA 328

@@ -56,4 +56,12 @@ NA	*32/0x20	2            Taller stand (Board v4)
 == Circular Controller ==
 160 160       3   128      Circular Controller, Moteino Mega
 
+== Test units ==
+170 170       3   7        Test unit
+
 (*) Not yet set
+
+
+== Lightbringer modules ==
+id	address		HTML_version Hdw_v description
+1   1/0x01      3            12    First Lightbringer 1284 board
