@@ -1,0 +1,28 @@
+{
+    "info": "This is equivalent to HMTLv4, with an RFM69 module",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 128,
+	      "baud": 57600,
+	      "device_id": 160,
+	      "address": 160,
+	      "flags": 0
+    },
+    "outputs": [
+      {
+        "type": "pixels",
+        "clockpin": 21,
+        "datapin": 20,
+        "numpixels": 16,
+        "rgbtype": 0
+      },
+      {
+        "type": "mpr121",
+        "irqpin": 2,
+        "useinterrupt": 0,
+        "trigger": [ 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 ],
+        "release": [  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2 ]
+      }
+
+    ]
+}
