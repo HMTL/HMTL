@@ -216,7 +216,7 @@ void hmtl_send_poll_request(Socket *socket, byte *buff, byte buff_len,
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
-                           output_hdr_t *output) {
+                           output_hdr_t *output, void *object) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
@@ -278,7 +278,7 @@ boolean program_blink(output_hdr_t *output, void *object,
  */
 boolean program_timed_change_init(msg_program_t *msg,
 				                          program_tracker_t *tracker,
-                                  output_hdr_t *output) {
+                                  output_hdr_t *output, void *object) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
@@ -331,7 +331,7 @@ boolean program_timed_change(output_hdr_t *output, void *object,
 
 boolean program_fade_init(msg_program_t *msg,
                           program_tracker_t *tracker,
-                          output_hdr_t *output) {
+                          output_hdr_t *output, void *object) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
@@ -404,7 +404,7 @@ boolean program_fade(output_hdr_t *output, void *object,
 
 boolean program_sparkle_init(msg_program_t *msg,
                              program_tracker_t *tracker,
-                             output_hdr_t *output) {
+                             output_hdr_t *output, void *object) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
@@ -477,7 +477,7 @@ boolean program_sparkle(output_hdr_t *output, void *object,
  * command.
  */
 boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
-                           output_hdr_t *output) {
+                           output_hdr_t *output, void *object) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
@@ -510,3 +510,4 @@ boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
 
   return false;
 }
+

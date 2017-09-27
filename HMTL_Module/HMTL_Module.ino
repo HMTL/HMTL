@@ -55,8 +55,10 @@
 RS485Socket rs485;
 byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 
+#ifdef USE_XBEE
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+#endif
 
 #ifdef USE_RFM69
 #include "RFM69.h"
@@ -141,8 +143,12 @@ void setup() {
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      outputs, objects, HMTL_MAX_OUTPUTS,
-                                     &rs485, 
+                                     &rs485,
+#ifdef USE_XBEE
                                      &xbee,
+#else
+                                     NULL,
+#endif
                                      &pixels,
                                      NULL, // MPR121
                                      NULL, // RGB
@@ -158,12 +164,14 @@ void setup() {
     sockets[num_sockets++] = &rs485;
   }
 
+#ifdef USE_XBEE
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
     /* Setup the RS485 connection */  
     xbee.setup();
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &xbee;
   }
+#endif
 
 #ifdef USE_RFM69
   if (true) {
@@ -348,7 +356,7 @@ void additional_loop() {
 
 boolean program_sensor_data_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output) {
+                                 output_hdr_t *output, void *object) {
   DEBUG3_PRINTLN("Initializing sensor data handler");
   return true;
 }
@@ -411,7 +419,7 @@ typedef struct {
 
 boolean program_level_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output) {
+                                 output_hdr_t *output, void *object) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
@@ -457,7 +465,7 @@ typedef struct {
 
 boolean program_sound_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output) {
+                                 output_hdr_t *output, void *object) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }

@@ -15,15 +15,15 @@ boolean program_level_value(output_hdr_t *output, void *object,
                             program_tracker_t *tracker);
 boolean program_level_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output);
+                                 output_hdr_t *output, void *object);
 boolean program_sound_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output);
+                                 output_hdr_t *output, void *object);
 boolean program_sound_value(output_hdr_t *output, void *object,
                             program_tracker_t *tracker);
 boolean program_sensor_data_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output);
+                                 output_hdr_t *output, void *object);
 boolean process_sensor_data(output_hdr_t *output,
                             void *object,
                             program_tracker_t *tracker);
