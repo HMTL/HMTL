@@ -48,8 +48,6 @@ int hmtl_output_size(output_hdr_t *output)
     return sizeof (config_value_t);
     case HMTL_OUTPUT_RGB:
     return sizeof (config_rgb_t);
-    case HMTL_OUTPUT_PROGRAM:
-    return sizeof (config_program_t);
 #ifdef USE_PIXELUTIL
     case HMTL_OUTPUT_PIXELS:
     return sizeof (config_pixels_t);
@@ -200,6 +198,8 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
         DEBUG4_PRINT(" pixels");
         if (data != NULL) {
           config_pixels_t *out = (config_pixels_t *)hdr;
+          DEBUG4_VALUE(" num:", out->numPixels);
+
           PixelUtil *pixels = (PixelUtil *)data;
           pixels->init(out->numPixels,
                        out->dataPin,
@@ -602,15 +602,6 @@ void hmtl_print_output(output_hdr_t *out) {
         DEBUG3_VALUE(" val0=", out2->values[0]);
         DEBUG3_VALUE(" val1=", out2->values[1]);
         DEBUG3_VALUELN(" val2=", out2->values[2]);
-        break;
-      }
-    case HMTL_OUTPUT_PROGRAM:
-      {
-        config_program_t *out2 = (config_program_t *)out;
-        DEBUG3_PRINTLN("program");
-        for (int i = 0; i < MAX_PROGRAM_VAL; i++) {
-          DEBUG3_VALUELN(" val=", out2->values[i]);
-        }
         break;
       }
     case HMTL_OUTPUT_PIXELS:
