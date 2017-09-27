@@ -74,8 +74,8 @@ def main():
             # Attempt to print the item as ascii
             text = data.decode()
         except UnicodeDecodeError:
-            # Failing that, print raw data
-            text = "'%s'" % data
+            # Failing that, print the raw data as hex
+            text = ":".join("{:02x}".format(ord(c)) for c in data)
 
         if options.timestamp:
             logger.log(text)
