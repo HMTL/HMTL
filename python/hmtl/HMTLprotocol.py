@@ -129,7 +129,8 @@ MODULE_TYPES = {
     2 : "WirelessPendant",
     3 : "TriangleLightModule",
     4 : "HMTL_Fire_Control",
-    128: "Lightbringer 1284"
+    128: "Lightbringer 328",
+    129: "Lightbringer 1284"
 }
 
 #
