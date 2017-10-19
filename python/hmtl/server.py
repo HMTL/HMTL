@@ -167,7 +167,8 @@ class DeviceScanner(threading.Thread):
         # Period between address
         self.address_period = 0.25
 
-        self.address_range = [x for x in range(120, 140)]
+        # TODO: This range is arbitrary for scanning purposes
+        self.address_range = [x for x in range(120, 150)]
 
         # Set as a daemon so that this thread will exit correctly
         # when the parent receives a kill signal
