@@ -307,6 +307,25 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
   return len;
 }
 
+/* Perform the basic formatting for a configuration dump response */
+uint16_t hmtl_dumpconfig_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                             byte flags,
+                             byte datalen) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+
+  if (buffsize < HMTL_MSG_DUMPCONFIG_MIN_LEN) {
+    DEBUG_ERR("hmtl_dumpconfig_fmt: buff too small");
+    DEBUG_ERR_STATE(1);
+  }
+
+  uint16_t len = HMTL_MSG_DUMPCONFIG_MIN_LEN + datalen;
+
+  hmtl_msg_fmt(msg_hdr, address, len, MSG_TYPE_DUMP_CONFIG,
+               flags | MSG_FLAG_ACK);
+
+  return len;
+}
+
 /*
  * Format a sensor response message.  The caller will fill in the actual sensor
  * data after the header.

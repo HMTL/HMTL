@@ -9,24 +9,8 @@ from hmtl.TimedLogger import TimedLogger
 
 from optparse import OptionParser, OptionGroup
 
-def handle_args():
-    global options
-
-    parser = OptionParser()
-
-    parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-                      help="Verbose output", default=False)
-
-    (options, args) = parser.parse_args()
-    print("options:" + str(options) + " args:" + str(args))
-    
-    options.setrgb=False
-    options.period=False
-    options.s=False
 
 def handle_args():
-    global options
-
     parser = OptionParser()
 
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
@@ -44,11 +28,10 @@ def handle_args():
     parser.add_option("-e", "--scanevery", dest="scanevery", action="store_true",
                       help="Individual scan through address", default=False)
 
-
     (options, args) = parser.parse_args()
     logger.log("options:" + str(options) + " args:" + str(args))
 
-    return (options, args)
+    return options, args
 
 
 def handle_poll_resp(data, modules):
@@ -65,14 +48,15 @@ def poll_one(client, modules, hmtladdress, verbose=True):
     if verbose:
         logger.log("Polling address: %d" % (hmtladdress))
     msg = HMTLprotocol.get_poll_msg(hmtladdress)
-    ret = client.send_and_ack(msg, True)
-    if (ret):
-        handle_poll_resp(ret, modules)
+    (messages, headers) = client.send_and_ack(msg, True)
+    if messages and messages[0] is not None:
+        handle_poll_resp(messages[0], modules)
         return True
     else:
         if verbose:
             logger.log("No response from: %d" % (hmtladdress))
         return False
+
 
 def scan_every(client):
     modules = []
@@ -80,6 +64,7 @@ def scan_every(client):
         if poll_one(client, modules, address):
             print("Modules: %s" % [(msg.device_id, msg.address) for msg in modules])
     return modules
+
 
 def scan_broadcast(client):
     modules = []
@@ -90,7 +75,6 @@ def scan_broadcast(client):
         msg = client.get_response_data()
         if (msg == None):
             break
-
         handle_poll_resp(msg, modules)
 
     return modules

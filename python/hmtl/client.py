@@ -54,27 +54,63 @@ class HMTLClient():
         else:
             return False
 
-
     def send_and_ack(self, msg, expect_response=False):
         self.send(msg)
 
         # Wait for message acknowledgement
-        if (self.verbose):
+        if self.verbose:
             self.logger.log(" - Waiting on ack")
+
+        # Wait for an ack from the server
+        has_ack = False
         while True:
             if self.get_ack():
-                if (expect_response):
-                    # Request response data
-                    msg = self.get_response_data()
-                    if self.verbose:
-                        if msg:
-                                self.logger.log(" - Received data response: '%s':\n%s" %
-                                      (hexlify(msg), HMTLprotocol.decode_data(msg)))
-                        else:
-                            self.logger.log(" - Failed to receive data response")
-                    return msg
-                else:
-                    break
+                has_ack = True
+                break
+
+        if has_ack and expect_response:
+            # If a response is expected then request the response data from the
+            # server, repeating until the message indicates that there is no
+            # more data.
+
+            messages = []
+            headers = []
+
+            more_data = True
+            while more_data:
+                more_data = False
+
+                # Request response data
+                msg = self.get_response_data()
+                messages.append(msg)
+
+                if self.verbose:
+                    if msg:
+                            self.logger.log(" - Received data response: '%s':\n%s" %
+                                  (hexlify(msg), HMTLprotocol.decode_data(msg)))
+                    else:
+                        self.logger.log(" - Failed to receive data response")
+
+                try:
+                    # Attempt to decode the message
+                    decoded_msg = HMTLprotocol.msg_to_headers(msg)
+                    if decoded_msg:
+                        headers.append(decoded_msg)
+
+                        # Check if the message indicate that there are
+                        # additional messages expected.
+                        hdr = decoded_msg[0]
+                        if isinstance(hdr, HMTLprotocol.MsgHdr):
+                            if hdr.more_data():
+                                # Request another message
+                                more_data = True
+                    else:
+                        headers.append(None)
+                except Exception as e:
+                    print("Exception decoding messages: %s" % (str(e)))
+                    headers.append(None)
+
+            return messages, headers
 
     def get_response_data(self):
         '''Request and attempt to retrieve response data'''

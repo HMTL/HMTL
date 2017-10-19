@@ -54,16 +54,20 @@ typedef struct {
 } msg_hdr_t;
 
 /* Message type codes */
-#define MSG_TYPE_OUTPUT   0x1
-#define MSG_TYPE_POLL     0x2
-#define MSG_TYPE_SET_ADDR 0x3
-#define MSG_TYPE_SENSOR   0x4
-#define MSG_TYPE_TIMESYNC 0x5
+#define MSG_TYPE_OUTPUT      0x01
+#define MSG_TYPE_POLL        0x02
+#define MSG_TYPE_SET_ADDR    0x03
+#define MSG_TYPE_SENSOR      0x04
+#define MSG_TYPE_TIMESYNC    0x05
+
+#define MSG_TYPE_DONT_FORWARD 0xE0 // Msg types past this should not be forwarded
+#define MSG_TYPE_DUMP_CONFIG  0xE0
 
 /* Message flags */
-#define MSG_FLAG_ACK        0x1 // This message is an acknowledgement
-#define MSG_FLAG_RESPONSE   0x2 // This message expects a response
-
+#define MSG_FLAG_ACK        (1 << 0) // This message is an acknowledgement
+#define MSG_FLAG_RESPONSE   (1 << 1) // This message expects a response
+#define MSG_FLAG_MORE_DATA  (1 << 2) // This message has followup messages
+#define MSG_FLAG_ERROR      (1 << 3) // This message indicates an error
 
 #define HMTL_MSG_SIZE(msgtype) (sizeof (msg_hdr_t) + sizeof (msgtype))
 /*******************************************************************************
@@ -103,6 +107,16 @@ typedef struct {
   uint8_t data[0];
 } msg_poll_response_t;
 #define HMTL_MSG_POLL_MIN_LEN (sizeof (msg_hdr_t) + sizeof (msg_poll_response_t))
+
+/*******************************************************************************
+ * Message format for MSG_TYPE_DUMP_CONFIG
+ */
+
+typedef struct {
+  uint8_t data[0];
+} msg_dumpconfig_response_t;
+#define HMTL_MSG_DUMPCONFIG_MIN_LEN (sizeof (msg_hdr_t) + sizeof (msg_dumpconfig_response_t))
+
 
 /*******************************************************************************
  * Message format for MSG_TYPE_SET_ADDR
@@ -178,6 +192,9 @@ uint16_t hmtl_poll_fmt(byte *buffer, uint16_t buffsize, socket_addr_t address,
 uint16_t hmtl_set_addr_fmt(byte *buffer, uint16_t buffsize,
                            socket_addr_t address,
                            uint16_t device_id, socket_addr_t new_address);
+uint16_t hmtl_dumpconfig_fmt(byte *buffer, uint16_t buffsize, uint16_t address,
+                             byte flags,
+                             byte datalen);
 uint16_t hmtl_sensor_fmt(byte *buffer, uint16_t buffsize, socket_addr_t address,
                          uint8_t datalen, uint8_t **data_ptr);
 

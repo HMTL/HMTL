@@ -77,16 +77,29 @@ MSG_HDR_FMT = "<BBBBBBH" # All HMTL messages start with this
 MSG_TYPE_OUTPUT   = 1
 MSG_TYPE_POLL     = 2
 MSG_TYPE_SET_ADDR = 3
+MSG_TYPE_DUMPCONFIG = 0xE0
 
+# Mapping of message types to strings
 MSG_TYPES = {
     MSG_TYPE_OUTPUT: "OUTPUT",
     MSG_TYPE_POLL: "POLL",
     MSG_TYPE_SET_ADDR: "SETADDR",
+    MSG_TYPE_DUMPCONFIG: "DUMPCONFIG",
 }
 
 # Msg flags
-MSG_FLAG_ACK      = 0x1
-MSG_FLAG_RESPONSE = 0x2
+MSG_FLAG_ACK       = (1 << 0)
+MSG_FLAG_RESPONSE  = (1 << 1)
+MSG_FLAG_MORE_DATA = (1 << 2)
+MSG_FLAG_ERROR     = (1 << 3)
+
+# Mapping of message flags to strings
+MSG_FLAGS = {
+    MSG_FLAG_ACK: "ACK",
+    MSG_FLAG_RESPONSE: "RESPONSE",
+    MSG_FLAG_MORE_DATA: "MORE_DATA",
+    MSG_FLAG_ERROR: "ERROR",
+}
 
 MSG_VALUE_FMT = "H"
 MSG_RGB_FMT = "BBB"
@@ -101,6 +114,7 @@ MSG_PROGRAM_VALUE_LEN = 12
 MSG_PROGRAM_LEN = MSG_OUTPUT_LEN + 1 + MSG_PROGRAM_VALUE_LEN
 
 MSG_POLL_LEN = MSG_BASE_LEN
+MSG_DUMPCONFIG_LEN = MSG_BASE_LEN
 
 # Broadcast address
 BROADCAST = 65535  # = (uint16_t)-1
@@ -280,9 +294,20 @@ def get_rgb_msg(address, output, r, g, b):
 
 
 def get_poll_msg(address):
-    packed_hdr = get_msg_hdr(MSG_POLL_LEN, address, mtype=MSG_TYPE_POLL, flags=MSG_FLAG_RESPONSE)
+    packed_hdr = get_msg_hdr(MSG_POLL_LEN, address,
+                             mtype=MSG_TYPE_POLL,
+                             flags=MSG_FLAG_RESPONSE)
 
     return packed_hdr
+
+
+def get_dumpconfig_msg(address):
+    packed_hdr = get_msg_hdr(MSG_DUMPCONFIG_LEN, address,
+                             mtype=MSG_TYPE_DUMPCONFIG,
+                             flags=MSG_FLAG_RESPONSE)
+
+    return packed_hdr
+
 
 def get_set_addr_msg(address, device_id, new_address):
     hdr = MsgHdr(length = MsgHdr.LENGTH + SetAddress.LENGTH,
@@ -336,16 +361,29 @@ def decode_data(readdata):
 
     return text
 
-def decode_msg(data):
-    # Check to see if this is a valid HMTL message
+
+def msg_to_headers(data):
+    """Attempt to get HMTL headers from data"""
+    headers = []
     hdr = MsgHdr.from_data(data)
-    text = str(hdr)
+    headers.append(hdr)
 
     hdr = hdr.next_hdr(data)
     if (hdr != None):
+        headers.append(hdr)
+
+    return headers
+
+
+def decode_msg(data):
+    """Attempt to convert raw data to text and a HMTL header"""
+    headers = msg_to_headers(data)
+
+    text = ""
+    for hdr in headers:
         text += str(hdr)
 
-    return (text, hdr)
+    return text, headers[-1]
 
 
 #
@@ -387,7 +425,23 @@ class MsgHdr(Msg):
         self.address = address
 
     def __str__(self):
-        return "  msg_hdr_t:\n    start:%02x\n    crc:%02x\n    version:%d\n    len:%d\n    type:%d\n    flags:0x%x\n    addr:%d\n" %  (self.startcode, self.crc, self.version, self.length, self.mtype, self.flags, self.address)
+        return """  msg_hdr_t:
+    start:%02x
+    crc:%02x
+    version:%d
+    len:%d
+    type:%d (%s)
+    flags:0x%x (%s)
+    addr:%d
+""" % (
+            self.startcode,
+            self.crc,
+            self.version,
+            self.length,
+            self.mtype, MSG_TYPES[self.mtype],
+            self.flags, '|'.join([MSG_FLAGS[1 << x] for x in range(0,8) if ((1 << x) & self.flags) ]),
+            self.address
+        )
 
     def pack(self):
         return struct.pack(self.FORMAT, self.startcode, self.crc, self.version, 
@@ -399,6 +453,8 @@ class MsgHdr(Msg):
             raise Exception("MSG_TYPE_OUTPUT currently not handled in parsing")
         elif (self.mtype == MSG_TYPE_POLL):
             return PollHdr.from_data(data, self.LENGTH)
+        elif (self.mtype == MSG_TYPE_DUMPCONFIG):
+            return DumpConfigHdr.from_data(data)
         else:
             raise Exception("Unknown message type %d" % (self.mtype))
 
@@ -408,6 +464,11 @@ class MsgHdr(Msg):
             print("ERROR: No message type %d" % self.mtype)
             return None
         return MSG_TYPES[self.mtype]
+
+    def more_data(self):
+        """Return whether the header indicates that this is part of a multi-packet
+           message."""
+        return self.flags & MSG_FLAG_MORE_DATA
         
 
 class PollHdr(Msg):
@@ -447,6 +508,22 @@ class PollHdr(Msg):
                (self.device_id, self.address, self.protocol_version,
                 self.hardware_version, byte_to_baud(self.baud),
                 self.num_outputs, module_type)
+
+class DumpConfigHdr(Msg):
+    TYPE = "DUMPCONFIG"
+    FORMAT = "<XXXXXX" # TODO: Need to figure out how to parse variable sized data
+
+    def __init__(self, data):
+        self.data = data
+
+    @classmethod
+    def from_data(cls, data):
+        #header = struct.unpack_from(cls.FORMAT, data, offset)
+        print("DumpConfigHdr: from_data does not yet process the config data ***")
+        return cls(data)
+
+    def __str__(self):
+        return "   CONFIG DATA NOT YET PARSED: len:%d data:%s  " % (len(self.data), self.data)
 
 class SetAddress(Msg):
     TYPE = "SETADDR"

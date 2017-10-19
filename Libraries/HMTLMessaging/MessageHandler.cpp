@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include <Arduino.h>
+#include <EEPromUtils.h>
 #include <HMTLProtocol.h>
 #include "MessageHandler.h"
 
@@ -187,6 +188,74 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
          * TimeSync object.
          */
         time.synchronize(src, SOCKET_ADDR_INVALID, msg_hdr);
+        break;
+      }
+
+      case MSG_TYPE_DUMP_CONFIG: {
+        /*
+         * This is a request to dump the EEPROM objects to the serial device.
+         *
+         * TODO: This could be made to work remotely rather than only to requests
+         * from the serial device.
+         */
+        uint16_t source_address = 0;
+
+        DEBUG3_VALUELN("Dump req src:", source_address);
+
+        /*
+         * The response will be a typical message header followed by the raw data
+         * from EEPROM.
+         */
+        msg_dumpconfig_response_t *resp = (msg_dumpconfig_response_t *)(serial_socket->send_buffer + sizeof (msg_hdr_t));
+
+        int location = HMTL_CONFIG_ADDR; // Starting location in EEPROM
+        int next_addr = 0;
+
+        do {
+          uint16_t len;
+          uint8_t flags = msg_hdr->flags;
+
+          next_addr = EEPROM_safe_read(location, resp->data,
+                                       serial_socket->send_data_size -
+                                           HMTL_MSG_DUMPCONFIG_MIN_LEN);
+          if (next_addr > 0) {
+            uint16_t datalen = (uint16_t)EEPROM_DATA_SIZE(next_addr - location);
+
+            // This isn't the final message
+            // TODO: Peak ahead would simplify the responses
+            flags |= MSG_FLAG_MORE_DATA;
+
+            // Now that the length of the data is known construct the message
+            len = hmtl_dumpconfig_fmt(serial_socket->send_buffer,
+                                      serial_socket->send_data_size,
+                                      source_address,
+                                      flags,
+                                      datalen);
+
+            DEBUG4_VALUELN("Dump config:", location);
+            location = next_addr;
+          } else {
+            /*
+             * There was an error or no more items to send, respond with a
+             * "response complete" message.
+             */
+            if (next_addr != EEPROM_ERROR_NOT_START) {
+              flags |= MSG_FLAG_ERROR;
+            }
+
+            len = hmtl_dumpconfig_fmt(serial_socket->send_buffer,
+                                      serial_socket->send_data_size,
+                                      source_address,
+                                      flags,
+                                      0);
+            DEBUG4_PRINTLN("Dump final message")
+          }
+
+          Serial.write(serial_socket->send_buffer, len);
+
+        } while (next_addr > 0);
+
+        break;
       }
     }
   }
@@ -296,8 +365,8 @@ boolean MessageHandler::check(config_hdr_t *config) {
  * the indicated socket if so.
  */
 boolean MessageHandler::check_and_forward(msg_hdr_t *msg_hdr, Socket *socket) {
-  if ((msg_hdr->address != address) ||
-      (msg_hdr->address == SOCKET_ADDR_ANY)) {
+  if (((msg_hdr->address != address) || (msg_hdr->address == SOCKET_ADDR_ANY)) &&
+          (msg_hdr->type < MSG_TYPE_DONT_FORWARD)) {
     /*
      * Messages that are not to this module's address or are on the broadcast
      * address should be forwarded.
