@@ -210,10 +210,11 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
 
         int location = HMTL_CONFIG_ADDR; // Starting location in EEPROM
         int next_addr = 0;
+        uint8_t flags;
 
         do {
           uint16_t len;
-          uint8_t flags = msg_hdr->flags;
+          flags = msg_hdr->flags;
 
           next_addr = EEPROM_safe_read(location, resp->data,
                                        serial_socket->send_data_size -
@@ -221,9 +222,17 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
           if (next_addr > 0) {
             uint16_t datalen = (uint16_t)EEPROM_DATA_SIZE(next_addr - location);
 
-            // This isn't the final message
-            // TODO: Peak ahead would simplify the responses
-            flags |= MSG_FLAG_MORE_DATA;
+            DEBUG4_VALUELN("Dump config:", location);
+
+            /*
+             * Check if the next address is a valid structure and if so indicate
+             * that there will be additional messages.
+             */
+            if (EEPROM_check_address(next_addr)) {
+              flags |= MSG_FLAG_MORE_DATA;
+            } else {
+              DEBUG4_PRINTLN("Dump final message")
+            }
 
             // Now that the length of the data is known construct the message
             len = hmtl_dumpconfig_fmt(serial_socket->send_buffer,
@@ -232,28 +241,23 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
                                       flags,
                                       datalen);
 
-            DEBUG4_VALUELN("Dump config:", location);
             location = next_addr;
           } else {
             /*
-             * There was an error or no more items to send, respond with a
-             * "response complete" message.
+             * There was an error, respond with an error flag
              */
-            if (next_addr != EEPROM_ERROR_NOT_START) {
-              flags |= MSG_FLAG_ERROR;
-            }
+            flags |= MSG_FLAG_ERROR;
 
             len = hmtl_dumpconfig_fmt(serial_socket->send_buffer,
                                       serial_socket->send_data_size,
                                       source_address,
                                       flags,
                                       0);
-            DEBUG4_PRINTLN("Dump final message")
           }
 
           Serial.write(serial_socket->send_buffer, len);
 
-        } while (next_addr > 0);
+        } while (flags & MSG_FLAG_MORE_DATA);
 
         break;
       }
