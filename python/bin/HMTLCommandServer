@@ -39,7 +39,7 @@ def main():
 
     handle_args()
 
-    server = HMTLServer(options)
+    server = HMTLServer.from_options(options)
     server.listen()
     server.close()
 
