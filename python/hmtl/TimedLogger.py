@@ -38,14 +38,23 @@ class TimedLogger:
         self.textcolor = textcolor
         self.timecolor = timecolor
 
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
+
+    def enable(self):
+        self.enabled = True
+
     def log(self, text, timestamp=None, color=None):
         if not timestamp:
             timestamp = time.time()
         if not color:
             color = self.textcolor
 
-        # Print the timestamp
-        print(self.timecolor + "[%.3f] " % (timestamp - self.start_time), end="")
+        if self.enabled:
+            # Print the timestamp
+            print(self.timecolor + "[%.3f] " % (timestamp - self.start_time), end="")
 
-        # Print the message and reset the color
-        print(color + text + Fore.RESET)
+            # Print the message and reset the color
+            print(color + text + Fore.RESET)

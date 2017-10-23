@@ -9,6 +9,7 @@ from optparse import OptionParser, OptionGroup
 
 import hmtl.HMTLprotocol as HMTLprotocol
 from hmtl.client import HMTLClient
+import hmtl.config as config
 
 def handle_args():
     global options
@@ -208,9 +209,16 @@ def main():
 
     if msg is not None:
         starttime = time.time()
-        client.send_and_ack(msg, expect_response)
+        [messages, headers] = client.send_and_ack(msg, expect_response)
         endtime = time.time()
         print("Sent and acked in %.6fs" % (endtime - starttime))
+
+        if (options.commandtype == "dumpconfig"):
+            hdrs = [x[-1].config for x in headers]
+            print("Configuration objects:")
+            for hdr in hdrs:
+                print("  * %s" % hdr.short())
+            print("outputs: %s" % (config.config_types(hdrs)))
 
     if options.killserver:
         # Send an exit message to the server

@@ -26,15 +26,15 @@ class HMTLServer():
     # Default logging color
     LOGGING_COLOR = TimedLogger.RED
 
-    def __init__(self, options):
-        # Connect to serial connection
-        self.ser = HMTLSerial(options.device,
-                              verbose=options.verbose,
-                              baud=options.baud)
+    def __init__(self, serial_device, address, device_scan=False, logger=True):
+        self.ser = serial_device
+        self.address = address
+
         self.logger = TimedLogger(self.ser.serial.start_time,
                                   textcolor=self.LOGGING_COLOR)
+        if not logger:
+            self.logger.disable()
 
-        self.address = (options.address, options.port)
         self.terminate = False
 
          # TODO: Is this needed at all? If so should the SerialBuffer handle synchronization?
@@ -43,11 +43,22 @@ class HMTLServer():
         self.conn = None
         self.listener = None
 
-        if (options.devicescan):
+        if device_scan:
             self.scanner = DeviceScanner(self, True)
             self.scanner.start()
         else:
             self.scanner = None
+
+    @classmethod
+    def from_options(cls, options):
+        # Connect to serial connection
+        ser = HMTLSerial(options.device,
+                         verbose=options.verbose,
+                         baud=options.baud)
+
+        address = (options.address, options.port)
+
+        return cls(ser, address, options.devicescan)
 
     def get_connection(self):
         try:

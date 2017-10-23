@@ -4,13 +4,17 @@
 # connection to a HMTL module
 
 import sys
+import time
+import thread
 
 from optparse import OptionParser
 
 import hmtl.portscan as portscan
-import hmtl.HMTLprotocol as HMTLprotocol
 import hmtl.HMTLjson as HMTLjson
 from hmtl.HMTLSerial import *
+from hmtl.server import HMTLServer
+from hmtl.client import HMTLClient
+import hmtl.config as config
 
 
 def handle_args():
@@ -26,12 +30,15 @@ def handle_args():
     parser.add_option("-i", "--device_id", dest="device_id", type="int",
                       help="Set device_id")
     parser.add_option("-b", "--baud", dest="baud", type="int",
-                      help="Set baud")
+                      help="Set baud", default=9600)
 
     parser.add_option("-w", "--write", dest="writeconfig", action="store_true",
                       help="Write configuration", default=False)
     parser.add_option("-p", "--print", dest="printconfig", action="store_true",
                       help="Read and print the current configuration", default=False)
+    parser.add_option("--dump", dest="dumpconfig", action="store_true",
+                      help="Read and print the current configuration (new method)",
+                      default=False)
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
 
@@ -40,6 +47,7 @@ def handle_args():
     # Required args
     if ((options.filename is None) and
         (options.printconfig is False) and
+        (options.dumpconfig is False) and
         (options.address is None) and
         (options.device_id is None) and
         (options.baud is None)):
@@ -65,18 +73,18 @@ def handle_args():
 def send_configuration(config_data):
     print("***** Sending configuration *****")
 
-    if (ser.send_command(HMTLprotocol.HMTL_CONFIG_START) == False):
+    if (ser.send_command(config.CONFIG_START) == False):
         print("Failed to get ack from start message")
         exit(1)
 
-    header_struct = HMTLprotocol.get_header_struct(config_data)
+    header_struct = config.get_header_struct(config_data)
     ser.send_config('header', header_struct)
 
     for output in config_data["outputs"]:
-        output_struct = HMTLprotocol.get_output_struct(output)
+        output_struct = config.get_output_struct(output)
         ser.send_config(output["type"], output_struct)
 
-    if (ser.send_command(HMTLprotocol.HMTL_CONFIG_END) == False):
+    if (ser.send_command(config.CONFIG_END) == False):
         print("Failed to get ack from end message")
         exit(1)
 
@@ -84,25 +92,25 @@ def send_configuration(config_data):
 def send_address(address):
     print("***** Setting address to %d *****" % (address))
 
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
-    ser.send_config("address", HMTLprotocol.get_address_struct(address))
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
+    ser.send_command(config.CONFIG_START)
+    ser.send_config("address", config.get_address_struct(address))
+    ser.send_command(config.CONFIG_END)
 
 # Just send commands to read the existing configuration and set the device_id
 def send_device_id(device_id):
     print("***** Setting device_id to %d *****" % (device_id))
 
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
-    ser.send_config("device_id", HMTLprotocol.get_device_id_struct(device_id))
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
+    ser.send_command(config.CONFIG_START)
+    ser.send_config("device_id", config.get_device_id_struct(device_id))
+    ser.send_command(config.CONFIG_END)
 
 # Just send commands to read the existing configuration and set the baud
 def send_baud(baud):
     print("***** Setting baud to %d *****" % (baud))
 
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_START)
-    ser.send_config("baud", HMTLprotocol.get_baud_struct(baud))
-    ser.send_command(HMTLprotocol.HMTL_CONFIG_END)
+    ser.send_command(config.CONFIG_START)
+    ser.send_config("baud", config.get_baud_struct(baud))
+    ser.send_command(config.CONFIG_END)
 
 def main():
     global ser
@@ -131,13 +139,42 @@ def main():
 
     # Open the serial connection and wait for connection
     ser = HMTLSerial(options.device, 
-                     verbose=options.verbose)
+                     verbose=options.verbose,
+                     baud=options.baud)
 
-    if (options.printconfig == True):
+    if options.dumpconfig:
+        # Use the binary formatted method for requesting the module
+        # configurations.  To do this a server and client object are created,
+        # a dump message is sent and the responses accumulated.
+
+        print("Attempting to dump out the configuration")
+
+        address = "0.0.0.0"
+        port = 6000
+
+        server = HMTLServer(ser, (address, port), logger=False)
+        thread.start_new_thread(server.listen, ())
+
+        client = HMTLClient(address, port,  verbose=False, logger=False)
+
+        msg = HMTLprotocol.get_dumpconfig_msg(HMTLprotocol.BROADCAST)
+        [messages, headers] = client.send_and_ack(msg, True)
+
+        hdrs = [x[-1].config for x in headers]
+        print("Current configuration:")
+        for hdr in hdrs:
+            print("  * %s" % hdr.short())
+        print("outputs: %s" % (config.config_types(hdrs)))
+
+        client.close()
+        server.close()
+        exit(0)
+
+    if options.printconfig:
         # Only read and print the configuration
-        ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
+        ser.send_command(config.CONFIG_READ)
         options.verbose = True
-        ser.send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+        ser.send_command(config.CONFIG_PRINT)
         exit(0)
 
     if (config_data != None):
@@ -148,7 +185,7 @@ def main():
 
         # If not sending the entire configuration, first read the existing
         # configuration before modifying it.
-        ser.send_command(HMTLprotocol.HMTL_CONFIG_READ)
+        ser.send_command(config.CONFIG_READ)
 
         if (options.address != None):
             # Send the address update
@@ -162,7 +199,7 @@ def main():
 
     if (options.verbose):
         # Have the module output its entire configuration
-        ser.send_command(HMTLprotocol.HMTL_CONFIG_PRINT)
+        ser.send_command(config.CONFIG_PRINT)
 
     if (options.writeconfig == True):
         if (config_data):
@@ -172,7 +209,7 @@ def main():
                 sys.exit(1)
 
         # Write out the module's config to EEPROM
-        ser.send_command(HMTLprotocol.HMTL_CONFIG_WRITE)
+        ser.send_command(config.CONFIG_WRITE)
 
         print("Wrote config")
     else:

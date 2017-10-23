@@ -62,6 +62,12 @@ class HMTLSerial():
         start_wait = time.time()
         while True:
             item = self.get_message(1.0)
+
+            # After connecting to the serial device there is sometimes data
+            # from before the module resets, so wait a bit for that to clear.
+            if (time.time() - start_wait) < 0.5:
+                continue
+
             if item and (item.data == HMTLprotocol.HMTL_CONFIG_READY):
                 self.logger.log("***** Recieved ready *****")
                 return True

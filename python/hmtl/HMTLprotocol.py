@@ -11,62 +11,16 @@
 
 import struct
 from binascii import hexlify
+from constants import *
+from config import *
 
 # Protocol commands
 HMTL_CONFIG_READY  = "ready"
 HMTL_CONFIG_ACK    = "ok"
 HMTL_CONFIG_FAIL   = "fail"
 
-HMTL_CONFIG_START  = "start"
-HMTL_CONFIG_END    = "end"
-HMTL_CONFIG_READ   = "read"
-HMTL_CONFIG_PRINT  = "print"
-HMTL_CONFIG_WRITE  = "write"
-
 HMTL_TERMINATOR    = b'\xfe\xfe\xfe\xfe' # Indicates end of command
 
-#
-# Config starts with the config start byte, followed by the type of object,
-# followed by the encoded form of that onbject
-#
-CONFIG_START_FMT = '<BB'
-CONFIG_START_BYTE = 0xFD
-
-# These values must match those in HMTLTypes.h
-CONFIG_TYPES = {
-    "header"  : 0x0,
-    "value"   : 0x1,
-    "rgb"     : 0x2,
-    "program" : 0x3,
-    "pixels"  : 0x4,
-    "mpr121"  : 0x5,
-    "rs485"   : 0x6,
-    "xbee"    : 0x7,
-    
-    # The following values are for special commands
-    "address"   : 0xE0,
-    "device_id" : 0xE1,
-    "baud"      : 0xE2,
-    }
-
-# Individial object formats
-HEADER_FMT = '<BBBBBBHH'
-HEADER_MAGIC = 0x5C
-
-OUTPUT_HDR_FMT   = '<BB'
-OUTPUT_VALUE_FMT = '<Bh'
-OUTPUT_RGB_FMT   = '<BBBBBB'
-OUTPUT_PIXELS_FMT = '<BBHB'
-OUTPUT_MPR121_FMT = '<BB' + 'B'*12
-OUTPUT_RS485_FMT = '<BBB'
-OUTPUT_XBEE_FMT = '<BB'
-
-OUTPUT_ALL_OUTPUTS = 254
-
-
-UPDATE_ADDRESS_FMT = '<H'
-UPDATE_DEVICE_ID_FMT = '<H'
-UPDATE_BAUD_FMT = '<B'
 
 #
 # HMTL Message formats
@@ -146,115 +100,6 @@ MODULE_TYPES = {
     128: "Lightbringer 328",
     129: "Lightbringer 1284"
 }
-
-#
-# Utility
-#
-def baud_to_byte(baud):
-    return (baud / 1200)
-
-def byte_to_baud(data):
-    return data * 1200
-
-#
-# Configuration formatting
-#
-
-def get_config_start(type):
-    packed = struct.pack(CONFIG_START_FMT,
-                         CONFIG_START_BYTE,
-                         CONFIG_TYPES[type])
-    return packed
-
-def get_header_struct(data):
-    config = data['header']
-
-    packed_start = get_config_start('header')
-
-    packed = struct.pack(HEADER_FMT,
-                         HEADER_MAGIC,
-                         config['protocol_version'],
-                         config['hardware_version'],
-                         baud_to_byte(config['baud']),
-                         len(data['outputs']),
-                         config['flags'],
-                         config['device_id'],
-                         config['address'])
-
-    return packed_start + packed
-
-
-def get_output_struct(output):
-#    print("get_output_struct: %s" % (output))
-    type = output["type"]
-
-    packed_start = get_config_start(type)
-    packed_hdr = struct.pack(OUTPUT_HDR_FMT,
-                             CONFIG_TYPES[type], # type
-                             0) # output # filled in by module
-    if (type == "value"):
-        packed_output = struct.pack(OUTPUT_VALUE_FMT,
-                                    output["pin"],
-                                    output["value"])
-    elif (type == "rgb"):
-        packed_output = struct.pack(OUTPUT_RGB_FMT,
-                                    output['pins'][0],
-                                    output['pins'][1],
-                                    output['pins'][2],
-                                    output['values'][0],
-                                    output['values'][1],
-                                    output['values'][2])
-    elif (type == "pixels"):
-        packed_output = struct.pack(OUTPUT_PIXELS_FMT,
-                                    output['clockpin'],
-                                    output['datapin'],
-                                    output['numpixels'],
-                                    output['rgbtype'])
-    elif (type == "rs485"):
-        packed_output = struct.pack(OUTPUT_RS485_FMT,
-                                    output['recvpin'],
-                                    output['xmitpin'],
-                                    output['enablepin'])
-    elif (type == "xbee"):
-        packed_output = struct.pack(OUTPUT_XBEE_FMT,
-                                    output['recvpin'],
-                                    output['xmitpin'])
-
-    elif (type == "mpr121"):
-        args = [OUTPUT_MPR121_FMT, output["irqpin"],
-                output["useinterrupt"]] + [x for x in output["threshold"]]
-        packed_output = struct.pack(*args)
-    else:
-        raise Exception("Unknown type %s" % (type))
-
-    return packed_start + packed_hdr + packed_output
-
-def get_address_struct(address):
-    print("get_address_struct: address %d" % (address))
-
-    packed_start = get_config_start("address")
-    packed_address = struct.pack(UPDATE_ADDRESS_FMT,
-                                 address)
-    
-    return packed_start + packed_address
-
-def get_device_id_struct(device_id):
-    print("get_device_id_struct: device_id %d" % (device_id))
-
-    packed_start = get_config_start("device_id")
-    packed_device_id = struct.pack(UPDATE_DEVICE_ID_FMT,
-                                 device_id)
-    
-    return packed_start + packed_device_id
-
-def get_baud_struct(baud):
-    print("get_baud_struct: baud %d" % (baud))
-
-    packed_start = get_config_start("baud")
-    packed_baud = struct.pack(UPDATE_BAUD_FMT,
-                              baud_to_byte(baud))
-    
-    return packed_start + packed_baud
 
 
 #
@@ -494,7 +339,30 @@ class PollHdr(Msg):
         self.msg_version = msg_version
 
     def __str__(self):
-        return "  poll_hdr_t:\n    config_hdr_t:\n      magic:%02x\n      proto_ver:%d\n      hdw_ver:%d\n      baud:%d\n      outputs:%d\n      flags:%02x\n      dev_id:%d\n      addr:%d\n    type:%d\n    buffer_size:%d\n    msg_version=%d\n" % (self.magic, self.protocol_version, self.hardware_version, byte_to_baud(self.baud), self.num_outputs, self.flags, self.device_id, self.address, self.object_type, self.buffer_size, self.msg_version)
+        return """  poll_hdr_t:
+    config_hdr_t:
+    magic:%02x
+    proto_ver:%d
+    hdw_ver:%d
+    baud:%d
+    outputs:%d
+    flags:%02x
+    dev_id:%d
+    addr:%d
+    type:%d
+    buffer_size:%d
+    msg_version=%d
+""" %(self.magic,
+      self.protocol_version,
+      self.hardware_version,
+      byte_to_baud(self.baud),
+      self.num_outputs,
+      self.flags,
+      self.device_id,
+      self.address,
+      self.object_type,
+      self.buffer_size,
+      self.msg_version)
 
     @classmethod
     def headers(cls):
@@ -509,30 +377,6 @@ class PollHdr(Msg):
                (self.device_id, self.address, self.protocol_version,
                 self.hardware_version, byte_to_baud(self.baud),
                 self.num_outputs, module_type)
-
-
-class DumpConfigHdr(Msg):
-    TYPE = "DUMPCONFIG"
-    FORMAT = "XXX" # This should never be directly unpacked as the structure is of variable length
-    LENGTH = -1
-
-    def __init__(self, data, config):
-        self.data = data
-        self.config = config
-
-    @classmethod
-    def from_data(cls, data):
-        if ord(data[0]) == HEADER_MAGIC:
-            config = ConfigHeaderMain.from_data(data)
-        else:
-            config = OutputHdr.full_config(data)
-        return cls(data, config)
-
-    def __str__(self):
-        if self.config is None:
-            return "   CONFIG DATA NOT YET PARSED: len:%d data:%s  " % (len(self.data), hexlify(self.data))
-        else:
-            return str(self.config)
 
 
 class SetAddress(Msg):
@@ -552,36 +396,34 @@ class SetAddress(Msg):
         return struct.pack(self.FORMAT, self.device_id, self.address)
 
 
-class OutputHdr(Msg):
-    TYPE = "OUTPUT"
-    FORMAT = OUTPUT_HDR_FMT
-    LENGTH = 2
+class DumpConfigHdr(Msg):
+    """Message type for receiving configuration data from a module"""
+    TYPE = "DUMPCONFIG"
+    LENGTH = -1
 
-    def __init__(self, outputtype, output):
-        self.outputtype = outputtype
-        self.output = output
-
-    def __str__(self):
-        return ("  output_hdr_t:\n    type:%d\n    output:%d\n" %
-                (self.outputtype, self.output))
-
-    def pack(self):
-        return struct.pack(self.FORMAT, self.outputtype, self.output)
-
-    def full_config_x(self, data):
-        # Construct a full config object from this output header and the
-        # additional data
-        config = None
-        if self.outputtype == CONFIG_TYPES["rgb"]:
-            config = ConfigHeaderRGB.from_data(data)
-
-        if config:
-            config.output_hdr = self
-
-        return config
+    def __init__(self, data, config):
+        self.data = data
+        self.config = config
 
     @classmethod
-    def full_config(cls, data):
+    def from_data(cls, data, offset=0):
+        if ord(data[0]) == HEADER_MAGIC:
+            config = ConfigHeaderMain.from_data(data)
+        else:
+            config = cls.full_config(data)
+        return cls(data, config)
+
+    def __str__(self):
+        return str(self.config)
+
+    def short(self):
+        return self.config.short()
+
+    def type(self):
+        return self.config.type()
+
+    @staticmethod
+    def full_config(data):
         output_hdr = OutputHdr.from_data(data)
         remaining_data = data[output_hdr.LENGTH:]
 
@@ -589,7 +431,7 @@ class OutputHdr(Msg):
         if output_hdr.outputtype == CONFIG_TYPES["value"]:
             config = ConfigHeaderValue.from_data(remaining_data)
         elif output_hdr.outputtype == CONFIG_TYPES["rgb"]:
-                config = ConfigHeaderRGB.from_data(remaining_data)
+            config = ConfigHeaderRGB.from_data(remaining_data)
         elif output_hdr.outputtype == CONFIG_TYPES["pixels"]:
             config = ConfigHeaderPixels.from_data(remaining_data)
         elif output_hdr.outputtype == CONFIG_TYPES["rs485"]:
@@ -605,184 +447,21 @@ class OutputHdr(Msg):
         return config
 
 
-#
-# Configuration object classes
-#
-
-
-class ConfigHeaderMain(Msg):
-    """This class is for the config_hdr_t structure"""
-    FORMAT = HEADER_FMT
-
-    def __init__(self, magic, protocol_version, hardware_version, baud,
-                 num_outputs, flags, device_id, address):
-        self.magic = magic;
-        self.protocol_version = protocol_version
-        self.hardware_version = hardware_version
-        self.baud = baud
-        self.num_outputs = num_outputs
-        self.flags = flags
-        self.device_id = device_id
-        self.address = address
-
-    def __str__(self):
-        return """  config_hdr_t:
-    magic:%02x
-    proto_ver:%d
-    hdw_ver:%d
-    baud:%d
-    outputs:%d
-    flags:%02x
-    dev_id:%d
-    addr:%d
-""" % (self.magic,
-       self.protocol_version,
-       self.hardware_version,
-       byte_to_baud(self.baud),
-       self.num_outputs,
-       self.flags,
-       self.device_id,
-       self.address)
-
-
-class ConfigHeaderValue(Msg):
-    TYPE = "Value"
-    FORMAT = OUTPUT_VALUE_FMT
+class OutputHdr(Msg):
+    TYPE = "OUTPUT"
+    FORMAT = OUTPUT_HDR_FMT
     LENGTH = 2
 
-    def __init__(self, pin, value):
-        self.output_hdr = None
-        self.pin = pin
-        self.value = value
+    def __init__(self, outputtype, output):
+        self.outputtype = outputtype
+        self.output = output
 
     def __str__(self):
-        return str(self.output_hdr) + """  config_value_t:
-    pin:%s
-    value:%s
-        """ % (self.pin, self.value)
+        return ("  output_hdr_t:\n    type:%d\n    output:%d\n" %
+                (self.outputtype, self.output))
 
     def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.pin, self.value)
-
-
-class ConfigHeaderRGB(Msg):
-    TYPE = "RGB"
-    FORMAT = OUTPUT_RGB_FMT
-    LENGTH = 6
-
-    def __init__(self,
-                 pin_red, pin_green, pin_blue,
-                 value_red, value_green, value_blue):
-        self.output_hdr = None
-        self.pins = [pin_red, pin_green, pin_blue]
-        self.value = [value_red, value_green, value_blue]
-
-    def __str__(self):
-        return str(self.output_hdr) + """  config_rgb_t:
-    pins:%s
-    value:%s
-        """ % (self.pins, self.value)
-
-    def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.pins[0], self.pins[1], self.pins[2],
-                           self.value[0], self.value[1], self.value[2])
-
-
-class ConfigHeaderPixels(Msg):
-    TYPE = "PIXELS"
-    FORMAT = OUTPUT_PIXELS_FMT
-    LENGTH = 5
-
-    def __init__(self, clockpin, datapin, numpixels, rgbtype):
-        self.output_hdr = None
-        self.clockpin = clockpin
-        self.datapin = datapin
-        self.numpixels = numpixels
-        self.rgbtype = rgbtype
-
-    def __str__(self):
-        return str(self.output_hdr) + """  config_pixels_t:
-    clockpin:%d
-    datapin:%d
-    numpixels:%d
-    rgbtype:%d
-        """ % (self.clockpin, self.datapin, self.numpixels, self.rgbtype)
-
-    def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.clockpin, self.datapin,
-                           self.numpixels, self.rgbtype)
-
-
-class ConfigHeaderRS485(Msg):
-    TYPE = "RS485"
-    FORMAT = OUTPUT_RS485_FMT
-    LENGTH = 3
-
-    def __init__(self, recvpin, xmitpin, enablepin):
-        self.output_hdr = None
-        self.recvpin = recvpin
-        self.xmitpin = xmitpin
-        self.enablepin = enablepin
-
-    def __str__(self):
-        return str(self.output_hdr) + """  config_rs485_t:
-    recvpin:%d
-    xmitpin:%d
-    enablepin:%d
-        """ % (self.recvpin, self.xmitpin, self.enablepin)
-
-    def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.recvpin, self.xmitpin,
-                           self.enablepin)
-
-
-class ConfigHeaderXbee(Msg):
-    TYPE = "XBEE"
-    FORMAT = OUTPUT_XBEE_FMT
-    LENGTH = 2
-
-    def __init__(self, recvpin, xmitvalue):
-        self.output_hdr = None
-        self.recvpin = recvpin
-        self.xmitvalue = xmitvalue
-
-    def __str__(self):
-        return str(self.output_hdr) + """  config_xbee_t:
-    recvpin:%s
-    xmitvalue:%s
-        """ % (self.recvpin, self.xmitvalue)
-
-    def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.recvpin, self.xmitvalue)
-
-
-class ConfigHeaderMPR121(Msg):
-    TYPE = "MPR121"
-    FORMAT = OUTPUT_MPR121_FMT
-    LENGTH = 14
-
-    def __init__(self, irqpin, useinterrupt, *thresholds):
-        self.output_hdr = None
-        self.irqpin = irqpin
-        self.useinterrupt = useinterrupt
-        self.thresholds = thresholds
-
-    def __str__(self):
-        return str(self.output_hdr) + """  config_mpr121_t:
-    irqpin:%s
-    useinterrupt:%s
-    thresholds:%s
-        """ % (self.irqpin, self.useinterrupt, self.thresholds)
-
-    def pack(self):
-        return self.output_hdr.pack() + \
-               struct.pack(self.FORMAT, self.irqpin, self.useinterrupt,
-                           *self.thresholds)
+        return struct.pack(self.FORMAT, self.outputtype, self.output)
 
 
 #
@@ -810,6 +489,7 @@ class ProgramHdr(Msg):
     @classmethod
     def from_data(cls, data, offset=0):
         raise Exception("From data needs to be defined for ProgramHdr")
+
 
 class ProgramGeneric(Msg):
     """Generic program data message"""
@@ -841,11 +521,14 @@ class ProgramGeneric(Msg):
     def pack(self):
         return struct.pack(self.FORMAT, *self.values)
 
+
 class ProgramLevelValue(ProgramGeneric):
     TYPE = "PROGRAMLEVELVALUE"
 
+
 class ProgramSoundValue(ProgramGeneric):
     TYPE = "PROGRAMSOUNDVALUE"
+
 
 class ProgramFade(Msg):
     TYPE = "PROGRAMFADE"
@@ -867,7 +550,6 @@ class ProgramFade(Msg):
                            self.stop_values[2],
                            self.flags,
                            0)
-
     
 
 def get_program_level_value_msg(address, output):

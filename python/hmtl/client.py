@@ -22,8 +22,10 @@ class HMTLClient():
     address = HMTLprotocol.BROADCAST
     verbose = False
 
-    def __init__(self, address='localhost', port=6000, hmtladdress=None, verbose=False):
+    def __init__(self, address='localhost', port=6000, hmtladdress=None, verbose=False, logger=True):
         self.logger = TimedLogger()
+        if not logger:
+            self.logger.disable()
 
         self.address = hmtladdress
         self.verbose = verbose
