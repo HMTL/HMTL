@@ -50,6 +50,14 @@ class InputBuffer(threading.Thread):
     def get_reader(self):
         pass
 
+    @abstractmethod
+    def read(self, max_read):
+        pass
+
+    @abstractmethod
+    def write(self, data):
+        pass
+
     def get_buffer(self):
         return self.buff
 
@@ -60,15 +68,14 @@ class InputBuffer(threading.Thread):
         self._Thread__stop()
 
     def run(self):
-        reader = self.get_reader()
         while True:
             data = ""
             is_html = False
             hdr = None
             while True:
-                char = reader.read(1)
+                char = self.read(1)
 
-                if len(char) == 0:
+                if (char is None) or (len(char) == 0):
                     break
 
                 self.total_received += 1

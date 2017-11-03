@@ -78,9 +78,9 @@ class HMTLSerial():
     def send_and_confirm(self, data, terminated, timeout=10):
         """Send a command and wait for the ACK"""
 
-        self.serial.connection.write(data)
+        self.serial.write(data)
         if (terminated):
-            self.serial.connection.write(HMTLprotocol.HMTL_TERMINATOR)
+            self.serial.write(HMTLprotocol.HMTL_TERMINATOR)
 
         start_wait = time.time()
         while True:

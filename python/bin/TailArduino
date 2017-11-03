@@ -9,6 +9,7 @@ import argparse
 
 import hmtl.portscan as portscan
 from hmtl.SerialBuffer import SerialBuffer
+from hmtl.SocketBuffer import SocketBuffer
 from hmtl.StdinBuffer import StdinBuffer
 from hmtl.TimedLogger import TimedLogger
 
@@ -30,14 +31,19 @@ def handle_args():
                         action="store_true",
                         help="Resend stdin to the serial device", default=False)
 
+    parser.add_argument("-I", "--ip", dest="ip",
+                        help="Connect to the indicated IP address")
+    parser.add_argument("-p", "--port", dest="port", default=23,
+                        help="Port to connect to [default=%(default)s]")
+
     options = parser.parse_args()
 
-    if options.device is None:
+    if options.device is None and options.ip is None:
         options.device = portscan.choose_port()
 
-    if options.device is None:
-        parser.print_help()
-        exit("Must specify device")
+        if options.device is None:
+            parser.print_help()
+            exit("Must specify device")
 
     return options
 
@@ -45,10 +51,16 @@ def handle_args():
 def main():
     options = handle_args()
 
-    serial = SerialBuffer(options.device, options.baud, verbose=False)
+    if options.device is not None:
+        device = SerialBuffer(options.device, options.baud, verbose=False)
+    elif options.ip is not None:
+        device = SocketBuffer(options.ip, options.port, verbose=False)
+    else:
+        exit("No device or address specified")
+
     stdin = StdinBuffer(verbose=False)
 
-    serial.start()
+    device.start()
     stdin.start()
 
     logger = TimedLogger()
@@ -60,12 +72,12 @@ def main():
             if options.input:
                 # Resend the input over the serial connection
                 logger.log("RESEND: %s" % data, color=TimedLogger.RED)
-                serial.connection.write(data + "\n")
+                device.write(data + "\n")
             else:
                 logger.log("READ: %s" % data, color=TimedLogger.CYAN)
 
         # Check the serial queue for data
-        item = serial.get(0.1)
+        item = device.get(0.1)
         if not item:
             continue
 

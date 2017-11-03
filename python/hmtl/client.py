@@ -114,6 +114,8 @@ class HMTLClient():
 
             return messages, headers
 
+        return [None, None]
+
     def get_response_data(self):
         '''Request and attempt to retrieve response data'''
         self.conn.send(server.SERVER_DATA_REQ)

@@ -108,7 +108,7 @@ def main():
             print("SNAKE command requires background, colormode, and period")
             exit(1)
         bg = [ int(x) for x in options.background.split(",") ]
-        print("Sending STATIC message.  Address=%d Output=%d period=%d bg=%s colormode=%d" %
+        print("Sending SNAKE message.  Address=%d Output=%d period=%d bg=%s colormode=%d" %
               (options.hmtladdress, options.output, options.period, bg,
                options.colormode))
         snake = TriangleSnake(options.period, bg, options.colormode)

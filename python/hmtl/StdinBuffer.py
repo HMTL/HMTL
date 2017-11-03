@@ -25,3 +25,10 @@ class StdinBuffer(InputBuffer):
 
     def get_reader(self):
         return sys.stdin
+
+    def read(self, max_read):
+        return sys.stdin.read(max_read)
+
+    def write(self, data):
+        return sys.stdin.write(data)
+
