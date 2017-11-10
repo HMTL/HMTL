@@ -472,7 +472,7 @@ class OutputHdr(Msg):
 class ProgramHdr(Msg):
     TYPE = "PROGRAM"
     FORMAT = "<B"
-    MAX_DATA = 32 # Was 12
+    MAX_DATA = 32 # Was 12 # XXX!
     LENGTH = OutputHdr.LENGTH + 1 + MAX_DATA
 
     def __init__(self, program, output):

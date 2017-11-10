@@ -16,6 +16,10 @@ def handle_args():
     parser.add_option("-b", "--baud", dest="baud", type="int",
                       help="Serial port baud (9600, 19200, [57600], 115200)",
                       default=57600)
+    parser.add_option("-I", "--ip", dest="ip",
+                      help="IP of device to connect to")
+    parser.add_option("-P", "--deviceport", dest="deviceport", default=23,
+                      help="Port on IP device [default=%(default)s]")
 
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
@@ -30,8 +34,12 @@ def handle_args():
     (options, args) = parser.parse_args()
     print("options:" + str(options) + " args:" + str(args))
 
-    if options.device == None:
+    if options.device is None and options.ip is None:
         options.device = portscan.choose_port()
+
+        if options.device == None:
+            parser.print_help()
+            exit("Must specify device")
     
     return (options, args)
  
@@ -39,7 +47,16 @@ def main():
 
     handle_args()
 
-    server = HMTLServer.from_options(options)
+    if options.device:
+        buff = SerialBuffer(options.device, options.baud)
+    elif options.ip:
+        buff = SocketBuffer(options.ip, options.deviceport)
+    else:
+        exit("No device or address specified")
+    ser = HMTLSerial(buff, verbose=options.verbose)
+
+    server = HMTLServer(ser, (options.address, options.port),
+                        options.devicescan)
     server.listen()
     server.close()
 

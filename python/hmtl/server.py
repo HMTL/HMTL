@@ -14,6 +14,7 @@ import threading
 from HMTLSerial import *
 from InputBuffer import InputItem
 from TimedLogger import TimedLogger
+from SocketBuffer import SocketBuffer
 
 SERVER_ACK = "ack"
 SERVER_EXIT = "exit"
@@ -48,17 +49,6 @@ class HMTLServer():
             self.scanner.start()
         else:
             self.scanner = None
-
-    @classmethod
-    def from_options(cls, options):
-        # Connect to serial connection
-        ser = HMTLSerial(options.device,
-                         verbose=options.verbose,
-                         baud=options.baud)
-
-        address = (options.address, options.port)
-
-        return cls(ser, address, options.devicescan)
 
     def get_connection(self):
         try:

@@ -26,15 +26,11 @@ class HMTLSerial():
     # How long to wait for the ready signal after connection
     MAX_READY_WAIT = 10
 
-    def __init__(self, device, verbose=False, baud = 9600):
+    def __init__(self, buff, verbose=False):
         '''Open a serial connection and wait for the ready signal'''
-        self.device = device
         self.verbose = verbose
-        self.baud = baud
         self.last_received = 0
-
-        # Create the serial buffer and start it up
-        self.serial = SerialBuffer(device, baud)
+        self.serial = buff
 
         # Create the logger
         self.logger = TimedLogger(self.serial.start_time, textcolor=self.LOGGING_COLOR)
