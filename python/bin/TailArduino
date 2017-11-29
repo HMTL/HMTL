@@ -33,7 +33,7 @@ def handle_args():
 
     parser.add_argument("-I", "--ip", dest="ip",
                         help="Connect to the indicated IP address")
-    parser.add_argument("-P", "--port", dest="port", default=23,
+    parser.add_argument("-P", "--port", dest="port", type=int, default=23,
                         help="Port to connect to [default=%(default)s]")
 
     options = parser.parse_args()
