@@ -81,6 +81,13 @@ RFM69Socket rfm69;
 byte databuffer[RF69_MAX_DATA_LEN];
 #endif
 
+/*
+ * Set the BAUD if not over-riden by build flags
+ */
+#ifndef BAUD
+  #define BAUD 115200
+#endif
+
 
 #define MAX_SOCKETS 2
 Socket *sockets[MAX_SOCKETS] = { NULL, NULL };
@@ -103,6 +110,7 @@ uint16_t light_data = 1023;
 byte sound_channels = 0;
 #define SOUND_CHANNELS 8
 uint16_t sound_data[SOUND_CHANNELS] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+boolean sound_updated = false;
 
 /*
  * Program management
@@ -120,6 +128,8 @@ hmtl_program_t program_functions[] = {
 
   { HMTL_PROGRAM_LEVEL_VALUE, program_level_value, program_level_value_init },
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
+  { HMTL_PROGRAM_SOUND_PIXELS, program_sound_pixels, program_sound_pixels_init },
+
   { PROGRAM_SENSOR_DATA, process_sensor_data, program_sensor_data_init }
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
@@ -138,8 +148,7 @@ void additional_loop();
 
 void setup() {
 
-  //  Serial.begin(115200);
-  Serial.begin(57600);
+  Serial.begin(BAUD);
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      outputs, objects, HMTL_MAX_OUTPUTS,
@@ -371,6 +380,7 @@ boolean process_sensor_data(output_hdr_t *output,
     case HMTL_SENSOR_SOUND: {
       byte copy_len;
       if (sizeof (uint16_t) * SOUND_CHANNELS < sensor->data_len) {
+        // TODO: This indicates that more data was returned than is expected
         copy_len = sizeof (uint16_t) * SOUND_CHANNELS;
       } else {
         copy_len = sensor->data_len;
@@ -384,25 +394,22 @@ boolean process_sensor_data(output_hdr_t *output,
                        DEBUG4_HEXVAL(" ", sound_data[i]);
                      }
                      );
+      sound_updated = true;
       return true;
-      break;
     }
     case HMTL_SENSOR_LIGHT: {
       light_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LIGHT:", light_data);
       return true;
-      break;
     }
     case HMTL_SENSOR_POT: {
       level_data = *(uint16_t *)data;
       DEBUG4_VALUE(" LEVEL:", level_data);
       return true;
-      break;
     }
     default: {
       DEBUG1_PRINT(" ERROR: UNKNOWN TYPE");
       return false;
-      break;
     }
   }
 }
@@ -455,7 +462,8 @@ boolean program_level_value(output_hdr_t *output, void *object,
 
 
 /*******************************************************************************
- * Program to set the value based on the most recent sound data
+ * Program to set the value of a given output based on the most recent sound
+ * data.
  */
 
 typedef struct {
@@ -477,6 +485,7 @@ boolean program_sound_value_init(msg_program_t *msg,
   state->max = 0;
   
   tracker->state = state;
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
 
   return true;
 }
@@ -499,7 +508,7 @@ boolean program_sound_value(output_hdr_t *output, void *object,
 
   uint8_t mapped = 0;
   if (total > 2) {
-    // To avoid noise while quiet set a minimumza
+    // To avoid noise while quiet set a minimum
     mapped = map(total, 0, state->max, 0, 255);
   }
   if (mapped != state->value) {
@@ -514,3 +523,58 @@ boolean program_sound_value(output_hdr_t *output, void *object,
   return false;
 }
 
+/*******************************************************************************
+ * Program which uses the columns in the sound data to light individual pixels.
+ * This is intended for separate leds controlled as the individual pixels, rather than
+ * RGB pixels.
+ */
+
+typedef struct {
+  uint16_t max[SOUND_CHANNELS];
+} state_sound_pixels_t;
+
+boolean program_sound_pixels_init(msg_program_t *msg,
+                                 program_tracker_t *tracker,
+                                 output_hdr_t *output, void *object) {
+  if ((output == NULL) || !IS_HMTL_PIXEL_OUTPUT(output->type)) {
+    return false;
+  }
+
+  DEBUG3_PRINTLN("Initializing sound pixels");
+  state_sound_pixels_t *state =
+          (state_sound_pixels_t *)malloc(sizeof (state_sound_pixels_t));
+  memset(state->max, sizeof(uint16_t) * SOUND_CHANNELS, 0) ;
+
+  tracker->state = state;
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+
+  return true;
+}
+
+boolean program_sound_pixels(output_hdr_t *output, void *object,
+                            program_tracker_t *tracker) {
+  PixelUtil *pixels = (PixelUtil*)object;
+  state_sound_pixels_t *state = (state_sound_pixels_t *)tracker->state;
+
+  if (sound_updated) {
+    for (byte channel = 0; channel < SOUND_CHANNELS; channel++) {
+
+      // Track the maximum value for each channel
+      if (sound_data[channel] > state->max[channel]) {
+        state->max[channel] = sound_data[channel];
+      }
+
+      // Map the value of the channel compared to its max into a byte
+      uint8_t value = (uint8_t)map(sound_data[channel],
+                                   0, state->max[channel],
+                                   0, 255);
+
+      // Set the led value for this channel
+      pixels->setDistinct(channel, value);
+    }
+    sound_updated = false;
+    return true;
+  }
+
+  return false;
+}

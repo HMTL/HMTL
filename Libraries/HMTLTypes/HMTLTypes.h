@@ -99,6 +99,10 @@ typedef struct {
   ((out == HMTL_OUTPUT_VALUE) || \
    (out == HMTL_OUTPUT_RGB) || \
    (out == HMTL_OUTPUT_PIXELS))
+
+#define IS_HMTL_PIXEL_OUTPUT(out) \
+  ((out == HMTL_OUTPUT_PIXELS))
+
 #define HMTL_FLAG_MASTER 0x1
 #define HMTL_FLAG_SERIAL 0x2
 

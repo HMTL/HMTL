@@ -25,8 +25,9 @@
 #define HMTL_PROGRAM_SOUND_VALUE  0x04
 #define HMTL_PROGRAM_FADE         0x05
 #define HMTL_PROGRAM_SPARKLE      0x06
+#define HMTL_PROGRAM_SOUND_PIXELS 0x07
 
-#define PROGRAM_SENSOR_DATA       0x10
+#define PROGRAM_SENSOR_DATA       0x10 // Special handler for sensor data messages
 
 #define PROGRAM_BRIGHTNESS        0x30 // One-time only
 #define PROGRAM_COLOR             0x31
@@ -180,7 +181,7 @@ boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
 typedef struct {
   uint16_t period;        // 2B
   CRGB bgColor;           // 3B
-  uint8_t length;         // 1B
+  uint16_t length;        // 1B
 } hmtl_program_circular_t;
 typedef struct {
   hmtl_program_circular_t msg;
