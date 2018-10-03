@@ -1,68 +1,70 @@
 Assigned HMTL addresses:
 
-id	address		HTML_version Hdw_v description
+id	address		HTML_v	Hdw_v	description
 
 ==Cube Lights==
-NA	*16/0x10	2            Parents (Board v2)
-NA	*17/0x11	2            Seth (Board v2)
-NA	*18/0x12	2            D (Board v2)
-19	19/0x13 	3            Adam (Board v2)
-20 	20/0x14		3            #5 (Board v2)
-21	21/0x15		3            Big Cube
+NA	*16/0x10	2            	Parents (Board v2)
+NA	*17/0x11	2            	Seth (Board v2)
+NA	*18/0x12	2            	D (Board v2)
+19	19/0x13 	3            	Adam (Board v2)
+20 	20/0x14		3            	#5 (Board v2)
+21	21/0x15		3            	Big Cube
 
 ==Triangle Lights==
-NA	*32/0x20	2            Taller stand (Board v4)
-33	33/0x21		3            First XLR
-34  34/0x22   3            Tower (Board v4, XLR)
-35  35/0x23   3            Icohedron (Board v4, XLR)
-36  36/0x24   3            Icohedron (Board v4, XLR)
-40  37/0x25   3            Icohedron w/4x Triggers (Board v4, XLR)
+NA	*32/0x20	2            	Taller stand (Board v4)
+33	33/0x21		3            	First XLR
+34	34/0x22   	3            	Tower (Board v4, XLR)
+35 	35/0x23   	3            	Icohedron (Board v4, XLR)
+36 	36/0x24   	3            	Icohedron (Board v4, XLR)
+40 	40/0x28   	3            	Icohedron w/4x Triggers (Board v4, XLR)
 
-41  41/0x26   3            Board v8.0 (1284p)
-42  42/0x27   3            Icohedron (Board v5-green, XLR)
-43  43/0x28   3            ?? (Board v5-purple, XLR)
-44  44/0x29   3            Board v8.1 (1284p)
+41 	41/0x29   	3            	Board v8.0 (1284p)
+42 	42/0x2a   	3            	Icohedron (Board v5-green, XLR)
+43 	43/0x2b   	3            	?? (Board v5-purple, XLR)
+44 	44/0x2c   	3            	Board v8.1 (1284p)
+
+45	45/0x2d   	3	12	HMTLv10_328 with ESP8266
 
 ==Trigger boards==
-64	64/0x40   3            Trigger Board v3 (stereo terminals, XLR)
-65	65/0x41	  3            Trigger Board v3 (stereo terminals, XLR)
-66	66/0x42	  3            Trigger Board v3 (stereo terminals, XLR)
-67	64/0x41	  3            Trigger Board v3 (stereo terminals, XLR, Chad)
-68	64/0x41	  3            Trigger Board v3 (stereo terminals, XLR, Chad)
-69  69/0x45   3            Trigger Board v4 (stereo terminals, XLR)
-70  70/0x46   3            Trigger Board v4 (stereo terminals, XLR)
+64	64/0x40   	3            	Trigger Board v3 (stereo terminals, XLR)
+65	65/0x41	  	3            	Trigger Board v3 (stereo terminals, XLR)
+66	66/0x42	  	3            	Trigger Board v3 (stereo terminals, XLR)
+67	64/0x41	  	3            	Trigger Board v3 (stereo terminals, XLR, Chad)
+68	64/0x41	    	3            	Trigger Board v3 (stereo terminals, XLR, Chad)
+69 	69/0x45     	3            	Trigger Board v4 (stereo terminals, XLR), Bluetooth
+70 	70/0x46     	3            	Trigger Board v4 (stereo terminals, XLR)
 
 ==HMTL Fire Control===
-128 128/0x80  3            HMTL Fire Control Module 1
+128 	128/0x80  	3            	HMTL Fire Control Module 1
 
 ==Sound Unit==
-8   8/0x8     3            First Sound Unit
+8   	8/0x8     	3            	First Sound Unit
 
 ==Power Unit==
-4   4/0x4     3            Power Unit (Board v2)
+4   	4/0x4     	3            	Power Unit (Board v2)
 
 ==Wireless Pendants==
-0x0101 1/0x1  3            First assembled wireless pendant
+0x0101 	1/0x1  		3            	First assembled wireless pendant
 
 == OtherMill pendant==
-100 100/0x64  3  11        First milled module
-101 101/0x65  3  11
+100 	100/0x64  	3  	11      First milled module
+101 	101/0x65  	3  	11
 
 == Broken Wings ==
-140 140/0x8c  3   4        Prototype module, with testunit nano
-141 141       3   4        Prototype module with RFM69HW
+140 	140/0x8c  	3   	4	Prototype module, with testunit nano
+141 	141       	3   	4	Prototype module with RFM69HW
 
 
 == Circular Controller ==
-160 160       3   128      Circular Controller, Moteino Mega
+160 	160       	3   	128	Circular Controller, Moteino Mega
 
 == Test units ==
-170 170       3   7        Test unit
+170 	170       	3   	7	Test unit
 
 (*) Not yet set
 
 
 == Lightbringer modules ==
-id	address		HTML_version Hdw_v description
-1   1/0x01      3            13    First Lightbringer 1284 board
-2   2/0x02      3
+id	address		HTML_v	Hdw_v	description
+1   1/0x01      	3	13	First Lightbringer 1284 board
+2   2/0x02      	3
