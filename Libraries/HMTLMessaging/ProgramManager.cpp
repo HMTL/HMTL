@@ -52,6 +52,25 @@ ProgramManager::ProgramManager(output_hdr_t **_outputs,
   DEBUG3_VALUELN(" programs:", num_programs);
 }
 
+/**
+ * Lookup a configured output based on its type
+ * @param type HMTL object type to look for
+ * @param nth return the nth matching output found
+ * @return
+ */
+byte ProgramManager::lookup_output_by_type(uint8_t type, uint8_t nth) {
+  byte count = 0;
+  for (byte i = 0; i < num_outputs; i++) {
+    if (outputs[i]->type == type) {
+      if (count == nth) {
+        return i;
+      }
+      count++;
+    }
+  }
+  return HMTL_NO_OUTPUT;
+}
+
 /*
  * Lookup a program in the manager based on its ID
  */

@@ -99,7 +99,11 @@ void *objects[HMTL_MAX_OUTPUTS];
 
 PixelUtil pixels;
 
-
+/*
+ * A timesync object must be defined and initialized here as some libraries
+ * require it during initialization.
+ */
+TimeSync time;
 
 /*
  * Data from sensors, set to highest analog value
@@ -236,21 +240,6 @@ byte get_button_value() {
 
 #ifdef STARTUP_COMMANDS
 
-/* Return the first output of the indicated type */
-uint8_t find_output_type(uint8_t type, uint8_t num = 0) {
-  byte count = 0;
-  for (byte i = 0; i < config.num_outputs; i++) {
-    if (outputs[i]->type == type) {
-      if (count == num) {
-        return i;
-      }
-      count++;
-    }
-  }
-  return HMTL_NO_OUTPUT;
-}
-
-
 /*******************************************************************************
  * Execute any startup commands
  */
@@ -265,7 +254,7 @@ void startup_commands() {
 #ifdef STARTUP_VALUE
   byte num = 0;
   byte output;
-  while ((output = find_output_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
+  while ((output = manager.lookup_output_by_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
     DEBUG4_VALUELN("Init: value ", output);
     hmtl_set_output_rgb(outputs[output], objects[output],
                         pixel_color(STARTUP_VALUE, STARTUP_VALUE, STARTUP_VALUE));
@@ -276,7 +265,7 @@ void startup_commands() {
   // Go through the outputs and set them to blink
   byte num = 0;
   byte output;
-  while ((output = find_output_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
+  while ((output = manager.lookup_output_by_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
     DEBUG3_VALUELN("Init: blink ", output);
     num++;
     hmtl_program_blink_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
@@ -288,7 +277,7 @@ void startup_commands() {
 #endif
 
 #ifdef STARTUP_SPARKLE
-  byte output = find_output_type(HMTL_OUTPUT_PIXELS);
+  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
   DEBUG4_VALUELN("Init: sparkle ", output);
   program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
                       config.address, output,
@@ -304,7 +293,7 @@ void startup_commands() {
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
 byte serial_offset = 0;
-
+boolean first_run = true;
 
 /*******************************************************************************
  * The main event loop
@@ -329,6 +318,12 @@ void loop() {
   /* Execute any active programs */
   if (manager.run()) {
     update = true;
+  }
+
+  /* If this is the first execution then update to set initial values */
+  if (first_run) {
+    update = true;
+    first_run = false;
   }
 
   if (update) {
@@ -530,6 +525,11 @@ boolean program_sound_value(output_hdr_t *output, void *object,
  */
 
 typedef struct {
+  uint16_t num_leds;
+} program_sound_pixels_t;
+
+typedef struct {
+  program_sound_pixels_t msg;
   uint16_t max[SOUND_CHANNELS];
 } state_sound_pixels_t;
 
@@ -540,10 +540,14 @@ boolean program_sound_pixels_init(msg_program_t *msg,
     return false;
   }
 
-  DEBUG3_PRINTLN("Initializing sound pixels");
+  DEBUG4_PRINT("Initializing sound pixels:");
   state_sound_pixels_t *state =
           (state_sound_pixels_t *)malloc(sizeof (state_sound_pixels_t));
-  memset(state->max, sizeof(uint16_t) * SOUND_CHANNELS, 0) ;
+  memcpy(&state->msg, msg->values, sizeof (state->msg));
+  memset(state->max, sizeof(uint16_t) * SOUND_CHANNELS, 0);
+
+  DEBUG4_VALUE(" chans:", SOUND_CHANNELS);
+  DEBUG4_VALUELN(" leds:", state->msg.num_leds);
 
   tracker->state = state;
   tracker->flags |= PROGRAM_DEALLOC_STATE;
@@ -557,6 +561,35 @@ boolean program_sound_pixels(output_hdr_t *output, void *object,
   state_sound_pixels_t *state = (state_sound_pixels_t *)tracker->state;
 
   if (sound_updated) {
+#if 0
+    // TODO: Beginning code for sound reactive high-power pixels
+    for (uint16_t led = 0; led < state->msg.num_leds; led++) {
+      /*
+       * Example: 3 channels, 8 LEDs
+       * led   low  high  distance
+       *   0   0    0     0
+       *   1   0    1
+       *   2   0    1
+       *   3   0    1
+       *   4   1    2
+       *   5   1    2
+       *   6   1    2
+       *   7   2    2     0
+       *
+       *   How to compute the distance?
+       *   - Convert channels to float [0,1]
+       *   - Convert led to float [0,1]
+       *   - Determine which channel is above and below....
+       */
+
+      // Interpolate the value
+      uint8_t low_channel;
+      uint8_t high_channel;
+      uint8_t distance;
+
+
+    }
+#else
     for (byte channel = 0; channel < SOUND_CHANNELS; channel++) {
 
       // Track the maximum value for each channel
@@ -572,6 +605,8 @@ boolean program_sound_pixels(output_hdr_t *output, void *object,
       // Set the led value for this channel
       pixels->setDistinct(channel, value);
     }
+#endif
+
     sound_updated = false;
     return true;
   }

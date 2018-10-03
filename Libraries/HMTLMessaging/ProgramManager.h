@@ -13,8 +13,8 @@
 #include "HMTLMessaging.h"
 #include "TimeSync.h"
 
+/* Provide access to a time synchronization object */
 extern TimeSync time;
-
 
 /*******************************************************************************
  * Function prototypes for a HMTL program and program configuration
@@ -79,6 +79,8 @@ class ProgramManager {
 
   byte program_from_tracker(program_tracker_t *tracker);
 
+  byte lookup_output_by_type(uint8_t type, uint8_t num = 0);
+
  private:
   program_tracker_t* get_tracker(int index);
   void free_tracker(int index);
@@ -90,8 +92,5 @@ class ProgramManager {
 
   program_tracker_t **trackers;
 };
-
-/* Provide access to a time synchronization object */
-extern TimeSync time;
 
 #endif
