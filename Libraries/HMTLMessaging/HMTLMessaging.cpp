@@ -214,6 +214,14 @@ hmtl_serial_getmsg(byte *msg, byte msg_len, byte *offset_ptr)
     }
   }
 
+  DEBUG5_COMMAND(
+    if (complete && (msg_len > 0)) {
+      DEBUG4_PRINT("SERIAL:")
+      print_hex_buffer((char *)msg, msg_hdr->length);
+      DEBUG_PRINT_END();
+    }
+  );
+
   *offset_ptr = offset;
   return complete;
 }
