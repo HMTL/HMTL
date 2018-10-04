@@ -452,7 +452,7 @@ boolean program_sparkle(output_hdr_t *output, void *object,
 
     state->last_change_ms = now;
 
-    for (byte led = 0; led < pixels->numPixels(); led++) {
+    for (PIXEL_ADDR_TYPE led = 0; led < pixels->numPixels(); led++) {
       byte rand = (byte)random(100);
       if (rand <= state->msg.sparkle_threshold) {
         CRGB color = CHSV((uint8_t)random(state->msg.hue_max),
@@ -511,3 +511,80 @@ boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
   return false;
 }
 
+/*******************************************************************************
+ * Program to cycle a pattern around a pixel strip
+ *
+ * This program runs colors on a length of pixels that circles around the entire
+ * LED array.
+ */
+
+boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
+                              output_hdr_t *output, void *object) {
+  if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
+    return false;
+  }
+
+  DEBUG3_PRINT("Initializing circular program:");
+
+  /* Allocate a new state object */
+  state_circular_t *state = (state_circular_t *)malloc(sizeof (state_circular_t));
+  tracker->state = state;
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+
+  /* Copy the incoming message into the state */
+  memcpy(&state->msg, msg->values, sizeof (state->msg));
+
+
+  /* Set defaults if not set in the program message */
+  if (state->msg.period == 0) state->msg.period = 100;
+  if (state->msg.length == 0) state->msg.length = 10;
+
+  DEBUG3_VALUE(" ", state->msg.period);
+  DEBUG3_VALUE(" ", state->msg.length);
+  DEBUG3_VALUE(" ", state->msg.bgColor.r);
+  DEBUG3_VALUE(",", state->msg.bgColor.g);
+  DEBUG3_VALUE(",", state->msg.bgColor.b);
+  DEBUG3_VALUELN(" ", state->msg.pattern);
+
+  state->last_change_ms = millis();
+
+  return true;
+}
+
+boolean program_circular(output_hdr_t *output, void *object,
+                         program_tracker_t *tracker) {
+  unsigned long now = time.ms();
+  state_circular_t *state = (state_circular_t *)tracker->state;
+
+  if (now - state->last_change_ms >= state->msg.period) {
+    PixelUtil *pixels = (PixelUtil *)object;
+
+    state->last_change_ms = now;
+
+    /* Clear the previous current LED */
+    pixels->setPixelRGB(state->current, CRGB(0,0,0));
+
+    /* Increment the current start of the colored LEDs */
+    state->current = (state->current + 1) % pixels->numPixels();
+
+    /* Set the colors of the LEDs */
+    switch (state->msg.pattern) {
+      default: {
+        for (byte i = 0; i < state->msg.length; i++) {
+          uint16_t led = (state->current + i) % pixels->numPixels();
+
+          /* Scale the color based so that the center LED is brightest */
+          byte scale = 255 -
+                       abs(state->msg.length / 2 - i) *
+                       (255 / (state->msg.length / 2));
+          CRGB color = CRGB(CHSV(state->current, 255, 255)).nscale8(scale);
+          pixels->setPixelRGB(led, color);
+        }
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}

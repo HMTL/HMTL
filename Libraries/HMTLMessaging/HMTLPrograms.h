@@ -180,8 +180,9 @@ boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
  */
 typedef struct {
   uint16_t period;        // 2B
+  uint16_t length;        // 2B
   CRGB bgColor;           // 3B
-  uint16_t length;        // 1B
+  uint8_t pattern;        // 1B
 } hmtl_program_circular_t;
 typedef struct {
   hmtl_program_circular_t msg;
