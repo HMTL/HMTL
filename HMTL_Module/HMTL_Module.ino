@@ -360,7 +360,8 @@ void additional_loop() {
 
 boolean program_sensor_data_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output, void *object) {
+                                 output_hdr_t *output, void *object,
+                                 ProgramManager *managet) {
   DEBUG3_PRINTLN("Initializing sensor data handler");
   return true;
 }
@@ -421,19 +422,18 @@ typedef struct {
 
 boolean program_level_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output, void *object) {
+                                 output_hdr_t *output, void *object,
+                                 ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG3_PRINTLN("Initializing level value state");
 
-  state_level_value_t *state = (state_level_value_t *)malloc(sizeof (state_level_value_t));
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
-
+  state_level_value_t *state =
+          (state_level_value_t *)manager->get_program_state(tracker,
+                                                            sizeof (state_level_value_t));
   state->value = 0;
-  
-  tracker->state = state;
 
   return true;
 }
@@ -468,19 +468,19 @@ typedef struct {
 
 boolean program_sound_value_init(msg_program_t *msg,
                                  program_tracker_t *tracker,
-                                 output_hdr_t *output, void *object) {
+                                 output_hdr_t *output, void *object,
+                                 ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG3_PRINTLN("Initializing sound value state");
 
-  state_sound_value_t *state = (state_sound_value_t *)malloc(sizeof (state_sound_value_t));
+  state_sound_value_t *state =
+          (state_sound_value_t *)manager->get_program_state(tracker,
+                                                            sizeof (state_sound_value_t));
   state->value = 0;
   state->max = 0;
-  
-  tracker->state = state;
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
 
   return true;
 }
@@ -534,23 +534,22 @@ typedef struct {
 } state_sound_pixels_t;
 
 boolean program_sound_pixels_init(msg_program_t *msg,
-                                 program_tracker_t *tracker,
-                                 output_hdr_t *output, void *object) {
+                                  program_tracker_t *tracker,
+                                  output_hdr_t *output, void *object,
+                                  ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_PIXEL_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG4_PRINT("Initializing sound pixels:");
   state_sound_pixels_t *state =
-          (state_sound_pixels_t *)malloc(sizeof (state_sound_pixels_t));
+          (state_sound_pixels_t *)manager->get_program_state(tracker,
+                                                             sizeof (state_sound_pixels_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
   memset(state->max, sizeof(uint16_t) * SOUND_CHANNELS, 0);
 
   DEBUG4_VALUE(" chans:", SOUND_CHANNELS);
   DEBUG4_VALUELN(" leds:", state->msg.num_leds);
-
-  tracker->state = state;
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
 
   return true;
 }

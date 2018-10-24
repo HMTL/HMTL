@@ -163,7 +163,8 @@ boolean ProgramManager::handle_msg(msg_program_t *msg) {
     /* Attempt to setup the program */
 
 
-    boolean success = functions[program].setup(msg, tracker, outputs[output], objects[output]);
+    boolean success = functions[program].setup(msg, tracker, outputs[output],
+                                               objects[output], this);
 
     if (!success) {
       if (tracker) {
@@ -203,13 +204,7 @@ void ProgramManager::free_tracker(int index) {
   if (IS_RUNNING_PROGRAM(tracker)) {
     DEBUG3_VALUELN("free_tracker:", index);
     if (tracker->flags & PROGRAM_DEALLOC_STATE) {
-      /*
-       * If the tracker's flags indicate that the state should be deallocated
-       * then do so now.
-       */
-      if (tracker->state) {
-        free(tracker->state);
-      }
+      free_program_state(tracker);
     }
 
     /* Clear the tracker and set its program to NO_PROGRAM */
@@ -217,6 +212,39 @@ void ProgramManager::free_tracker(int index) {
     tracker->program_index = NO_PROGRAM;
   }
 }
+
+
+/*
+ * Allocate the state for a new program
+ * TODO: Use a program state freelist
+ */
+void *ProgramManager::get_program_state(program_tracker_t *tracker, byte size){
+
+  /* By default malloc every state object*/
+  void *state = malloc(size);
+  tracker->state = state;
+  tracker->flags |= PROGRAM_DEALLOC_STATE;
+  return state;
+}
+
+/*
+ * Deallocate the state for a new program
+ * TODO: Use a program state freelist
+ */
+void ProgramManager::free_program_state(program_tracker_t *tracker) {
+  if (tracker->state) {
+    if (tracker->flags & PROGRAM_DEALLOC_STATE) {
+      /*
+       * If the tracker's flags indicate that the state should be deallocated
+       * then do so now.
+       */
+      free(tracker->state);
+    }
+
+    tracker->state = nullptr;
+  }
+}
+
 
 /*
  * Execute all configured program functions

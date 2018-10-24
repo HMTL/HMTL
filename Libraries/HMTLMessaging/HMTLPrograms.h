@@ -54,7 +54,8 @@ void hmtl_send_blink(Socket *socket, byte *buff, byte buff_len,
 		     uint16_t off_period, uint32_t off_color);
 
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
-                           output_hdr_t *output, void *object);
+                           output_hdr_t *output, void *object,
+                           ProgramManager *manager);
 boolean program_blink(output_hdr_t *output, void *object,
                       program_tracker_t *tracker);
 
@@ -91,7 +92,8 @@ typedef struct {
 
 boolean program_timed_change_init(msg_program_t *msg,
                                   program_tracker_t *tracker,
-                                  output_hdr_t *output, void *object);
+                                  output_hdr_t *output, void *object,
+                                  ProgramManager *manager);
 boolean program_timed_change(output_hdr_t *output, void *object,
                              program_tracker_t *tracker);
 
@@ -112,7 +114,8 @@ uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
                                uint32_t stop_color,
                                uint8_t flags);
 boolean program_fade_init(msg_program_t *msg, program_tracker_t *tracker,
-                          output_hdr_t *output, void *object);
+                          output_hdr_t *output, void *object,
+                          ProgramManager *manager);
 boolean program_fade(output_hdr_t *output, void *object,
                      program_tracker_t *tracker);
 
@@ -149,7 +152,8 @@ uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
                            uint32_t period,
                            CRGB bgColor);
 boolean program_sparkle_init(msg_program_t *msg, program_tracker_t *tracker,
-                          output_hdr_t *output, void *object);
+                          output_hdr_t *output, void *object,
+                             ProgramManager *manager);
 boolean program_sparkle(output_hdr_t *output, void *object,
                      program_tracker_t *tracker);
 
@@ -163,7 +167,8 @@ uint16_t program_brightness_fmt(byte *buffer, uint16_t buffsize,
                              uint16_t address, uint8_t output,
                              uint8_t value);
 boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
-                             output_hdr_t *output, void *object);
+                           output_hdr_t *output, void *object,
+                           ProgramManager *manager);
 
 /*
  * Program that sets the color for a range of pixels
@@ -173,7 +178,8 @@ typedef struct {
   pixel_range_t range;
 } hmtl_program_color_t;
 boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
-                      output_hdr_t *output, void *object);
+                      output_hdr_t *output, void *object,
+                      ProgramManager *manager);
 
 /*
  * Program that sends a pattern on a circular loop of the available LEDs
@@ -195,7 +201,8 @@ uint16_t program_circular_fmt(byte *buffer, uint16_t buffsize,
                              uint32_t period,
                              CRGB bgColor);
 boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
-                             output_hdr_t *output, void *object);
+                             output_hdr_t *output, void *object,
+                              ProgramManager *manager);
 boolean program_circular(output_hdr_t *output, void *object,
                         program_tracker_t *tracker);
 

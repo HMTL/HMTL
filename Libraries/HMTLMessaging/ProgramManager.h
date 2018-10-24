@@ -20,6 +20,7 @@ extern TimeSync time;
  * Function prototypes for a HMTL program and program configuration
  */
 typedef struct program_tracker program_tracker_t;
+class ProgramManager;
 
 typedef boolean (*hmtl_program_func)(output_hdr_t *output,
                                      void *object, // TODO: This and output should go away
@@ -27,7 +28,8 @@ typedef boolean (*hmtl_program_func)(output_hdr_t *output,
 typedef boolean (*hmtl_program_setup)(msg_program_t *msg,
                                       program_tracker_t *tracker,
                                       output_hdr_t *output,
-                                      void *object);
+                                      void *object,
+                                      ProgramManager *manager);
 
 typedef struct {
   byte type;
@@ -80,6 +82,9 @@ class ProgramManager {
   byte program_from_tracker(program_tracker_t *tracker);
 
   byte lookup_output_by_type(uint8_t type, uint8_t num = 0);
+
+  void *get_program_state(program_tracker_t *tracker, byte size);
+  void free_program_state(program_tracker_t *tracker);
 
  private:
   program_tracker_t* get_tracker(int index);

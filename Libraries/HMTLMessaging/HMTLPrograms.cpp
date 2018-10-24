@@ -216,21 +216,20 @@ void hmtl_send_poll_request(Socket *socket, byte *buff, byte buff_len,
  * Program function to turn an output on and off
  */
 boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
-                           output_hdr_t *output, void *object) {
+                           output_hdr_t *output, void *object,
+                           ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG3_PRINT("Initializing blink program state");
 
-  state_blink_t *state = (state_blink_t *)malloc(sizeof (state_blink_t));
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
-
+  state_blink_t *state =
+          (state_blink_t *)manager->get_program_state(tracker,
+                                                      sizeof(state_blink_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->on = false;
   state->next_change = time.ms();
-
-  tracker->state = state;
 
   DEBUG3_VALUE(" on_period:", state->msg.on_period);
   DEBUG3_VALUELN(" off_period:", state->msg.off_period);
@@ -278,22 +277,20 @@ boolean program_blink(output_hdr_t *output, void *object,
  */
 boolean program_timed_change_init(msg_program_t *msg,
 				                          program_tracker_t *tracker,
-                                  output_hdr_t *output, void *object) {
+                                  output_hdr_t *output, void *object,
+                                  ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG3_PRINT("Initializing timed change program");
-
-  state_timed_change_t *state = (state_timed_change_t *)malloc(sizeof (state_timed_change_t));
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
-
+  state_timed_change_t *state =
+          (state_timed_change_t *)manager->get_program_state(tracker,
+                                                  sizeof(state_timed_change_t));
   DEBUG3_VALUE(" msgsz=", sizeof (state->msg));
 
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->change_time = 0;
-
-  tracker->state = state;
 
   DEBUG3_VALUELN(" change_period:", state->msg.change_period);
 
@@ -331,17 +328,19 @@ boolean program_timed_change(output_hdr_t *output, void *object,
 
 boolean program_fade_init(msg_program_t *msg,
                           program_tracker_t *tracker,
-                          output_hdr_t *output, void *object) {
+                          output_hdr_t *output,
+                          void *object,
+                          ProgramManager *manager) {
   if ((output == NULL) || !IS_HMTL_RGB_OUTPUT(output->type)) {
     return false;
   }
 
   DEBUG3_PRINT("Initializing fade program:");
 
-  state_fade_t *state = (state_fade_t *)malloc(sizeof (state_fade_t));
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
+  state_fade_t *state =
+          (state_fade_t *)manager->get_program_state(tracker,
+                                                     sizeof(state_fade_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
-  tracker->state = state;
 
   DEBUG3_VALUE(" ", state->msg.period);
   DEBUG3_VALUE(" ", state->msg.start_value[0]);
@@ -413,17 +412,18 @@ boolean program_fade(output_hdr_t *output, void *object,
 
 boolean program_sparkle_init(msg_program_t *msg,
                              program_tracker_t *tracker,
-                             output_hdr_t *output, void *object) {
+                             output_hdr_t *output, void *object,
+                             ProgramManager *manager) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
 
   DEBUG3_PRINT("Initializing sparkle program:");
 
-  state_sparkle_t *state = (state_sparkle_t *)malloc(sizeof (state_sparkle_t));
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
+  state_sparkle_t *state =
+          (state_sparkle_t *)manager->get_program_state(tracker,
+                                                        sizeof (state_sparkle_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
-  tracker->state = state;
 
   if (state->msg.sparkle_threshold == 0) state->msg.sparkle_threshold = 50;
   if (state->msg.bg_threshold == 0) state->msg.bg_threshold = 20;
@@ -486,7 +486,8 @@ boolean program_sparkle(output_hdr_t *output, void *object,
  * command.
  */
 boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
-                           output_hdr_t *output, void *object) {
+                           output_hdr_t *output, void *object,
+                           ProgramManager *manager) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
@@ -503,7 +504,8 @@ boolean program_brightness(msg_program_t *msg, program_tracker_t *tracker,
  * Set a range of LEDs to an indicated color
  */
 boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
-                      output_hdr_t *output, void *object) {
+                      output_hdr_t *output, void *object,
+                      ProgramManager *manager) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
@@ -528,7 +530,8 @@ boolean program_color(msg_program_t *msg, program_tracker_t *tracker,
  */
 
 boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
-                              output_hdr_t *output, void *object) {
+                              output_hdr_t *output, void *object,
+                              ProgramManager *manager) {
   if ((output == NULL) || (output->type != HMTL_OUTPUT_PIXELS)) {
     return false;
   }
@@ -536,13 +539,12 @@ boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
   DEBUG3_PRINT("Initializing circular program:");
 
   /* Allocate a new state object */
-  state_circular_t *state = (state_circular_t *)malloc(sizeof (state_circular_t));
-  tracker->state = state;
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
+  state_circular_t *state =
+          (state_circular_t *)manager->get_program_state(tracker,
+                                                         sizeof (state_circular_t));
 
   /* Copy the incoming message into the state */
   memcpy(&state->msg, msg->values, sizeof (state->msg));
-
 
   /* Set defaults if not set in the program message */
   if (state->msg.period == 0) state->msg.period = 100;
