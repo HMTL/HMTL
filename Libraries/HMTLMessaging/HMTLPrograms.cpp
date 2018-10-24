@@ -349,7 +349,8 @@ boolean program_fade_init(msg_program_t *msg,
   DEBUG3_VALUE(",", state->msg.start_value[2]);
   DEBUG3_VALUE(" ", state->msg.stop_value[0]);
   DEBUG3_VALUE(",", state->msg.stop_value[1]);
-  DEBUG3_VALUELN(",", state->msg.stop_value[2]);
+  DEBUG3_VALUE(",", state->msg.stop_value[2]);
+  DEBUG3_HEXVALLN(" 0x", state->msg.flags);
 
   state->start_time = 0;
 
@@ -364,35 +365,43 @@ boolean program_fade(output_hdr_t *output, void *object,
 
   if (state->start_time == 0) {
     // Set the initial color
-    hmtl_set_output_rgb(output, object, state->msg.start_value);
+    hmtl_set_output_rgb(output, object, state->msg.start_value.raw);
     changed = true;
     state->start_time = now;
     DEBUG5_VALUELN("Fade ms:", now);
   } else {
     // Calculate the color at this time
-    CRGB start = CRGB(state->msg.start_value[0],
-                      state->msg.start_value[1],
-                      state->msg.start_value[2]);
-    CRGB stop = CRGB(state->msg.stop_value[0],
-                     state->msg.stop_value[1],
-                     state->msg.stop_value[2]);
 
-    // TODO: There is probably a more efficient way to do this
-    unsigned int elapsed = now - state->start_time;
+    unsigned long elapsed = now - state->start_time;
     if (elapsed >= state->msg.period) {
-      // Disable the program
-      tracker->flags |= PROGRAM_TRACKER_DONE;
       elapsed = state->msg.period;
     }
-    fract8 fraction = map(elapsed, 0, state->msg.period, 0, 255);
 
-    CRGB current = blend(start, stop, fraction);
+    // TODO: There is probably a more efficient way to do this calculation
+    fract8 fraction = (fract8)map(elapsed, 0, state->msg.period, 0, 255);
+    CRGB current = blend(state->msg.start_value, state->msg.stop_value,
+                         fraction);
     hmtl_set_output_rgb(output, object, current.raw);
     changed = true;
 
     DEBUG5_VALUE("Fade ms:", now);
     DEBUG5_VALUE(" elapsed:", elapsed);
     DEBUG5_VALUELN(" fract:", fraction);
+
+    if (elapsed >= state->msg.period) {
+      // The fade has completed
+      if (state->msg.flags & HMTL_FADE_FLAG_CYCLE) {
+        // Reset the start time and reverse the direction of fade
+        state->start_time = now;
+
+        CRGB temp = state->msg.start_value;
+        state->msg.start_value = state->msg.stop_value;
+        state->msg.stop_value = temp;
+      } else {
+        // Disable the program
+        tracker->flags |= PROGRAM_TRACKER_DONE;
+      }
+    }
   }
 
   return changed;

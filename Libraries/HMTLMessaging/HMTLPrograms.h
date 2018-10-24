@@ -99,12 +99,12 @@ boolean program_timed_change(output_hdr_t *output, void *object,
  * Program which sets a color and fades to another over a set period
  */
 typedef struct {
-  uint32_t period;
-  uint8_t start_value[3];
-  uint8_t stop_value[3];
-  uint8_t flags;
-} hmtl_program_fade_t;
-#define HMTL_FADE_FLAG_CYCLE 0x1
+  uint32_t period;         //  4B
+  CRGB start_value;        //  3B
+  CRGB stop_value;         //  3B
+  uint8_t flags;           //  1B
+} hmtl_program_fade_t;     // 11B
+#define HMTL_FADE_FLAG_CYCLE 0x1 // Fade reverses when completed
 uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
                                uint16_t address, uint8_t output,
                                uint32_t period,

@@ -103,6 +103,7 @@ def handle_args():
 
     return (options, args)
  
+
 def main():
 
     handle_args()
@@ -171,17 +172,22 @@ def main():
         msg = HMTLprotocol.get_dumpconfig_msg(options.hmtladdress)
         expect_response = True
     elif (options.commandtype == "fade"):
-        (a, b,c,d, e,f,g,) = options.commandvalue.split(",")
-        print("Sending FADE message. Address=%d Output=%d fade_period=%d start_value=%s stop_values=%s" % 
+        (period,
+         start_r,start_g,start_b,
+         stop_r,stop_g,stop_b, flags) = options.commandvalue.split(",")
+        print("Sending FADE message. Address=%d Output=%d fade_period=%d start_value=%s stop_values=%s flags=0x%x" %
               (options.hmtladdress, options.output,
-               int(a), 
-               [int(b),int(c),int(d)],
-               [int(e),int(f),int(g)]))
-        msg = HMTLprotocol.get_program_fade_msg(options.hmtladdress,
-                                        options.output,
-                                        int(a),
-                                        [int(b),int(c),int(d)],
-                                        [int(e),int(f),int(g)])
+               int(period),
+               [int(start_r),int(start_g),int(start_b)],
+               [int(stop_r),int(stop_g),int(stop_b)],
+               flags))
+        msg = HMTLprotocol.get_program_fade_msg(
+                                    options.hmtladdress,
+                                    options.output,
+                                    int(period),
+                                    [int(start_r), int(start_g), int(start_b)],
+                                    [int(stop_r), int(stop_g), int(stop_b)],
+                                    flags)
     elif (options.commandtype == "program"):
         commandvalues = options.commandvalue.split(",") if options.commandvalue else None
 

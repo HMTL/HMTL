@@ -571,15 +571,17 @@ def get_program_sound_value_msg(address, output):
 
     return hdr.pack() + programhdr.pack() + soundhdr.pack()
 
+
 def get_program_fade_msg(address, output,
-                         change_period, start_values, stop_values):
-    hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
-                 mtype = MSG_TYPE_OUTPUT,
-                 address = address)
+                         change_period, start_values, stop_values, flags=0):
+    hdr = MsgHdr(length=MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                 mtype=MSG_TYPE_OUTPUT,
+                 address=address)
     programhdr = ProgramHdr(MSG_PROGRAM_FADE_TYPE, output)
-    fadehdr = ProgramFade(change_period, start_values, stop_values, 0)
+    fadehdr = ProgramFade(change_period, start_values, stop_values, flags)
 
     return hdr.pack() + programhdr.pack() + fadehdr.pack()
+
 
 def get_program_generic(address, output, program, data):
     hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,
