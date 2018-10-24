@@ -83,7 +83,8 @@ class ProgramManager {
 
   byte lookup_output_by_type(uint8_t type, uint8_t num = 0);
 
-  void *get_program_state(program_tracker_t *tracker, byte size);
+  void *get_program_state(program_tracker_t *tracker, byte size,
+                          void *preallocated = nullptr);
   void free_program_state(program_tracker_t *tracker);
 
  private:

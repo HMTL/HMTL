@@ -218,13 +218,20 @@ void ProgramManager::free_tracker(int index) {
  * Allocate the state for a new program
  * TODO: Use a program state freelist
  */
-void *ProgramManager::get_program_state(program_tracker_t *tracker, byte size){
+void *ProgramManager::get_program_state(program_tracker_t *tracker,
+                                        byte size,
+                                        void *preallocated) {
 
-  /* By default malloc every state object*/
-  void *state = malloc(size);
-  tracker->state = state;
-  tracker->flags |= PROGRAM_DEALLOC_STATE;
-  return state;
+  if (preallocated != nullptr) {
+    /* Use a pre-allocated program state */
+    tracker->state = preallocated;
+  } else {
+    /* By default malloc every state object*/
+    void *state = malloc(size);
+    tracker->state = state;
+    tracker->flags |= PROGRAM_DEALLOC_STATE;
+  }
+  return tracker->state;
 }
 
 /*
