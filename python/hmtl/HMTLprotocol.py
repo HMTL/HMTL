@@ -89,9 +89,6 @@ MSG_PROGRAM_LEVEL_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 MSG_PROGRAM_SOUND_VALUE_TYPE = 4
 MSG_PROGRAM_SOUND_VALUE_FMT = '<BBBBBBBBBBBB' # Only padding
 
-MSG_PROGRAM_FADE_TYPE = 5
-MSG_PROGRAM_FADE_FMT = '<LBBBBBBB' + 'B' # Msg + padding XXXXXX
-
 MODULE_TYPES = {
     1 : "HMTL_Module",
     2 : "WirelessPendant",
@@ -468,7 +465,6 @@ class OutputHdr(Msg):
 # Program message classes
 #
 
-
 class ProgramHdr(Msg):
     TYPE = "PROGRAM"
     FORMAT = "<B"
@@ -495,8 +491,6 @@ class ProgramGeneric(Msg):
     """Generic program data message"""
     TYPE = "PROGRAMGENERIC"
     FORMAT = "<%s" % ('B' * ProgramHdr.MAX_DATA)
-#    FORMAT = '<BBBBBBBBBBBB'
-#    FORMAT='x'*12
 
     NAME_MAP = {
         "blink":   0x01,
@@ -511,6 +505,10 @@ class ProgramGeneric(Msg):
     }
 
     def __init__(self, values=None):
+        if len(values) > ProgramHdr.MAX_DATA:
+            raise Exception("Received more values (%d) than max (%d)" %
+                            (len(values), ProgramHdr.MAX_DATA))
+
         if values:
             # Convert all values to ints and fill unspecified bytes as zero
             self.values = [int(values[i]) if i < len(values) else 0 for i in range(ProgramHdr.MAX_DATA)]
@@ -532,7 +530,12 @@ class ProgramSoundValue(ProgramGeneric):
 
 class ProgramFade(Msg):
     TYPE = "PROGRAMFADE"
-    FORMAT = MSG_PROGRAM_FADE_FMT
+    TYPE_NUM = 5
+
+    BASE_FORMAT = 'LBBBBBBB'
+    BASE_FORMAT_LENGTH = 11
+    PADDING = ProgramHdr.MAX_DATA - BASE_FORMAT_LENGTH
+    FORMAT = "<%s%s" % (BASE_FORMAT, 'B' * PADDING)
 
     def __init__(self, change_period, start_values, stop_values, flags):
         self.change_period = change_period
@@ -549,7 +552,7 @@ class ProgramFade(Msg):
                            self.stop_values[1],
                            self.stop_values[2],
                            self.flags,
-                           0)
+                           *[0 for i in range(self.PADDING)])
     
 
 def get_program_level_value_msg(address, output):
@@ -577,7 +580,7 @@ def get_program_fade_msg(address, output,
     hdr = MsgHdr(length=MsgHdr.LENGTH + ProgramHdr.LENGTH,
                  mtype=MSG_TYPE_OUTPUT,
                  address=address)
-    programhdr = ProgramHdr(MSG_PROGRAM_FADE_TYPE, output)
+    programhdr = ProgramHdr(ProgramFade.TYPE_NUM, output)
     fadehdr = ProgramFade(change_period, start_values, stop_values, flags)
 
     return hdr.pack() + programhdr.pack() + fadehdr.pack()

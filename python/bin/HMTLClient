@@ -180,14 +180,14 @@ def main():
                int(period),
                [int(start_r),int(start_g),int(start_b)],
                [int(stop_r),int(stop_g),int(stop_b)],
-               flags))
+               int(flags)))
         msg = HMTLprotocol.get_program_fade_msg(
                                     options.hmtladdress,
                                     options.output,
                                     int(period),
                                     [int(start_r), int(start_g), int(start_b)],
                                     [int(stop_r), int(stop_g), int(stop_b)],
-                                    flags)
+                                    int(flags))
     elif (options.commandtype == "program"):
         commandvalues = options.commandvalue.split(",") if options.commandvalue else None
 

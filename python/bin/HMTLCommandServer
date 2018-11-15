@@ -14,8 +14,8 @@ def handle_args():
     parser.add_option("-d", "--device", dest="device",
                       help="Arduino USB device")
     parser.add_option("-b", "--baud", dest="baud", type="int",
-                      help="Serial port baud (9600, 19200, [57600], 115200)",
-                      default=57600)
+                      help="Serial port baud (9600, 19200, 57600, [115200])",
+                      default=115200)
     parser.add_option("-I", "--ip", dest="ip",
                       help="IP of device to connect to")
     parser.add_option("-P", "--deviceport", dest="deviceport", default=23,
