@@ -1,0 +1,32 @@
+{
+    "info": "This config is the default for the 4th revision HMTL PCB",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 12,
+	      "address": 0,
+	      "device_id": 0,
+	      "baud": 57600,
+	      "flags": 0
+    },
+    "outputs": [
+		  {
+	          "type": "rgb",
+	          "pins": [ 7, 9, 8 ],
+	          "values": [ 0, 0, 0 ]
+	      },
+	      {
+	          "type": "pixels",
+	          "datapin": 11,
+              "clockpin": 13,
+	          "numpixels": 60,
+	          "rgbtype": 0
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 6,
+	          "enablepin": 5
+	      }
+
+    ]
+}

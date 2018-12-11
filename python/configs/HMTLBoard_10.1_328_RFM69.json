@@ -1,0 +1,26 @@
+{
+    "info": "This is equivalent to HMTLv4, with an RFM69 module",
+    "header": {
+	      "protocol_version": 3,
+	      "hardware_version": 4,
+	      "baud": 57600,
+	      "device_id": 0,
+	      "address": 0,
+	      "flags": 0
+    },
+    "outputs": [
+	      {
+	          "type": "pixels",
+	          "clockpin": 8,
+	          "datapin": 7,
+	          "numpixels": 64,
+	          "rgbtype": 0
+	      },
+	      {
+	          "type": "rs485",
+	          "recvpin": 4,
+	          "xmitpin": 6,
+	          "enablepin": 5
+	      }
+    ]
+}

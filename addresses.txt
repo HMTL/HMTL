@@ -61,6 +61,9 @@ NA	*32/0x20	2            	Taller stand (Board v4)
 == Test units ==
 170 	170       	3   	7	Test unit
 
+== RFM69 Units ==
+180     180         3      14   First HMTL board with built in RFM69
+
 (*) Not yet set
 
 
