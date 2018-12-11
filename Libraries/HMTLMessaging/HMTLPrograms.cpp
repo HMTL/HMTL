@@ -114,8 +114,16 @@ uint16_t hmtl_program_timed_change_fmt(byte *buffer, uint16_t buffsize,
 /* Format a sparkle program message */
 uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
                              uint16_t address, uint8_t output,
-                             uint32_t period,
-                             CRGB bgColor){
+                             uint32_t period = 50,
+                             CRGB bgColor = CRGB(0,0,0),
+                             uint8_t sparkle_threshold = 0,
+                             uint8_t bg_threshold = 0,
+                             uint8_t hue_min = 0,
+                             uint8_t hue_max = 255,
+                             uint8_t sat_min = 0,
+                             uint8_t sat_max = 255,
+                             uint8_t val_min = 0,
+                             uint8_t val_max = 255){
 
   msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
   msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
@@ -129,7 +137,40 @@ uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
   memset(program, 0, MAX_PROGRAM_VAL);
   program->period = period;
   program->bgColor = bgColor;
+  program->sparkle_threshold = sparkle_threshold;
+  program->bg_threshold = bg_threshold;
+  program->hue_min = hue_min;
+  program->hue_max = hue_max;
+  program->sat_min = sat_min;
+  program->sat_max = sat_max;
+  program->val_min = val_min;
+  program->val_max = val_max;
 
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
+  return HMTL_MSG_PROGRAM_LEN;
+}
+
+
+/* Format a circular program message */
+uint16_t program_circular_fmt(byte *buffer, uint16_t buffsize,
+                              uint16_t address, uint8_t output,
+                              uint16_t period, uint16_t length, CRGB bgColor,
+                              uint8_t pattern, uint8_t flags) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_CIRCULAR, buffsize);
+
+  hmtl_program_circular_t *program =
+          (hmtl_program_circular_t *)msg_program->values;
+
+  /* If the other values are set then don't memset */
+  memset(program, 0, MAX_PROGRAM_VAL);
+  program->period = period;
+  program->length = length;
+  program->bgColor = bgColor;
+  program->pattern = pattern;
+  program->flags = flags;
 
   hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
   return HMTL_MSG_PROGRAM_LEN;
@@ -425,6 +466,7 @@ boolean program_sparkle_init(msg_program_t *msg,
                                                         sizeof (state_sparkle_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
 
+  if (state->msg.period == 0) state->msg.period = 50;
   if (state->msg.sparkle_threshold == 0) state->msg.sparkle_threshold = 50;
   if (state->msg.bg_threshold == 0) state->msg.bg_threshold = 20;
   if (state->msg.hue_max == 0) state->msg.hue_max = 255;
@@ -437,6 +479,7 @@ boolean program_sparkle_init(msg_program_t *msg,
   DEBUG3_VALUE(",", state->msg.bgColor.b);
   DEBUG3_VALUE(" ", state->msg.sparkle_threshold);
   DEBUG3_VALUE(" ", state->msg.bg_threshold);
+  DEBUG3_VALUE(" ", state->msg.hue_min);
   DEBUG3_VALUE(" ", state->msg.hue_max);
   DEBUG3_VALUE(" ", state->msg.sat_min);
   DEBUG3_VALUE(" ", state->msg.sat_max);
@@ -464,7 +507,8 @@ boolean program_sparkle(output_hdr_t *output, void *object,
     for (PIXEL_ADDR_TYPE led = 0; led < pixels->numPixels(); led++) {
       byte rand = (byte)random(100);
       if (rand <= state->msg.sparkle_threshold) {
-        CRGB color = CHSV((uint8_t)random(state->msg.hue_max),
+        CRGB color = CHSV(state->msg.hue_min +
+                                  (uint8_t)random(state->msg.hue_max - state->msg.hue_min),
                           state->msg.sat_min +
                                   (uint8_t)random(state->msg.sat_max - state->msg.sat_min),
                           state->msg.val_min +
@@ -555,8 +599,11 @@ boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
   DEBUG3_VALUE(" ", state->msg.bgColor.r);
   DEBUG3_VALUE(",", state->msg.bgColor.g);
   DEBUG3_VALUE(",", state->msg.bgColor.b);
-  DEBUG3_VALUELN(" ", state->msg.pattern);
+  DEBUG3_VALUE(" ", state->msg.pattern);
+  DEBUG3_HEXVALLN(" ", state->msg.flags);
 
+  state->current = 0;
+  state->color_position = 0;
   state->last_change_ms = millis();
 
   return true;
@@ -577,21 +624,35 @@ boolean program_circular(output_hdr_t *output, void *object,
 
     /* Increment the current start of the colored LEDs */
     state->current = (state->current + 1) % pixels->numPixels();
+    state->color_position++;
 
     /* Set the colors of the LEDs */
-    switch (state->msg.pattern) {
-      default: {
-        for (byte i = 0; i < state->msg.length; i++) {
-          uint16_t led = (state->current + i) % pixels->numPixels();
+    for (byte i = 0; i < state->msg.length; i++) {
+      uint16_t led = (state->current + i) % pixels->numPixels();
+      // This needs to cycle to beginning?  Might be the LED limit I have
 
+      CRGB color;
+      switch (state->msg.pattern) {
+        case 1: {
+          byte position = state->color_position + (i * 255/state->msg.length/2);
+          color = CRGB(CHSV(position, 255, 255));
+          break;
+        }
+        case 2: {
+
+          break;
+        }
+        default: {
           /* Scale the color based so that the center LED is brightest */
           byte scale = 255 -
                        abs(state->msg.length / 2 - i) *
                        (255 / (state->msg.length / 2));
-          CRGB color = CRGB(CHSV(state->current, 255, 255)).nscale8(scale);
-          pixels->setPixelRGB(led, color);
+          color = CRGB(CHSV(state->color_position, 255, 255)).nscale8(scale);
+          break;
         }
       }
+
+      pixels->setPixelRGB(led, color);
     }
 
     return true;

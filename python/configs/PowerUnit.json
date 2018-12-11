@@ -5,7 +5,7 @@
         "hardware_version": 2,
         "device_id": 64,
         "address": 64,
-        "baud": 57600,
+        "baud": 115200,
         "flags": 0
     },
     "outputs": [
@@ -15,11 +15,11 @@
             "values": [ 0, 0, 0 ]
         },
         {
-          "type": "pixels",
-          "clockpin": 255,
-          "datapin": 12,
-          "numpixels": 240,
-          "rgbtype": 0
+            "type": "pixels",
+            "clockpin": 255,
+            "datapin": 12,
+            "numpixels": 240,
+            "rgbtype": 0
         },
         {
             "type": "rs485",

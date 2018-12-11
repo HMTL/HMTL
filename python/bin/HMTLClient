@@ -52,7 +52,13 @@ def handle_args():
                       help="Send program to set value to sound level")
     group.add_option("-F", "--fade", action="store_const",
                       dest="commandtype", const="fade",
-                      help="Send program to fade between two values")
+                      help="Send program to fade between two values [period, R1,G1,B1, R2,G2,B2, flags]")
+    group.add_option("--circular", action="store_const",
+                      dest="commandtype", const="circular",
+                      help="Run a pattern of LEDs around in a circle")
+    group.add_option("--sparkle", action="store_const",
+                      dest="commandtype", const="sparkle",
+                      help="Sparkle program")
 
     group.add_option("-P", "--program", dest="program", type="string",
                       help="Send program of indicated type [%s]" % (','.join(HMTLprotocol.ProgramGeneric.NAME_MAP.keys())))
@@ -87,7 +93,8 @@ def handle_args():
         options.commandtype = "program"
 
     if ((options.commandvalue == None) and
-            not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue", "program", "dumpconfig"])):
+            not (options.commandtype in [None, "poll", "setaddr", "none", "levelvalue", "soundvalue", "program", "dumpconfig",
+                                         "circular"])):
         print("Must specify a command value")
         sys.exit(1)
 
@@ -188,6 +195,51 @@ def main():
                                     [int(start_r), int(start_g), int(start_b)],
                                     [int(stop_r), int(stop_g), int(stop_b)],
                                     int(flags))
+    elif (options.commandtype == "sparkle"):
+        (period,
+         bg_r,bg_g,bg_b,
+         sparkle_threshold, bg_threshold,
+         hue_min, hue_max, sat_min, sat_max, val_min, val_max
+         ) = options.commandvalue.split(",")
+        print("Sending SPARKLE message. Address=%d Output=%d period=%d "
+              "bg_value=%s sparkle_threshold=%d bg_threshold=%d "
+              "hue_min=%d hue_max=%d sat_min=%d sat_max=%d val_min=%d val_max=%d" %
+              (options.hmtladdress, options.output,
+               int(period),
+               [int(bg_r), int(bg_g), int(bg_b)],
+               int(sparkle_threshold),
+               int(bg_threshold),
+               int(hue_min), int(hue_max),
+               int(sat_min), int(sat_max),
+               int(val_min), int(val_max)))
+        program = HMTLprotocol.ProgramSparkle(int(period),
+                                                [int(bg_r),int(bg_g),int(bg_b)],
+                                                int(sparkle_threshold),
+                                                int(bg_threshold),
+                                                int(hue_min), int(hue_max),
+                                                int(sat_min), int(sat_max),
+                                                int(val_min), int(val_max))
+        msg = program.prepare_msg(options.hmtladdress, options.output)
+
+    elif (options.commandtype == "circular"):
+        if options.commandvalue:
+            (period, chain_length,
+             bg_r,bg_g,bg_b,
+             pattern, flags) = options.commandvalue.split(",")
+        else:
+            (period, chain_length,
+             bg_r, bg_g, bg_b,
+             pattern, flags) = (0, 0, 0, 0, 0, 0, 0)
+        print("Sending CIRCULAR message. Address=%d Output=%d period=%d length=%d bg_value=%s pattern=%d flags=0x%x" %
+              (options.hmtladdress, options.output,
+               int(period), int(chain_length),
+               [int(bg_r),int(bg_g),int(bg_b)],
+               int(pattern), int(flags)))
+        program = HMTLprotocol.ProgramCircular(int(period), int(chain_length),
+                                              [int(bg_r),int(bg_g),int(bg_b)],
+                                               int(pattern), int(flags))
+        msg = program.prepare_msg(options.hmtladdress, options.output)
+
     elif (options.commandtype == "program"):
         commandvalues = options.commandvalue.split(",") if options.commandvalue else None
 

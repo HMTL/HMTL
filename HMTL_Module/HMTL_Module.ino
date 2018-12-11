@@ -134,7 +134,8 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_SOUND_VALUE, program_sound_value, program_sound_value_init },
   { HMTL_PROGRAM_SOUND_PIXELS, program_sound_pixels, program_sound_pixels_init },
 
-  { PROGRAM_SENSOR_DATA, process_sensor_data, program_sensor_data_init }
+  { PROGRAM_SENSOR_DATA, process_sensor_data, program_sensor_data_init },
+  { HMTL_PROGRAM_CIRCULAR, program_circular, program_circular_init}
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -281,8 +282,29 @@ void startup_commands() {
   DEBUG4_VALUELN("Init: sparkle ", output);
   program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
                       config.address, output,
-                      100, 0);
+#ifdef STARTUP_ARGS
+                      STARTUP_ARGS);
+#else
+                      0,0,0,0,0,0,0,0,0,0);
+#endif
   handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
+#endif
+
+#ifdef STARTUP_CIRCULAR
+  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
+  if (output != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("Init: circular ", output);
+    program_circular_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                         config.address, output,
+#ifdef STARTUP_ARGS
+                         STARTUP_ARGS);
+#else
+                         100, pixels.numPixels() / 3, CRGB::Black,
+                         1, 0);
+#endif
+    handler.process_msg((msg_hdr_t *) sockets[0]->send_buffer, sockets[0], NULL,
+                        &config);
+  }
 #endif
 }
 

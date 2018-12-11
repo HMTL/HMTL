@@ -493,19 +493,21 @@ class ProgramGeneric(Msg):
     FORMAT = "<%s" % ('B' * ProgramHdr.MAX_DATA)
 
     NAME_MAP = {
-        "blink":   0x01,
-        "timed":   0x02,
-        "level":   0x03,
-        "sound":   0x04,
-        "fade":    0x05,
-        "sparkle": 0x06,
+        "blink":       0x01,
+        "timed":       0x02,
+        "level":       0x03,
+        "sound":       0x04,
+        "fade":        0x05,
+        "sparkle":     0x06,
+        "soundpixels": 0x07,
+        "circular":    0x08,
 
-        "brightness": 0x30,
-        "color": 0x31,
+        "brightness":  0x30,
+        "color":       0x31,
     }
 
     def __init__(self, values=None):
-        if len(values) > ProgramHdr.MAX_DATA:
+        if values and (len(values) > ProgramHdr.MAX_DATA):
             raise Exception("Received more values (%d) than max (%d)" %
                             (len(values), ProgramHdr.MAX_DATA))
 
@@ -530,7 +532,7 @@ class ProgramSoundValue(ProgramGeneric):
 
 class ProgramFade(Msg):
     TYPE = "PROGRAMFADE"
-    TYPE_NUM = 5
+    TYPE_NUM = ProgramGeneric.NAME_MAP["fade"]
 
     BASE_FORMAT = 'LBBBBBBB'
     BASE_FORMAT_LENGTH = 11
@@ -553,7 +555,88 @@ class ProgramFade(Msg):
                            self.stop_values[2],
                            self.flags,
                            *[0 for i in range(self.PADDING)])
-    
+
+
+class ProgramSparkle(Msg):
+    TYPE = "PROGRAMSPARKLE"
+    TYPE_NUM = ProgramGeneric.NAME_MAP["sparkle"]
+
+    BASE_FORMAT = 'HBBBBBBBBBBB'
+    BASE_FORMAT_LENGTH=13
+    PADDING = ProgramHdr.MAX_DATA - BASE_FORMAT_LENGTH
+    FORMAT = "<%s%s" % (BASE_FORMAT, 'B' * PADDING)
+
+    def __init__(self, period, bg_values, sparkle_threshold, bg_threshold,
+                 hue_min, hue_max, sat_min, sat_max, val_min, val_max):
+        self.period = period
+        self.bg_values = bg_values
+        self.sparkle_threshold = sparkle_threshold
+        self.bg_thresholds = bg_threshold
+        self.hue_max = hue_max
+        self.hue_min = hue_min
+        self.sat_min = sat_min
+        self.sat_max = sat_max
+        self.val_min = val_min
+        self.val_max = val_max
+
+    def pack(self):
+        print("FORMAT=%s PADDING=%d" % (self.FORMAT, self.PADDING))
+        return struct.pack(self.FORMAT,
+                           self.period,
+                           self.bg_values[0],
+                           self.bg_values[1],
+                           self.bg_values[2],
+                           self.sparkle_threshold,
+                           self.bg_thresholds,
+                           self.hue_min,
+                           self.hue_max,
+                           self.sat_min,
+                           self.sat_max,
+                           self.val_min,
+                           self.val_max,
+                           *[0 for i in range(self.PADDING)])
+
+    def prepare_msg(self, address, output):
+        hdr = MsgHdr(length=MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                     mtype=MSG_TYPE_OUTPUT,
+                     address=address)
+        programhdr = ProgramHdr(self.TYPE_NUM, output)
+        return hdr.pack() + programhdr.pack() + self.pack()
+
+
+class ProgramCircular(Msg):
+    TYPE = "PROGRAMCIRCULAR"
+    TYPE_NUM = ProgramGeneric.NAME_MAP["circular"]
+
+    BASE_FORMAT = 'HHBBBBB'
+    BASE_FORMAT_LENGTH = 9
+    PADDING = ProgramHdr.MAX_DATA - BASE_FORMAT_LENGTH
+    FORMAT = "<%s%s" % (BASE_FORMAT, 'B' * PADDING)
+
+    def __init__(self, period, chain_length, bg_values, pattern, flags):
+        self.period = period
+        self.chain_length = chain_length
+        self.bg_values = bg_values
+        self.pattern = pattern
+        self.flags = flags
+
+    def pack(self):
+        return struct.pack(self.FORMAT, self.period,
+                           self.chain_length,
+                           self.bg_values[0],
+                           self.bg_values[1],
+                           self.bg_values[2],
+                           self.pattern,
+                           self.flags,
+                           *[0 for i in range(self.PADDING)])
+
+    def prepare_msg(self, address, output):
+        hdr = MsgHdr(length=MsgHdr.LENGTH + ProgramHdr.LENGTH,
+                     mtype=MSG_TYPE_OUTPUT,
+                     address=address)
+        programhdr = ProgramHdr(self.TYPE_NUM, output)
+        return hdr.pack() + programhdr.pack() + self.pack()
+
 
 def get_program_level_value_msg(address, output):
     hdr = MsgHdr(length = MsgHdr.LENGTH + ProgramHdr.LENGTH,

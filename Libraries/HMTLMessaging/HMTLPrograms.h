@@ -26,6 +26,7 @@
 #define HMTL_PROGRAM_FADE         0x05
 #define HMTL_PROGRAM_SPARKLE      0x06
 #define HMTL_PROGRAM_SOUND_PIXELS 0x07
+#define HMTL_PROGRAM_CIRCULAR     0x08
 
 #define PROGRAM_SENSOR_DATA       0x10 // Special handler for sensor data messages
 
@@ -133,13 +134,14 @@ typedef struct {
   CRGB bgColor;           //  3B
   byte sparkle_threshold; //  1B Percentage of pixels to change each iteration
   byte bg_threshold;      //  1B Percentage of pixels to leave as background
+  byte hue_min;           //  1B
   byte hue_max;           //  1B
   byte sat_min;           //  1B
   byte sat_max;           //  1B
   byte val_min;           //  1B
   byte val_max;           //  1B
 
-                          // 11B Total
+                          // 13B Total
 } hmtl_program_sparkle_t;
 
 typedef struct {
@@ -148,9 +150,18 @@ typedef struct {
 } state_sparkle_t;
 
 uint16_t program_sparkle_fmt(byte *buffer, uint16_t buffsize,
-                           uint16_t address, uint8_t output,
-                           uint32_t period,
-                           CRGB bgColor);
+                             uint16_t address, uint8_t output,
+                             uint32_t period,
+                             CRGB bgColor,
+                             uint8_t sparkle_threshold,
+                             uint8_t bg_threshold,
+                             uint8_t hue_min,
+                             uint8_t hue_max,
+                             uint8_t sat_min,
+                             uint8_t sat_max,
+                             uint8_t val_min,
+                             uint8_t val_max);
+
 boolean program_sparkle_init(msg_program_t *msg, program_tracker_t *tracker,
                           output_hdr_t *output, void *object,
                              ProgramManager *manager);
@@ -189,17 +200,19 @@ typedef struct {
   uint16_t length;        // 2B
   CRGB bgColor;           // 3B
   uint8_t pattern;        // 1B
+  uint8_t flags;          // 1B
 } hmtl_program_circular_t;
 typedef struct {
   hmtl_program_circular_t msg;
   unsigned long last_change_ms;
   uint16_t current;
+  byte color_position;
 } state_circular_t;
 
 uint16_t program_circular_fmt(byte *buffer, uint16_t buffsize,
                              uint16_t address, uint8_t output,
-                             uint32_t period,
-                             CRGB bgColor);
+                             uint16_t period, uint16_t length, CRGB bgColor,
+                             uint8_t pattern, uint8_t flags);
 boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
                              output_hdr_t *output, void *object,
                               ProgramManager *manager);
