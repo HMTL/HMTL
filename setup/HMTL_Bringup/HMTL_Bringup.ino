@@ -30,6 +30,7 @@
 #include "RS485Utils.h"
 #include "XBee.h"
 #include "XBeeSocket.h"
+#include "RFM69Socket.h"
 
 #include "HMTLProtocol.h"
 #include "HMTLMessaging.h"
@@ -101,7 +102,7 @@ void setup() {
     pixels.update();
     has_pixels = true;
 
-    FastLED.setBrightness(128);
+    FastLED.setBrightness(32);
   }
 }
 

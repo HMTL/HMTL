@@ -30,6 +30,7 @@
 #include "Socket.h"
 #include "RS485Utils.h"
 #include "XBeeSocket.h"
+#include "RFM69Socket.h"
 #include "Wire.h"
 
 #if defined(__AVR_ATmega32U4__)
