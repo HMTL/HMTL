@@ -172,18 +172,30 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
   switch (hdr->type) {
     case HMTL_OUTPUT_VALUE: 
       {
+#if defined(ESP32)
+      /*
+         * TODO: On Esp32 PWM outputs are implemented differently
+         */
+        DEBUG_ERR("Output needs to be implemented on ESP32")
+#else
         config_value_t *out = (config_value_t *)hdr;
         DEBUG4_PRINT(" value");
         pinMode(out->pin, OUTPUT);
+#endif
         break;
       }
     case HMTL_OUTPUT_RGB:
       {
+#if defined(ESP32)
+        // TODO: See above
+        DEBUG_ERR("Output needs to be implemented on ESP32")
+#else
         config_rgb_t *out = (config_rgb_t *)hdr;
         DEBUG4_PRINT(" rgb");
         for (int j = 0; j < 3; j++) {
           pinMode(out->pins[j], OUTPUT);
         }
+#endif
         break;
       }
     case HMTL_OUTPUT_PROGRAM:
@@ -290,16 +302,28 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
   switch (hdr->type) {
     case HMTL_OUTPUT_VALUE: 
       {
+#if defined(ESP32)
+        /*
+         * TODO: The ESP32 does not have an exact analogWrite() equivalent, this
+         * needs to be implemented using the ledcWrite() equivalents
+         */
+        DEBUG_ERR("analogWrite not implemented on ESP32");
+#else
         config_value_t *out = (config_value_t *)hdr;
 
         // On a non-PWM pin this outputs HIGH if value >= 128
         analogWrite(out->pin, out->value);
         DEBUG5_VALUE("hmtl_update_output: val pin=", out->pin);
         DEBUG5_VALUELN(" val=", out->value);
+#endif
         break;
       }
     case HMTL_OUTPUT_RGB:
       {
+#if defined(ESP32)
+        // TODO: See above
+        DEBUG_ERR("analogWrite not implemented on ESP32");
+#else
         config_rgb_t *out = (config_rgb_t *)hdr;
         DEBUG5_PRINT("hmtl_update_output: rgb");
         for (int j = 0; j < 3; j++) {
@@ -308,7 +332,8 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
           DEBUG5_VALUE("-", out->values[j]);
         }
         DEBUG_PRINT_END();
-        break;
+#endif
+      break;
       }
     case HMTL_OUTPUT_PROGRAM:
       {

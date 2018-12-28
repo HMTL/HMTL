@@ -4,14 +4,20 @@
  * Copyright: 2014
  *
  * Code for a fully contained module which handles HMTL formatted messages
- * from a serial, RS485, or XBee connection.   It also functions as a bridge
- * router, retransmitting messages from one connections over any others that
- * are present.
+ * from a serial, RS485, XBee, or other connection.   It also functions as a
+ * bridge router, retransmitting messages from one connection over any others
+ * that are present.
  ******************************************************************************/
+
+#include <Arduino.h>
 
 #include "EEPROM.h"
 #include <RS485_non_blocking.h>
+
+#ifdef __AVR__
 #include <SoftwareSerial.h>
+#endif
+
 #include <HMTLTypes.h>
 #include "SPI.h"
 #include "FastLED.h"
@@ -36,9 +42,10 @@
 #include "PixelUtil.h"
 
 #include "Socket.h"
-#include "RS485Utils.h"
-#include "XBeeSocket.h"
+
+#ifdef USE_MPR121
 #include "MPR121.h"
+#endif
 
 #include "TimeSync.h"
 #include "HMTL_Module.h"
@@ -49,13 +56,16 @@
 /*
  * Communications
  */
-
+#ifdef USE_RS485
+#include "RS485Utils.h"
 #define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
 
 RS485Socket rs485;
 byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+#endif
 
 #ifdef USE_XBEE
+#include "XBeeSocket.h"
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 #endif
@@ -157,7 +167,11 @@ void setup() {
 
   int32_t outputs_found = hmtl_setup(&config, readoutputs,
                                      outputs, objects, HMTL_MAX_OUTPUTS,
+#ifdef USE_RS485
                                      &rs485,
+#else
+                                     NULL,
+#endif
 #ifdef USE_XBEE
                                      &xbee,
 #else
@@ -171,16 +185,18 @@ void setup() {
 
   byte num_sockets = 0;
 
+#ifdef USE_RS485
   if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
-    /* Setup the RS485 connection */  
+    /* Setup the RS485 socket */
     rs485.setup();
     rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &rs485;
   }
+#endif
 
 #ifdef USE_XBEE
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
-    /* Setup the RS485 connection */  
+    /* Setup the XBee socket */
     xbee.setup();
     xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &xbee;
@@ -208,6 +224,7 @@ void setup() {
 
   handler = MessageHandler(config.address, &manager, sockets, num_sockets);
 
+  /* Perform any additional setup that's required */
   additional_setup();
 
   DEBUG2_VALUELN("HMTL Module initialized, v", HMTL_MODULE_BUILD);
@@ -217,9 +234,10 @@ void setup() {
 }
 
 #ifndef PLATFORMIO
-#define STARTUP_COMMANDS
+//#define STARTUP_COMMANDS
 //#define STARTUP_BLINK
 //#define STARTUP_SPARKLE
+//#define STARTUP_CIRCULAR
 //#define STARTUP_VALUE
 #endif
 
@@ -240,7 +258,6 @@ byte get_button_value() {
 #endif
 
 #ifdef STARTUP_COMMANDS
-
 /*******************************************************************************
  * Execute any startup commands
  */
@@ -251,6 +268,7 @@ void startup_commands() {
    * the EEPROM configuration would be much better, allowing for proper
    * configuration.
    */
+  msg_hdr_t *msg = NULL;
 
 #ifdef STARTUP_VALUE
   byte num = 0;
@@ -260,7 +278,7 @@ void startup_commands() {
     hmtl_set_output_rgb(outputs[output], objects[output],
                         pixel_color(STARTUP_VALUE, STARTUP_VALUE, STARTUP_VALUE));
   }
-#endif
+#endif // STARTUP_VALUE
 
 #ifdef STARTUP_BLINK
   // Go through the outputs and set them to blink
@@ -273,22 +291,22 @@ void startup_commands() {
                            config.address, output,
                            250*num, pixel_color(128,0,0),
                            250, 0);
-    handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
-  }
-#endif
+    msg = (msg_hdr_t *)sockets[0]->send_buffer;
+#endif // STARTUP_BLINK
 
 #ifdef STARTUP_SPARKLE
   byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
-  DEBUG4_VALUELN("Init: sparkle ", output);
-  program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
-                      config.address, output,
+  if (output != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("Init: sparkle ", output);
+    program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                        config.address, output,
 #ifdef STARTUP_ARGS
-                      STARTUP_ARGS);
+                        STARTUP_ARGS);
 #else
-                      0,0,0,0,0,0,0,0,0,0);
+                        0,0,0,0,0,0,0,0,0,0);
 #endif
-  handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
-#endif
+    msg = (msg_hdr_t *)sockets[0]->send_buffer;
+#endif // STARTUP_SPARKLE
 
 #ifdef STARTUP_CIRCULAR
   byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
@@ -302,15 +320,21 @@ void startup_commands() {
                          100, pixels.numPixels() / 3, CRGB::Black,
                          1, 0);
 #endif
-    handler.process_msg((msg_hdr_t *) sockets[0]->send_buffer, sockets[0], NULL,
-                        &config);
-  }
+    msg = (msg_hdr_t *)sockets[0]->send_buffer;
+#endif // STARTUP_CIRCULAR
+
+    if (msg) {
+#ifdef STARTUP_BROADCAST
+      for (int i = 0; i < MAX_SOCKETS; i++) {
+        if (sockets[i]) handler.check_and_forward(msg, sockets[i]);
+      }
 #endif
+
+      handler.process_msg(msg, sockets[0], NULL, &config);
+    }
+  }
 }
-
-
 #endif // STARTUP_COMMANDS
-
 
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
@@ -365,11 +389,12 @@ void additional_loop() {
     DEBUG1_VALUELN("Push button to ", prev_value);
     if (prev_value == LOW) {
       uint32_t value = (prev_value == LOW ? pixel_color(255,255,255) : 0);
-      hmtl_program_timed_change_fmt(rs485.send_buffer,  rs485.send_data_size,
+      hmtl_program_timed_change_fmt(sockets[0]->send_buffer,
+                             sockets[0]->send_data_size,
                              config.address, (byte)3,
                              500, value,
                              0);
-      handler.process_msg((msg_hdr_t *)rs485.send_buffer, &rs485, NULL, &config);
+      handler.process_msg((msg_hdr_t *)sockets[0]->send_buffer, sockets[0], NULL, &config);
 
     }
   }
@@ -568,7 +593,7 @@ boolean program_sound_pixels_init(msg_program_t *msg,
           (state_sound_pixels_t *)manager->get_program_state(tracker,
                                                              sizeof (state_sound_pixels_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg));
-  memset(state->max, sizeof(uint16_t) * SOUND_CHANNELS, 0);
+  memset(state->max, 0, sizeof(uint16_t) * SOUND_CHANNELS);
 
   DEBUG4_VALUE(" chans:", SOUND_CHANNELS);
   DEBUG4_VALUELN(" leds:", state->msg.num_leds);
