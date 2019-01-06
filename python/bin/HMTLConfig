@@ -228,4 +228,7 @@ def main():
     else:
         print("Did not write config")
 
+    # Close the InputBuffer
+    buff.stop()
+
 main()

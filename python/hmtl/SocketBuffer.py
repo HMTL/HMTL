@@ -53,4 +53,4 @@ class SocketBuffer(InputBuffer):
 
     def stop(self):
         self.sock.close()
-        InputBuffer.stop()
+        super(SocketBuffer, self).stop()

@@ -37,12 +37,14 @@ class SerialBuffer(InputBuffer):
         return self.connection
 
     def read(self, max_read):
-        return self.connection.read(max_read)
+        try:
+            return self.connection.read(max_read)
+        except serial.SerialException:
+            return None
 
     def write(self, data):
         return self.connection.write(data)
 
-
     def stop(self):
         self.connection.close()
-        InputBuffer.stop()
+        super(SerialBuffer, self).stop()
