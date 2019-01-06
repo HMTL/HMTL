@@ -86,6 +86,8 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
 {
   int addr;
 
+  EEPROM_init();
+
   /* Zero the outputs */
   for (int i = 0; i < max_outputs; i++) {
     outputs[i].hdr.type = HMTL_OUTPUT_NONE;
@@ -124,6 +126,8 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
     }
   }
 
+  EEPROM_end();
+
   DEBUG2_VALUE("hmtl_read_config: size=", addr - HMTL_CONFIG_ADDR);
   DEBUG2_VALUE(" end=", addr);
   DEBUG2_VALUELN(" module address=", hdr->address);
@@ -138,6 +142,9 @@ int hmtl_read_config(config_hdr_t *hdr, config_max_t outputs[],
 int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
 {
   int addr;
+
+  EEPROM_init();
+
   hdr->magic = HMTL_CONFIG_MAGIC;
   hdr->protocol_version = HMTL_CONFIG_VERSION;
   addr = EEPROM_safe_write(HMTL_CONFIG_ADDR,
@@ -159,6 +166,8 @@ int hmtl_write_config(config_hdr_t *hdr, output_hdr_t *outputs[])
     }
   }
 
+  EEPROM_end();
+
   DEBUG2_VALUE("hmtl_write_config: size=", addr - HMTL_CONFIG_ADDR);
   DEBUG2_VALUELN(" end=", addr);
 
@@ -172,30 +181,18 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
   switch (hdr->type) {
     case HMTL_OUTPUT_VALUE: 
       {
-#if defined(ESP32)
-      /*
-         * TODO: On Esp32 PWM outputs are implemented differently
-         */
-        DEBUG_ERR("Output needs to be implemented on ESP32")
-#else
         config_value_t *out = (config_value_t *)hdr;
         DEBUG4_PRINT(" value");
         pinMode(out->pin, OUTPUT);
-#endif
         break;
       }
     case HMTL_OUTPUT_RGB:
       {
-#if defined(ESP32)
-        // TODO: See above
-        DEBUG_ERR("Output needs to be implemented on ESP32")
-#else
         config_rgb_t *out = (config_rgb_t *)hdr;
         DEBUG4_PRINT(" rgb");
         for (int j = 0; j < 3; j++) {
           pinMode(out->pins[j], OUTPUT);
         }
-#endif
         break;
       }
     case HMTL_OUTPUT_PROGRAM:
@@ -302,37 +299,38 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
   switch (hdr->type) {
     case HMTL_OUTPUT_VALUE: 
       {
+        config_value_t *out = (config_value_t *)hdr;
 #if defined(ESP32)
         /*
          * TODO: The ESP32 does not have an exact analogWrite() equivalent, this
          * needs to be implemented using the ledcWrite() equivalents
          */
         DEBUG_ERR("analogWrite not implemented on ESP32");
+        digitalWrite(out->pin, out->value ? HIGH : LOW);
 #else
-        config_value_t *out = (config_value_t *)hdr;
-
         // On a non-PWM pin this outputs HIGH if value >= 128
         analogWrite(out->pin, out->value);
+#endif
         DEBUG5_VALUE("hmtl_update_output: val pin=", out->pin);
         DEBUG5_VALUELN(" val=", out->value);
-#endif
         break;
       }
     case HMTL_OUTPUT_RGB:
       {
-#if defined(ESP32)
-        // TODO: See above
-        DEBUG_ERR("analogWrite not implemented on ESP32");
-#else
         config_rgb_t *out = (config_rgb_t *)hdr;
         DEBUG5_PRINT("hmtl_update_output: rgb");
         for (int j = 0; j < 3; j++) {
+#if defined(ESP32)
+          // TODO: See above
+          DEBUG_ERR("analogWrite not implemented on ESP32");
+          digitalWrite(out->pins[j], out->values[j] ? HIGH : LOW);
+#else
           analogWrite(out->pins[j], out->values[j]);
+#endif
           DEBUG5_VALUE(" ", out->pins[j]);
           DEBUG5_VALUE("-", out->values[j]);
         }
         DEBUG_PRINT_END();
-#endif
       break;
       }
     case HMTL_OUTPUT_PROGRAM:
@@ -442,7 +440,7 @@ boolean hmtl_validate_header(config_hdr_t *hdr) {
 }
 
 boolean hmtl_validate_value(config_value_t *val) {
-  if (val->pin > 13) return false;
+  if (val->pin > MAX_PIN_NUM) return false;
   return true;
 }
 
@@ -451,7 +449,7 @@ boolean hmtl_validate_rgb(config_rgb_t *rgb) {
   uint32_t pinbit;
 
   for (int pin = 0; pin < 3; pin++) {
-    if (rgb->pins[pin] > 23) return false;
+    if (rgb->pins[pin] > MAX_PIN_NUM) return false;
     pinbit = (1 << rgb->pins[pin]);
     if (pinmap & pinbit) return false;
     pinmap |= pinbit;
@@ -460,21 +458,21 @@ boolean hmtl_validate_rgb(config_rgb_t *rgb) {
 }
 
 boolean hmtl_validate_pixels(config_pixels_t *pixels) {
-  if ((pixels->clockPin > 25) && (pixels->clockPin != (uint8_t)-1)) return false;
-  if (pixels->dataPin > 25) return false;
+  if ((pixels->clockPin > MAX_PIN_NUM) && (pixels->clockPin != (uint8_t)-1)) return false;
+  if (pixels->dataPin > MAX_PIN_NUM) return false;
   if (pixels->clockPin == pixels->dataPin) return false;
   return true;
 }
 
 boolean hmtl_validate_mpr121(config_mpr121_t *mpr121) {
-  if (mpr121->irqPin > 13) return false;
+  if (mpr121->irqPin > MAX_PIN_NUM) return false;
   return true;
 }
 
 boolean hmtl_validate_rs485(config_rs485_t *rs485) {
-  if (rs485->recvPin > 25) return false;
-  if (rs485->xmitPin > 25) return false;
-  if (rs485->enablePin > 25) return false;
+  if (rs485->recvPin > MAX_PIN_NUM) return false;
+  if (rs485->xmitPin > MAX_PIN_NUM) return false;
+  if (rs485->enablePin > MAX_PIN_NUM) return false;
   if (rs485->recvPin == rs485->xmitPin) return false;
   if (rs485->recvPin == rs485->enablePin) return false;
   if (rs485->enablePin == rs485->xmitPin) return false;
@@ -482,8 +480,8 @@ boolean hmtl_validate_rs485(config_rs485_t *rs485) {
 }
 
 boolean hmtl_validate_xbee(config_xbee_t *xbee) {
-  if (xbee->recvPin > 13) return false;
-  if (xbee->xmitPin > 13) return false;
+  if (xbee->recvPin > MAX_PIN_NUM) return false;
+  if (xbee->xmitPin > MAX_PIN_NUM) return false;
   return true;
 }
 

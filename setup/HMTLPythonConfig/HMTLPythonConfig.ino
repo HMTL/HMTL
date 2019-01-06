@@ -19,24 +19,37 @@
 
 // XXX: Some portion of these may be required, sometimes...
 #include "EEPROM.h"
-#include <RS485_non_blocking.h>
-#include <SoftwareSerial.h>
-#include "XBee.h"
+
+#ifdef __AVR__
+  #include <SoftwareSerial.h>
+#endif
+
 #include "SPI.h"
 #include "FastLED.h"
 #include "EEPromUtils.h"
 #include "PixelUtil.h"
-#include "MPR121.h"
-#include "Socket.h"
-#include "RS485Utils.h"
-#include "XBeeSocket.h"
-#include "RFM69Socket.h"
 #include "Wire.h"
 
+#ifdef USE_MPR121
+  #include "MPR121.h"
+#endif
+  #include "Socket.h"
+#ifdef USE_RS485
+  #include "RS485Utils.h"
+#endif
+#ifdef USE_XBEE
+  #include "XBee.h"
+  #include "XBeeSocket.h"
+#endif
+#ifdef USE_RFM69
+  #include "RFM69Socket.h"
+#endif
+
+
 #if defined(__AVR_ATmega32U4__)
-#define DEBUG_PIN 17
+  #define DEBUG_PIN 17
 #else
-#define DEBUG_PIN 13
+  #define DEBUG_PIN LED_BUILTIN
 #endif
 
 config_hdr_t config_hdr;

@@ -86,6 +86,10 @@ typedef struct {
 #define BYTE_TO_BAUD(val) ((uint32_t)val * 1200)
 #define BAUD_TO_BYTE(val) (val / 1200)
 
+// Max pin value
+
+#define MAX_PIN_NUM 32
+
 #define HMTL_OUTPUT_NONE    (uint8_t)-1
 #define HMTL_OUTPUT_VALUE   0x1
 #define HMTL_OUTPUT_RGB     0x2
@@ -109,25 +113,25 @@ typedef struct {
 #define HMTL_NO_OUTPUT (uint8_t)-1
 #define HMTL_ALL_OUTPUTS (uint8_t)-2
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   byte type;
   byte output;
 } output_hdr_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   byte pin;
   uint16_t value : 13;  // 13 bits provide values up to 8192
   uint16_t flags :  3;
 } config_value_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   byte pins[3];
   byte values[3];
 } config_rgb_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   byte clockPin;
   byte dataPin;
@@ -137,7 +141,7 @@ typedef struct {
 
 // This should be MPR121::MAX_SENSORS, but we don't want to include that here
 #define MAX_MPR121_PINS 12
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   //  byte address; // XXX: Requires version update BS
   byte irqPin;
@@ -145,7 +149,7 @@ typedef struct {
   byte thresholds[MAX_MPR121_PINS];
 } config_mpr121_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   byte recvPin;
   byte xmitPin;
@@ -153,7 +157,7 @@ typedef struct {
   //  byte bufferSize; // TODO: Need to handle this
 } config_rs485_t;
 
-typedef struct {
+typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
   byte recvPin; // TODO: Use for SoftwareSerial connection
   byte xmitPin;

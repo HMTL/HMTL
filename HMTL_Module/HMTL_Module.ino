@@ -22,7 +22,6 @@
 #include "SPI.h"
 #include "FastLED.h"
 #include "Wire.h"
-#include "XBee.h"
 
 #ifndef DEBUG_LEVEL
   #define DEBUG_LEVEL DEBUG_HIGH
@@ -65,6 +64,7 @@ byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 #endif
 
 #ifdef USE_XBEE
+#include "XBee.h"
 #include "XBeeSocket.h"
 XBeeSocket xbee;
 byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
