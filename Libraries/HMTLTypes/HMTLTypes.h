@@ -28,6 +28,11 @@
 #define USE_XBEE
 #endif
 
+#define DISABLE_LORA
+#ifndef DISABLE_LORA
+#define USE_LORA
+#endif
+
 /******************************************************************************
  * Module configuration
  */
@@ -98,6 +103,7 @@ typedef struct {
 #define HMTL_OUTPUT_MPR121  0x5
 #define HMTL_OUTPUT_RS485   0x6
 #define HMTL_OUTPUT_XBEE    0x7
+#define HMTL_OUTPUT_LORA    0x8
 
 #define IS_HMTL_RGB_OUTPUT(out) \
   ((out == HMTL_OUTPUT_VALUE) || \
@@ -163,6 +169,22 @@ typedef struct __attribute__((__packed__)) {
   byte xmitPin;
 } config_xbee_t;
 
+/* Configuration structure for LoRa radios */
+#define LORA_TYPE_RFM69 69
+
+#define LORA_FLAG_HIGH_POWER 0x01
+typedef struct __attribute__((__packed__)) {
+  output_hdr_t hdr;
+  uint8_t slaveSelectPin;
+  uint8_t irqPin;
+
+  uint8_t networkId;
+  uint8_t frequency;
+
+  uint8_t radioType; // Radio type RFM69, RFM95, etc
+  uint8_t flags;
+} config_lora_t;
+
 typedef config_mpr121_t config_max_t; // Set to the largest output structure
 
 /* Dump the entire raw configuration to serial */
@@ -194,6 +216,7 @@ boolean hmtl_validate_pixels(config_pixels_t *pixels);
 boolean hmtl_validate_mpr121(config_mpr121_t *mpr121);
 boolean hmtl_validate_rs485(config_rs485_t *rs485);
 boolean hmtl_validate_xbee(config_xbee_t *xbee);
+boolean hmtl_validate_lora(config_lora_t *lora);
 boolean hmtl_validate_config(config_hdr_t *config_hdr, output_hdr_t *outputs[],
                              int num_outputs);
 

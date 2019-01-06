@@ -41,6 +41,13 @@
 #warning USE_XBEE is disabled
 #endif
 
+#ifdef USE_LORA
+#include "RFM69Socket.h"
+#warning USE_LORA is enabled
+#else
+#warning USE_LORA is disabled
+#endif
+
 int hmtl_output_size(output_hdr_t *output) 
 {
   switch (output->type) {
@@ -63,6 +70,10 @@ int hmtl_output_size(output_hdr_t *output)
 #ifdef USE_XBEE
     case HMTL_OUTPUT_XBEE:
     return sizeof (config_xbee_t);
+#endif
+#ifdef USE_LORA
+    case HMTL_OUTPUT_LORA:
+      return sizeof (config_lora_t);
 #endif
     default:
     DEBUG_ERR("hmtl_output_size: bad output type");
@@ -280,6 +291,25 @@ int hmtl_setup_output(config_hdr_t *config, output_hdr_t *hdr, void *data)
         }
         break;
       }
+#endif
+#ifdef USE_LORA
+    case HMTL_OUTPUT_LORA:
+    {
+      DEBUG4_PRINT(" lora");
+      if (data != NULL) {
+        config_lora_t *lora = (config_lora_t *)hdr;
+        if (lora->radioType == LORA_TYPE_RFM69) {
+          RFM69Socket *rfm = (RFM69Socket *)data;
+          rfm->init(config->address, lora->networkId, lora->irqPin,
+                    (boolean)(lora->flags & LORA_FLAG_HIGH_POWER),
+                    lora->frequency);
+          // rfm->setEncryptionKey(lora->encryptKey); TODO: Should this be configured?
+        }
+      } else {
+        DEBUG_ERR("Expected Socket data struct for LoRa configs")
+      }
+      break;
+    }
 #endif
     default:
       {
