@@ -73,6 +73,9 @@ MSG_DUMPCONFIG_LEN = MSG_BASE_LEN
 # Broadcast address
 BROADCAST = 65535  # = (uint16_t)-1
 
+# Default Port for direct TCP connections
+HMTL_PORT = 4365
+
 # Specific program formats
 MSG_PROGRAM_NONE_TYPE = 0
 MSG_PROGRAM_NONE_FMT = 'B'*MSG_PROGRAM_VALUE_LEN
@@ -248,7 +251,48 @@ class Msg(object):
     def type(cls):
         return cls.TYPE
 
-# Message header
+#
+# Header for messages sent to a TCPSocket object
+#
+class TCPSocketHeader(Msg):
+    FORMAT = "<IBBBBHH"
+    LEN = 12
+
+    STARTCODE = 0x54435053
+    VERSION = 1
+
+    def __init__(self, id, datalen, source, dest, flags):
+        self.id = id
+        self.datalen = datalen
+        self.source = source
+        self.dest = dest
+        self.flags = flags
+        # 0x54435053,  # START
+        # 1,  # VERSION
+        # id,  # ID
+        # 4,  # Data Length
+        # 0x12,  # Source addr
+        # 128,  # Dest addr
+        # 0x56,  # Flags
+
+    def __str__(self):
+        return """  tcphdr:
+  start:%04x
+  version:%d
+  id:%d
+  datalen:%d
+  source:%d
+  dest:%d
+  flags:0x%x
+""" % (self.STARTCODE, self.VERSION, self.id,
+       self.datalen, self.source, self.dest, self.flags)
+
+    def pack(self):
+        return struct.pack(self.FORMAT, self.STARTCODE, self.VERSION, self.id,
+                           self.datalen, self.flags, self.source, self.dest)
+
+
+# HMTL Message header
 class MsgHdr(Msg):
     TYPE = "MSGHDR"
     FORMAT = MSG_HDR_FMT

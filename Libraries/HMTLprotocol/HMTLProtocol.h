@@ -30,4 +30,7 @@
 #define CONFIG_START_BYTE 0xFD // Beginning of a binary comand
 #define CONFIG_START_SIZE 2    // Length of a binary command
 
+/* Socket port for when using a wifi connection */
+#define HMTL_PORT 4365
+
 #endif

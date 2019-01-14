@@ -52,7 +52,7 @@ SerialCLI serialcli(64, cliHandler);
 
 config_hdr_t config;
 
-TimeSync time = TimeSync();
+TimeSync timesync = TimeSync();
 
 void setup() {
   Serial.begin(57600);
@@ -133,7 +133,7 @@ void cliHandler(char **tokens, byte numtokens) {
       if (numtokens < 2) return;
       uint16_t address = atoi(tokens[1]);
       DEBUG1_VALUELN("* Time sync to: ", address);
-      time.synchronize(&rs485, address, NULL);
+      timesync.synchronize(&rs485, address, NULL);
       break;
     }
   }
@@ -232,7 +232,7 @@ void process_message(msg_hdr_t *msg, unsigned int msglen) {
 
     case MSG_TYPE_TIMESYNC: {
       // Handle the time sync message
-      time.synchronize(&rs485, SOCKET_ADDR_INVALID, msg);
+      timesync.synchronize(&rs485, SOCKET_ADDR_INVALID, msg);
 
       DEBUG1_PRINT(" * TIMESYNC:");
 

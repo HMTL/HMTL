@@ -49,7 +49,7 @@ MessageHandler::MessageHandler(socket_addr_t _address, ProgramManager *_manager,
  * Check is a serial-ready messages should be sent over the serial port
  */
 void MessageHandler::serial_ready() {
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
 
   if ((now - last_serial_ms > READY_THRESHOLD) &&
       (now - last_ready_ms > READY_RESEND_PERIOD)) {
@@ -187,7 +187,7 @@ boolean MessageHandler::process_msg(msg_hdr_t *msg_hdr, Socket *src,
          * This is a time synchronization message, send to the ProgramManager's
          * TimeSync object.
          */
-        time.synchronize(src, SOCKET_ADDR_INVALID, msg_hdr);
+        timesync.synchronize(src, SOCKET_ADDR_INVALID, msg_hdr);
         break;
       }
 
@@ -304,7 +304,7 @@ boolean MessageHandler::check_serial(config_hdr_t *config) {
     }
 
     serial_msg_offset = 0;
-    last_serial_ms = time.ms();
+    last_serial_ms = timesync.ms();
   }
 
   return update;

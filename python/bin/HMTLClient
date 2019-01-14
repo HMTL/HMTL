@@ -2,7 +2,7 @@
 #
 # Launch a client/server HMTL command system
 
-import sys, os
+import sys
 import time
 
 from optparse import OptionParser, OptionGroup
@@ -10,6 +10,9 @@ from optparse import OptionParser, OptionGroup
 import hmtl.HMTLprotocol as HMTLprotocol
 from hmtl.client import HMTLClient
 import hmtl.config as config
+
+DEFAULT_SERVER_PORT = 6000
+
 
 def handle_args():
     global options
@@ -19,7 +22,7 @@ def handle_args():
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                       help="Verbose output", default=False)
     parser.add_option("-p", "--port", dest="port", type="int",
-                      help="Port to bind to", default=6000)
+                      help="Port to bind to", default=DEFAULT_SERVER_PORT)
     parser.add_option("-a", "--address", dest="address",
                       help="Address to bind to", default="localhost")
     parser.add_option("-k", "--killserver", dest="killserver", action="store_true",
@@ -29,6 +32,9 @@ def handle_args():
     parser.add_option("-A", "--hmtladdress", dest="hmtladdress", type="int",
                       help="Address to which messages are sent [default=BROADCAST]", 
                       default=HMTLprotocol.BROADCAST)
+    parser.add_option("-t", "--tcpsocket", dest="tcpsocket", action="store_true",
+                      help="Send directly via tcpsocket rather than command server",
+                      default=False)
 
     # Command types
     group = OptionGroup(parser, "Command Types")
@@ -262,12 +268,27 @@ def main():
         print("Must specify a command")
         exit(1)
 
+    if options.tcpsocket:
+        # When sending directly to a device rather than using a command server
+        # disable authentication and set the default port.
+        authenticate = False
+        if options.port == DEFAULT_SERVER_PORT:
+            options.port = HMTLprotocol.HMTL_PORT
+    else:
+        authenticate = True
     client = HMTLClient(options.address, options.port,
-                        options.hmtladdress, options.verbose)
+                        options.hmtladdress, options.verbose, authenticate=authenticate)
 
     if msg is not None:
         starttime = time.time()
-        [messages, headers] = client.send_and_ack(msg, expect_response)
+        if options.tcpsocket:
+            # Send directly to a TCPSocket
+            hdr = HMTLprotocol.TCPSocketHeader(id=1, datalen=len(msg), source=0,
+                                               dest=options.hmtladdress,
+                                               flags=0)
+            client.send(hdr.pack() + msg)
+        else:
+            [messages, headers] = client.send_and_ack(msg, expect_response)
         endtime = time.time()
         print("Sent and acked in %.6fs" % (endtime - starttime))
 

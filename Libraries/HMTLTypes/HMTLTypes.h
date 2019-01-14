@@ -143,7 +143,7 @@ typedef struct __attribute__((__packed__)) {
 #define MAX_MPR121_PINS 12
 typedef struct __attribute__((__packed__)) {
   output_hdr_t hdr;
-  //  byte address; // XXX: Requires version update BS
+  //  byte address; // TODO: Requires version update BS
   byte irqPin;
   boolean useInterrupt;
   byte thresholds[MAX_MPR121_PINS];

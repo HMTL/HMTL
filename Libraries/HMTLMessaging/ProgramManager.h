@@ -14,7 +14,7 @@
 #include "TimeSync.h"
 
 /* Provide access to a time synchronization object */
-extern TimeSync time;
+extern TimeSync timesync;
 
 /*******************************************************************************
  * Function prototypes for a HMTL program and program configuration

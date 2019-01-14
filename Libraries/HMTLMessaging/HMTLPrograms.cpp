@@ -270,7 +270,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
                                                       sizeof(state_blink_t));
   memcpy(&state->msg, msg->values, sizeof (state->msg)); // ??? Correct size?
   state->on = false;
-  state->next_change = time.ms();
+  state->next_change = timesync.ms();
 
   DEBUG3_VALUE(" on_period:", state->msg.on_period);
   DEBUG3_VALUELN(" off_period:", state->msg.off_period);
@@ -281,7 +281,7 @@ boolean program_blink_init(msg_program_t *msg, program_tracker_t *tracker,
 boolean program_blink(output_hdr_t *output, void *object,
                       program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
   state_blink_t *state = (state_blink_t *)tracker->state;
 
   if (now >= state->next_change) {
@@ -341,7 +341,7 @@ boolean program_timed_change_init(msg_program_t *msg,
 boolean program_timed_change(output_hdr_t *output, void *object,
                              program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
   state_timed_change_t *state = (state_timed_change_t *)tracker->state;
 
   if (state->change_time == 0) {
@@ -400,7 +400,7 @@ boolean program_fade_init(msg_program_t *msg,
 boolean program_fade(output_hdr_t *output, void *object,
                      program_tracker_t *tracker) {
   boolean changed = false;
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
   state_fade_t *state = (state_fade_t *)tracker->state;
 
   if (state->start_time == 0) {
@@ -496,7 +496,7 @@ boolean program_sparkle_init(msg_program_t *msg,
 
 boolean program_sparkle(output_hdr_t *output, void *object,
                         program_tracker_t *tracker) {
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
   state_sparkle_t *state = (state_sparkle_t *)tracker->state;
 
   if (now - state->last_change_ms >= state->msg.period) {
@@ -611,7 +611,7 @@ boolean program_circular_init(msg_program_t *msg, program_tracker_t *tracker,
 
 boolean program_circular(output_hdr_t *output, void *object,
                          program_tracker_t *tracker) {
-  unsigned long now = time.ms();
+  unsigned long now = timesync.ms();
   state_circular_t *state = (state_circular_t *)tracker->state;
 
   if (now - state->last_change_ms >= state->msg.period) {

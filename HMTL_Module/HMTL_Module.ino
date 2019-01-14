@@ -57,17 +57,20 @@
  */
 #ifdef USE_RS485
 #include "RS485Utils.h"
-#define SEND_BUFFER_SIZE 64 // The data size for transmission buffers
+
+// The data size for transmission buffers
+#define RS485_SEND_BUFFER_SIZE RS485_BUFFER_TOTAL(64)
 
 RS485Socket rs485;
-byte rs485_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+byte rs485_data_buffer[RS485_BUFFER_TOTAL(RS485_SEND_BUFFER_SIZE)];
 #endif
 
 #ifdef USE_XBEE
 #include "XBee.h"
 #include "XBeeSocket.h"
 XBeeSocket xbee;
-byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
+#define XBEE_SEND_BUFFER_SIZE XBEE_BUFFER_TOTAL(64)
+byte xbee_data_buffer[RS485_BUFFER_TOTAL(XBEE_SEND_BUFFER_SIZE)];
 #endif
 
 #ifdef USE_RFM69
@@ -87,8 +90,20 @@ byte xbee_data_buffer[RS485_BUFFER_TOTAL(SEND_BUFFER_SIZE)];
 // TODO: End of stuff for configuration
 
 RFM69Socket rfm69;
-#define RFM69_SEND_BUFFER_SIZE RFM69_DATA_LENGTH(RF69_MAX_DATA_LEN)
-byte databuffer[RF69_MAX_DATA_LEN];
+#define RFM69_SEND_BUFFER_SIZE RF69_MAX_DATA_LEN
+byte rfm69_data_buffer[RFM69_SEND_BUFFER_SIZE];
+#endif
+
+#if defined(ESP32)
+#include <WiFiBase.h>
+#include <TCPSocket.h>
+
+WiFiBase wfb;
+TCPSocket tcpSocket;
+
+#define WIFI_SEND_BUFFER_SIZE TCP_BUFFER_TOTAL(64)
+byte wifi_data_buffer[TCP_BUFFER_TOTAL(WIFI_SEND_BUFFER_SIZE)];
+
 #endif
 
 /*
@@ -113,7 +128,7 @@ PixelUtil pixels;
  * A timesync object must be defined and initialized here as some libraries
  * require it during initialization.
  */
-TimeSync time;
+TimeSync timesync;
 
 /*
  * Data from sensors, set to highest analog value
@@ -189,7 +204,7 @@ void setup() {
   if (outputs_found & (1 << HMTL_OUTPUT_RS485)) {
     /* Setup the RS485 socket */
     rs485.setup();
-    rs485.initBuffer(rs485_data_buffer, SEND_BUFFER_SIZE);
+    rs485.initBuffer(rs485_data_buffer, RS485_SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &rs485;
   }
 #endif
@@ -198,7 +213,7 @@ void setup() {
   if (outputs_found & (1 << HMTL_OUTPUT_XBEE)) {
     /* Setup the XBee socket */
     xbee.setup();
-    xbee.initBuffer(xbee_data_buffer, SEND_BUFFER_SIZE);
+    xbee.initBuffer(xbee_data_buffer, XBEE_SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &xbee;
   }
 #endif
@@ -208,8 +223,22 @@ void setup() {
     // XXX: RFM69!
     rfm69.init(config.address, NETWORK, IRQ_PIN, IS_RFM69HW, RF69_915MHZ); // TODO: Put this in config
     rfm69.setup();
-    rfm69.initBuffer(databuffer, RFM69_SEND_BUFFER_SIZE);
+    rfm69.initBuffer(rfm69_data_buffer, RFM69_SEND_BUFFER_SIZE);
     sockets[num_sockets++] = &rfm69;
+  }
+#endif
+
+#if defined(ESP32)
+  if (true) { // TODO: Should any of this be put into the stored config?
+    /* Startup a connection and add a wifi socket */
+    wfb = WiFiBase();
+    wfb.configureAccessPoint("HMTL_Module", "12345678");
+    wfb.startup();
+
+    tcpSocket.init(config.address, HMTL_PORT);
+    tcpSocket.initBuffer(wifi_data_buffer, WIFI_SEND_BUFFER_SIZE);
+    tcpSocket.setup();
+    sockets[num_sockets++] = &tcpSocket;
   }
 #endif
 

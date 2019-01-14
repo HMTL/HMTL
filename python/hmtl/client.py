@@ -22,7 +22,8 @@ class HMTLClient():
     address = HMTLprotocol.BROADCAST
     verbose = False
 
-    def __init__(self, address='localhost', port=6000, hmtladdress=None, verbose=False, logger=True):
+    def __init__(self, address='localhost', port=6000, hmtladdress=None,
+                 verbose=False, logger=True, authenticate=True):
         self.logger = TimedLogger()
         if not logger:
             self.logger.disable()
@@ -32,7 +33,11 @@ class HMTLClient():
 
         address = (address, port)
         try:
-            self.conn = Client(address, authkey=b'secret password')
+            if authenticate:
+                authkey = b'secret password'
+            else:
+                authkey = None
+            self.conn = Client(address, authkey=authkey)
         except Exception as e:
             raise Exception("Failed to connect to '%s'" % (str(address)))
         random.seed()
