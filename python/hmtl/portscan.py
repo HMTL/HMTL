@@ -38,9 +38,11 @@ def choose_port():
     for (i, port) in enumerate(ports):
         print("  %d. %s" % (i + 1, port))
 
-        # Attempt to guess which port might be an Arduino
+        # Attempt to guess which port might be an Arduino or other development
+        # board
         if ((re.search("(.*usbserial.*)", port) != None) or
-            (re.search("(.*usbmodem.*)", port) != None)):
+                (re.search("(.*usbmodem.*)", port) != None) or
+                (re.search("(.*USBtoUART.*)", port) != None)):  # ESP32
             default = i + 1
             
     if len(ports) == 0:

@@ -88,7 +88,8 @@ typedef struct {
 
 // Max pin value
 
-#define MAX_PIN_NUM 32
+// TODO: This should be contingent on board type
+#define MAX_PIN_NUM 40
 
 #define HMTL_OUTPUT_NONE    (uint8_t)-1
 #define HMTL_OUTPUT_VALUE   0x1

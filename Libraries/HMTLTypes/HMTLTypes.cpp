@@ -305,7 +305,7 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
          * TODO: The ESP32 does not have an exact analogWrite() equivalent, this
          * needs to be implemented using the ledcWrite() equivalents
          */
-        DEBUG_ERR("analogWrite not implemented on ESP32");
+        DEBUG5_PRINTLN("analogWrite not implemented on ESP32");
         digitalWrite(out->pin, out->value ? HIGH : LOW);
 #else
         // On a non-PWM pin this outputs HIGH if value >= 128
@@ -322,7 +322,7 @@ int hmtl_update_output(output_hdr_t *hdr, void *data)
         for (int j = 0; j < 3; j++) {
 #if defined(ESP32)
           // TODO: See above
-          DEBUG_ERR("analogWrite not implemented on ESP32");
+          DEBUG5_PRINTLN("analogWrite not implemented on ESP32");
           digitalWrite(out->pins[j], out->values[j] ? HIGH : LOW);
 #else
           analogWrite(out->pins[j], out->values[j]);

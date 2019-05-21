@@ -45,11 +45,12 @@
   #include "RFM69Socket.h"
 #endif
 
-
-#if defined(__AVR_ATmega32U4__)
-  #define DEBUG_PIN 17
-#else
+#ifdef LED_BUILTIN
   #define DEBUG_PIN LED_BUILTIN
+#elif #elif defined(ESP32)
+  #define DEBUG_PIN 14
+#else
+  #define DEBUG_PIN 13
 #endif
 
 config_hdr_t config_hdr;
