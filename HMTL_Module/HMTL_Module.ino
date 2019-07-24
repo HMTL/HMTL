@@ -103,8 +103,12 @@ TCPSocket tcpSocket;
 
 #define WIFI_SEND_BUFFER_SIZE TCP_BUFFER_TOTAL(64)
 byte wifi_data_buffer[TCP_BUFFER_TOTAL(WIFI_SEND_BUFFER_SIZE)];
-
 #endif
+
+/* Period between updating */
+#define STATUS_UPDATE_PERIOD 15000
+unsigned long statusUpdateTime = 0;
+
 
 /*
  * Set the BAUD if not over-riden by build flags
@@ -152,6 +156,7 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_TIMED_CHANGE, program_timed_change, program_timed_change_init },
   { HMTL_PROGRAM_FADE, program_fade, program_fade_init },
   { HMTL_PROGRAM_SPARKLE, program_sparkle, program_sparkle_init },
+  { HMTL_PROGRAM_CIRCULAR, program_circular, program_circular_init},
   { PROGRAM_BRIGHTNESS, NULL,  program_brightness },
   { PROGRAM_COLOR, NULL, program_color},
 
@@ -160,7 +165,6 @@ hmtl_program_t program_functions[] = {
   { HMTL_PROGRAM_SOUND_PIXELS, program_sound_pixels, program_sound_pixels_init },
 
   { PROGRAM_SENSOR_DATA, process_sensor_data, program_sensor_data_init },
-  { HMTL_PROGRAM_CIRCULAR, program_circular, program_circular_init}
 };
 #define NUM_PROGRAMS (sizeof (program_functions) / sizeof (hmtl_program_t))
 
@@ -235,6 +239,9 @@ void setup() {
     wfb.configureAccessPoint("HMTL_Module", "12345678");
     wfb.startup();
 
+    wfb.addRESTEndpoint("/rgb", rgbHandler);
+    wfb.addRESTEndpoint("/circular", circularHandler);
+
     tcpSocket.init(config.address, HMTL_PORT);
     tcpSocket.initBuffer(wifi_data_buffer, WIFI_SEND_BUFFER_SIZE);
     tcpSocket.setup();
@@ -268,6 +275,7 @@ void setup() {
 //#define STARTUP_SPARKLE
 //#define STARTUP_CIRCULAR
 //#define STARTUP_VALUE
+//#define STARTUP_FADE_ALL
 #endif
 
 void additional_setup() {
@@ -303,6 +311,7 @@ void startup_commands() {
   byte num = 0;
   byte output;
   while ((output = manager.lookup_output_by_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
+    num++;
     DEBUG4_VALUELN("Init: value ", output);
     hmtl_set_output_rgb(outputs[output], objects[output],
                         pixel_color(STARTUP_VALUE, STARTUP_VALUE, STARTUP_VALUE));
@@ -365,6 +374,87 @@ void startup_commands() {
 }
 #endif // STARTUP_COMMANDS
 
+#if defined(ESP32)
+void circularHandler() {
+  WebServer *server = wfb.getServer();
+
+  uint8_t pattern = 0;
+  if (server->hasArg("pattern")) {
+    pattern = server->arg("pattern").toInt();
+  }
+
+  uint16_t length = pixels.numPixels() / 8;
+  if (server->hasArg("length")) {
+    length = server->arg("length").toInt();
+  }
+
+  uint16_t period = 25;
+  if (server->hasArg("period")) {
+    period = server->arg("period").toInt();
+  }
+
+  DEBUG3_VALUE("/circular pattern=", pattern);
+  DEBUG3_VALUE(" length=", length);
+  DEBUG3_VALUELN(" period=", period);
+
+  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
+  if (output != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("/circular: output ", output);
+    program_circular_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                         config.address, output,
+                         period, length, CRGB::Black,
+                         pattern, 0);
+    msg_hdr_t *msg = (msg_hdr_t *)sockets[0]->send_buffer;
+    handler.process_msg(msg, sockets[0], NULL, &config);
+  }
+
+  DEBUG3_PRINTLN("/circular done");
+
+  server->send(200, "application/json", "ok");
+}
+
+void rgbHandler() {
+  WebServer *server = wfb.getServer();
+
+  uint8_t rgb[3];
+
+  if (server->args() < 3) {
+    wfb.getServer()->send(400, "application/json", "insufficient args");
+    return;
+  }
+
+  rgb[0] = server->arg("red").toInt();
+  rgb[1] = server->arg("green").toInt();
+  rgb[2] = server->arg("blue").toInt();
+
+  DEBUG3_VALUE("/rgb r:", rgb[0]);
+  DEBUG3_VALUE("g:", rgb[1]);
+  DEBUG3_VALUELN("b:", rgb[2]);
+
+  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
+  if (output != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("/rgb output:", output);
+    hmtl_set_output_rgb(outputs[output], objects[output], rgb);
+  }
+
+  DEBUG3_PRINTLN("/rgb done");
+
+  server->send(200, "application/json", "ok");
+}
+#endif
+
+void status_update() {
+  DEBUG3_PRINTLN("Status:");
+  DEBUG3_VALUELN(" * uptime:", millis())
+
+#if defined(ESP32)
+  DEBUG3_VALUE(" * wifi connected:", wfb.connected());
+  DEBUG3_VALUE(" ssid:", WiFi.SSID());
+  DEBUG3_VALUE(" ip:", WiFi.localIP().toString());
+  DEBUG3_VALUE(" ap_ip:", WiFi.softAPIP().toString());
+#endif
+}
+
 #define MSG_MAX_SZ (sizeof(msg_hdr_t) + sizeof(msg_max_t))
 byte msg[MSG_MAX_SZ];
 byte serial_offset = 0;
@@ -378,7 +468,6 @@ boolean first_run = true;
  * - Updates any outputs
  */
 void loop() {
-
   // Check and send a serial-ready message if needed
   handler.serial_ready();
 
@@ -407,6 +496,16 @@ void loop() {
       hmtl_update_output(outputs[i], objects[i]);
     }
   }
+
+  unsigned long now = millis();
+  if (now - statusUpdateTime > STATUS_UPDATE_PERIOD) {
+    status_update();
+    statusUpdateTime = now;
+  }
+
+#if defined(ESP32)
+  wfb.checkServer();
+#endif
 }
 
 void additional_loop() {
