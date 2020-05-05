@@ -1,0 +1,31 @@
+{
+  "info": "Routed Esp32 board configuration",
+  "header": {
+    "protocol_version": 3,
+    "hardware_version": 5,
+    "address": 0,
+    "device_id": 0,
+    "baud": 115200,
+    "flags": 0
+  },
+  "outputs": [
+    {
+      "type": "rs485",
+      "recvpin": 16,
+      "xmitpin": 17,
+      "enablepin": 21
+    },
+    {
+      "type": "rgb",
+      "pins": [ 34, 35, 25 ],
+      "values": [ 0, 0, 0 ]
+    },
+    {
+      "type": "pixels",
+      "clockpin": 18,
+      "datapin": 23,
+      "numpixels": 128,
+      "rgbtype": 0
+    }
+  ]
+}
