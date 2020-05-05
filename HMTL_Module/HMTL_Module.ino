@@ -232,7 +232,6 @@ void setup() {
   }
 #endif
 
-#define ESP32
 #if defined(ESP32)
   if (true) { // TODO: Should any of this be put into the stored config?
     /* Startup a connection and add a wifi socket */
