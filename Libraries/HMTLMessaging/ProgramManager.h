@@ -73,7 +73,7 @@ class ProgramManager {
 
   boolean run_program(byte type, void *arg);
 
-  boolean run();
+  uint16_t run();
 
   output_hdr_t **outputs;
   void **objects;

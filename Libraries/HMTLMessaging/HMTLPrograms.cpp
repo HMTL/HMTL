@@ -176,6 +176,31 @@ uint16_t program_circular_fmt(byte *buffer, uint16_t buffsize,
   return HMTL_MSG_PROGRAM_LEN;
 }
 
+uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
+                               uint16_t address, uint8_t output,
+                               uint32_t period,
+                               CRGB start_color,
+                               CRGB stop_color,
+                               uint8_t flags) {
+  msg_hdr_t *msg_hdr = (msg_hdr_t *)buffer;
+  msg_program_t *msg_program = (msg_program_t *)(msg_hdr + 1);
+
+  hmtl_program_fmt(msg_program, output, HMTL_PROGRAM_FADE, buffsize);
+
+  hmtl_program_fade_t *program = (hmtl_program_fade_t *)msg_program->values;
+
+  /* If the other values are set then don't memset */
+  memset(program, 0, MAX_PROGRAM_VAL);
+  program->period = period;
+  program->start_value = start_color;
+  program->stop_value = stop_color;
+  program->flags = flags;
+
+  hmtl_msg_fmt(msg_hdr, address, HMTL_MSG_PROGRAM_LEN, MSG_TYPE_OUTPUT);
+  return HMTL_MSG_PROGRAM_LEN;
+}
+
+
 /*******************************************************************************
  * Wrapper functions for sending HMTL program messages
  */
@@ -437,9 +462,11 @@ boolean program_fade(output_hdr_t *output, void *object,
         CRGB temp = state->msg.start_value;
         state->msg.start_value = state->msg.stop_value;
         state->msg.stop_value = temp;
+        DEBUG4_VALUELN("Fade reset:", output->output);
       } else {
         // Disable the program
         tracker->flags |= PROGRAM_TRACKER_DONE;
+        DEBUG3_VALUELN("Fade done:", output->output);
       }
     }
   }
@@ -504,7 +531,8 @@ boolean program_sparkle(output_hdr_t *output, void *object,
 
     state->last_change_ms = now;
 
-    for (PIXEL_ADDR_TYPE led = 0; led < pixels->numPixels(); led++) {
+    PIXEL_ADDR_TYPE led;
+    for ( led = 0; led < pixels->numPixels(); led++) {
       byte rand = (byte)random(100);
       if (rand <= state->msg.sparkle_threshold) {
         CRGB color = CHSV(state->msg.hue_min +

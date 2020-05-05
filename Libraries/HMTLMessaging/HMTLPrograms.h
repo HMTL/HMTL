@@ -33,6 +33,10 @@
 #define PROGRAM_BRIGHTNESS        0x30 // One-time only
 #define PROGRAM_COLOR             0x31
 
+/* Intialize the program header */
+void hmtl_program_fmt(msg_program_t *msg_program, uint8_t output,
+                      uint8_t program, uint16_t buffsize);
+
 
 /*
  * Program to blink between two colors
@@ -111,8 +115,8 @@ typedef struct {
 uint16_t hmtl_program_fade_fmt(byte *buffer, uint16_t buffsize,
                                uint16_t address, uint8_t output,
                                uint32_t period,
-                               uint32_t start_color,
-                               uint32_t stop_color,
+                               CRGB start_color,
+                               CRGB stop_color,
                                uint8_t flags);
 boolean program_fade_init(msg_program_t *msg, program_tracker_t *tracker,
                           output_hdr_t *output, void *object,

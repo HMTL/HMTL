@@ -48,6 +48,7 @@
 
 #include "TimeSync.h"
 #include "HMTL_Module.h"
+#include "Module_Startup_Commands.h"
 
 /* Auto update build number */
 #define HMTL_MODULE_BUILD 29 // %META INCR
@@ -118,7 +119,6 @@ unsigned long statusUpdateTime = 0;
 #endif
 
 
-#define MAX_SOCKETS 2
 Socket *sockets[MAX_SOCKETS] = { NULL, NULL };
 
 config_hdr_t config;
@@ -232,6 +232,7 @@ void setup() {
   }
 #endif
 
+#define ESP32
 #if defined(ESP32)
   if (true) { // TODO: Should any of this be put into the stored config?
     /* Startup a connection and add a wifi socket */
@@ -241,6 +242,7 @@ void setup() {
 
     wfb.addRESTEndpoint("/rgb", rgbHandler);
     wfb.addRESTEndpoint("/circular", circularHandler);
+    wfb.addRESTEndpoint("/sparkle", sparkleHandler);
 
     tcpSocket.init(config.address, HMTL_PORT);
     tcpSocket.initBuffer(wifi_data_buffer, WIFI_SEND_BUFFER_SIZE);
@@ -269,22 +271,13 @@ void setup() {
   Serial.println(F(HMTL_READY));
 }
 
-#ifndef PLATFORMIO
-//#define STARTUP_COMMANDS
-//#define STARTUP_BLINK
-//#define STARTUP_SPARKLE
-//#define STARTUP_CIRCULAR
-//#define STARTUP_VALUE
-//#define STARTUP_FADE_ALL
-#endif
-
 void additional_setup() {
 #ifdef ENABLE_PUSH_BUTTON
   pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
 #endif
 
 #ifdef STARTUP_COMMANDS
-  startup_commands();
+  startup_commands(&manager, &handler, sockets, &config);
 #endif
 }
 
@@ -293,86 +286,6 @@ byte get_button_value() {
   return digitalRead(PUSH_BUTTON_PIN);
 }
 #endif
-
-#ifdef STARTUP_COMMANDS
-/*******************************************************************************
- * Execute any startup commands
- */
-void startup_commands() {
-
-  /*
-   * TODO: This mechanism is overly hard-coded.  A method of adding commands in
-   * the EEPROM configuration would be much better, allowing for proper
-   * configuration.
-   */
-  msg_hdr_t *msg = NULL;
-
-#ifdef STARTUP_VALUE
-  byte num = 0;
-  byte output;
-  while ((output = manager.lookup_output_by_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
-    num++;
-    DEBUG4_VALUELN("Init: value ", output);
-    hmtl_set_output_rgb(outputs[output], objects[output],
-                        pixel_color(STARTUP_VALUE, STARTUP_VALUE, STARTUP_VALUE));
-  }
-#endif // STARTUP_VALUE
-
-#ifdef STARTUP_BLINK
-  // Go through the outputs and set them to blink
-  byte num = 0;
-  byte output;
-  while ((output = manager.lookup_output_by_type(HMTL_OUTPUT_VALUE, num)) != HMTL_NO_OUTPUT) {
-    DEBUG3_VALUELN("Init: blink ", output);
-    num++;
-    hmtl_program_blink_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
-                           config.address, output,
-                           250*num, pixel_color(128,0,0),
-                           250, 0);
-    msg = (msg_hdr_t *)sockets[0]->send_buffer;
-#endif // STARTUP_BLINK
-
-#ifdef STARTUP_SPARKLE
-  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
-  if (output != HMTL_NO_OUTPUT) {
-    DEBUG4_VALUELN("Init: sparkle ", output);
-    program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
-                        config.address, output,
-#ifdef STARTUP_ARGS
-                        STARTUP_ARGS);
-#else
-                        0,0,0,0,0,0,0,0,0,0);
-#endif
-    msg = (msg_hdr_t *)sockets[0]->send_buffer;
-#endif // STARTUP_SPARKLE
-
-#ifdef STARTUP_CIRCULAR
-  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
-  if (output != HMTL_NO_OUTPUT) {
-    DEBUG4_VALUELN("Init: circular ", output);
-    program_circular_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
-                         config.address, output,
-#ifdef STARTUP_ARGS
-                         STARTUP_ARGS);
-#else
-                         100, pixels.numPixels() / 3, CRGB::Black,
-                         1, 0);
-#endif
-    msg = (msg_hdr_t *)sockets[0]->send_buffer;
-#endif // STARTUP_CIRCULAR
-
-    if (msg) {
-#ifdef STARTUP_BROADCAST
-      for (int i = 0; i < MAX_SOCKETS; i++) {
-        if (sockets[i]) handler.check_and_forward(msg, sockets[i]);
-      }
-#endif
-
-      handler.process_msg(msg, sockets[0], NULL, &config);
-    }
-  }
-}
-#endif // STARTUP_COMMANDS
 
 #if defined(ESP32)
 void circularHandler() {
@@ -412,6 +325,82 @@ void circularHandler() {
 
   server->send(200, "application/json", "ok");
 }
+
+void sparkleHandler() {
+  WebServer *server = wfb.getServer();
+
+  uint16_t period = 50;
+  if (server->hasArg("period")) {
+    period = server->arg("period").toInt();
+  }
+
+  uint8_t r = 0, g = 0, b = 0;
+  if (server->hasArg("r")) r = server->arg("r").toInt();
+  if (server->hasArg("g")) b = server->arg("g").toInt();
+  if (server->hasArg("b")) r = server->arg("b").toInt();
+  CRGB bgColor = CRGB(r, g, b);
+
+  uint8_t sparkle_threshold = 0;
+  if (server->hasArg("threshold"))
+    sparkle_threshold = server->arg("threshold").toInt();
+
+  uint8_t bg_threshold = 0;
+  if (server->hasArg("bg"))
+    bg_threshold = server->arg("bg").toInt();
+
+  uint8_t hue_min = 0;
+  if (server->hasArg("hue_min"))
+    hue_min = server->arg("hue_min").toInt();
+
+  uint8_t hue_max = 255;
+  if (server->hasArg("hue_max"))
+    hue_max = server->arg("hue_max").toInt();
+
+  uint8_t sat_min = 0;
+  if (server->hasArg("sat_min"))
+    sat_min = server->arg("sat_min").toInt();
+
+  uint8_t sat_max = 255;
+  if (server->hasArg("sat_max"))
+    sat_max = server->arg("sat_max").toInt();
+
+  uint8_t val_min = 0;
+  if (server->hasArg("val_min"))
+    val_min = server->arg("val_min").toInt();
+
+  uint8_t val_max = 255;
+  if (server->hasArg("val_max"))
+    val_max = server->arg("val_max").toInt();
+
+  DEBUG3_VALUE("/sparkle period=", period);
+  DEBUG3_VALUE("/sparkle threshold=", sparkle_threshold);
+  DEBUG3_VALUE("/sparkle bg=", bg_threshold);
+  DEBUG3_VALUE("/sparkle hue_min=", hue_min);
+  DEBUG3_VALUE("/sparkle hue_max=", hue_max);
+  DEBUG3_VALUE("/sparkle sat_min=", sat_min);
+  DEBUG3_VALUE("/sparkle sat_max=", sat_max);
+  DEBUG3_VALUE("/sparkle val_min=", val_min);
+  DEBUG3_VALUELN("/sparkle val_max=", val_max);
+
+  byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
+  if (output != HMTL_NO_OUTPUT) {
+    DEBUG4_VALUELN("/sparkle: output ", output);
+    program_sparkle_fmt(sockets[0]->send_buffer, sockets[0]->send_data_size,
+                        config.address, output,
+                        period,
+                        bgColor,
+                        sparkle_threshold, bg_threshold,
+                        hue_min, hue_max, sat_min, sat_max, val_min, val_max);
+
+    msg_hdr_t *msg = (msg_hdr_t *)sockets[0]->send_buffer;
+    handler.process_msg(msg, sockets[0], NULL, &config);
+  }
+
+  DEBUG3_PRINTLN("/sparkle done");
+
+  server->send(200, "application/json", "ok");
+}
+
 
 void rgbHandler() {
   WebServer *server = wfb.getServer();

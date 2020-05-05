@@ -256,8 +256,8 @@ void ProgramManager::free_program_state(program_tracker_t *tracker) {
 /*
  * Execute all configured program functions
  */
-boolean ProgramManager::run() {
-  boolean updated = false;
+uint16_t ProgramManager::run() {
+  uint16_t updated = 0;
 
   for (byte i = 0; i < num_outputs; i++) {
     program_tracker_t *tracker = trackers[i];
@@ -272,7 +272,7 @@ boolean ProgramManager::run() {
       if (functions[tracker->program_index].program(outputs[i],
                                                     objects[i],
                                                     tracker)) {
-        updated = true;
+        updated |= (1 << i);
       }
     }
   }

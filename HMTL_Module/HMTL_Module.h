@@ -11,6 +11,8 @@
 #include <HMTLTypes.h>
 #include <ProgramManager.h>
 
+#define MAX_SOCKETS 2
+
 boolean program_level_value(output_hdr_t *output, void *object,
                             program_tracker_t *tracker);
 boolean program_level_value_init(msg_program_t *msg,

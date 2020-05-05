@@ -47,7 +47,7 @@
 
 #ifdef LED_BUILTIN
   #define DEBUG_PIN LED_BUILTIN
-#elif #elif defined(ESP32)
+#elif defined(ESP32)
   #define DEBUG_PIN 14
 #else
   #define DEBUG_PIN 13
