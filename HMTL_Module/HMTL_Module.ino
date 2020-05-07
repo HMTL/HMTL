@@ -239,9 +239,13 @@ void setup() {
     wfb.configureAccessPoint("HMTL_Module", "12345678");
     wfb.startup();
 
-    wfb.addRESTEndpoint("/rgb", rgbHandler);
-    wfb.addRESTEndpoint("/circular", circularHandler);
-    wfb.addRESTEndpoint("/sparkle", sparkleHandler);
+    wfb.addRESTEndpoint("/clear", clearHandler, "\"description\":\"clear all patterns\"");
+    wfb.addRESTEndpoint("/rgb", rgbHandler,
+                        "\"description\":\"set to a single color\",\"args\":[\"r\",\"g\",\"b\"]");
+    wfb.addRESTEndpoint("/circular", circularHandler,
+                        "\"description\":\"run circular pattern\",\"args\":[\"pattern\",\"length\",\"period\"]");
+    wfb.addRESTEndpoint("/sparkle", sparkleHandler,
+                        "\"description\":\"run sparkle pattern\",\"args\":[\"r\",\"g\",\"b\",\"threshold\",\"bg\",\"hum_min\",\"hue_max\",\"sat_min\",\"sat_max\",\"val_min\",\"val_max\"]");
 
     tcpSocket.init(config.address, HMTL_PORT);
     tcpSocket.initBuffer(wifi_data_buffer, WIFI_SEND_BUFFER_SIZE);
@@ -287,6 +291,21 @@ byte get_button_value() {
 #endif
 
 #if defined(ESP32)
+
+void clearHandler() {
+  WebServer *server = wfb.getServer();
+
+  DEBUG3_PRINTLN("/clear");
+
+  hmtl_program_cancel_fmt(sockets[0]->send_buffer,
+                          sockets[0]->send_data_size,
+                          config.address, HMTL_ALL_OUTPUTS);
+  msg_hdr_t *msg = (msg_hdr_t *)sockets[0]->send_buffer;
+  handler.process_msg(msg, sockets[0], NULL, &config);
+
+  server->send(200, "application/json", "ok");
+}
+
 void circularHandler() {
   WebServer *server = wfb.getServer();
 
@@ -405,24 +424,19 @@ void rgbHandler() {
   WebServer *server = wfb.getServer();
 
   uint8_t rgb[3];
-
-  if (server->args() < 3) {
-    wfb.getServer()->send(400, "application/json", "insufficient args");
-    return;
-  }
-
-  rgb[0] = server->arg("red").toInt();
-  rgb[1] = server->arg("green").toInt();
-  rgb[2] = server->arg("blue").toInt();
+  rgb[0] = server->hasArg("r") ? server->arg("r").toInt() : 0;
+  rgb[1] = server->hasArg("g") ? server->arg("g").toInt() : 0;
+  rgb[2] = server->hasArg("b") ? server->arg("b").toInt() : 0;
 
   DEBUG3_VALUE("/rgb r:", rgb[0]);
-  DEBUG3_VALUE("g:", rgb[1]);
-  DEBUG3_VALUELN("b:", rgb[2]);
+  DEBUG3_VALUE(" g:", rgb[1]);
+  DEBUG3_VALUELN(" b:", rgb[2]);
 
   byte output = manager.lookup_output_by_type(HMTL_OUTPUT_PIXELS);
   if (output != HMTL_NO_OUTPUT) {
     DEBUG4_VALUELN("/rgb output:", output);
     hmtl_set_output_rgb(outputs[output], objects[output], rgb);
+    hmtl_update_output(outputs[output], objects[output]);
   }
 
   DEBUG3_PRINTLN("/rgb done");
