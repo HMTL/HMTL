@@ -86,8 +86,9 @@ public:
    */
   boolean check_and_forward(msg_hdr_t *msg_hdr, Socket *socket);
 
-private:
   ProgramManager *manager;
+
+private:
   socket_addr_t address;
   Socket **sockets;
   uint8_t num_sockets;
