@@ -247,6 +247,8 @@ void setup() {
     wfb.addRESTEndpoint("/sparkle", sparkleHandler,
                         "\"description\":\"run sparkle pattern\",\"args\":[\"r\",\"g\",\"b\",\"threshold\",\"bg\",\"hum_min\",\"hue_max\",\"sat_min\",\"sat_max\",\"val_min\",\"val_max\"]");
 
+    wfb.addRESTEndpoint("/RGB", rgbColorPicker, "");
+
     tcpSocket.init(config.address, HMTL_PORT);
     tcpSocket.initBuffer(wifi_data_buffer, WIFI_SEND_BUFFER_SIZE);
     tcpSocket.setup();
@@ -443,6 +445,37 @@ void rgbHandler() {
 
   server->send(200, "application/json", "ok");
 }
+
+void rgbColorPicker() {
+  WebServer *server = wfb.getServer();
+
+  String data =
+          "<!DOCTYPE html><html>\n"
+          "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+          "<link rel=\"icon\" href=\"data:,\">\n"
+          "<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\">\n"
+          "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js\"></script>\n"
+          "</head>\n"
+          "<body><div class=\"container\"><div class=\"row\"><h1>Select color</h1></div>\n"
+//          "<a class=\"btn btn-primary btn-lg\" href=\"#\" id=\"change_color\" role=\"button\">Change Color</a> \n"
+          "<input class=\"jscolor {onFineChange:'update(this)'}\" id=\"rgb\"></div>\n"
+          "<script>\n"
+            "function update(picker) {\n"
+              "document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' +  Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);\n"
+              "var xhttp = new XMLHttpRequest();\n"
+              "xhttp.open(\"POST\", \"/rgb?r=\" + Math.round(picker.rgb[0]) + \"&g=\" + Math.round(picker.rgb[1]) + \"&b=\" + Math.round(picker.rgb[2]), true);\n"
+              "xhttp.setRequestHeader(\"Content-type\", \"application/json\");\n"
+              "xhttp.send(\"\");\n"
+            "}\n"
+          "</script>\n"
+          "</body></html>\n"
+          "\n";
+
+  server->send(200, "text/html", data);
+
+  DEBUG3_PRINTLN("/RGB done");
+}
+
 #endif
 
 void status_update() {
