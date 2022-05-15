@@ -21,6 +21,7 @@ void circularHandler();
 void sparkleHandler();
 void rgbHandler();
 void rgbColorPicker();
+void controller();
 
 void api_status();
 void api_check();

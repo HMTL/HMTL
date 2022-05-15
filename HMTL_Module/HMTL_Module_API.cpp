@@ -6,6 +6,10 @@
  * REST API endpoints for Wifi-Enabled modules
  ******************************************************************************/
 
+// This shuld be defined by the framework, if not then add -DESP32 to the
+// platformio board definition
+#if defined(ESP32)
+
 #include <Arduino.h>
 
 #include "HMTL_Module_API.h"
@@ -14,6 +18,7 @@
 #define DEBUG_LEVEL DEBUG_HIGH
 #endif
 #include "Debug.h"
+
 #include "Socket.h"
 
 #include "HMTLTypes.h"
@@ -21,12 +26,9 @@
 #include "HMTLPrograms.h"
 #include "MessageHandler.h"
 
-#define ESP32
-#if defined(ESP32)
 #include <WiFiBase.h>
 
 WiFiBase wfb;
-#endif
 
 static Socket **sockets;
 static MessageHandler *handler;
@@ -54,22 +56,19 @@ setup_HMTL_API(Socket **s, MessageHandler *h, config_hdr_t *c) {
                       "\"description\":\"run sparkle pattern\",\"args\":[\"r\",\"g\",\"b\",\"threshold\",\"bg\",\"hum_min\",\"hue_max\",\"sat_min\",\"sat_max\",\"val_min\",\"val_max\"]");
 
   wfb.addRESTEndpoint("/RGB", rgbColorPicker, "");
+  wfb.addRESTEndpoint("/control", controller, "");
 }
 
 void api_status() {
-#if defined(ESP32)
-  DEBUG3_VALUE(" * wifi connected:", wfb.connected());
+    DEBUG3_VALUE(" * wifi connected:", wfb.connected());
     DEBUG3_VALUE(" ssid:", WiFi.SSID());
     DEBUG3_VALUE(" ip:", WiFi.localIP().toString());
     DEBUG3_VALUE(" ap_ip:", WiFi.softAPIP().toString());
-#endif
 }
 
 void api_check() {
   wfb.checkServer();
 }
-
-#if defined(ESP32)
 
 void clearHandler() {
   WebServer *server = wfb.getServer();
@@ -253,6 +252,52 @@ void rgbColorPicker() {
   server->send(200, "text/html", data);
 
   DEBUG3_PRINTLN("/RGB done");
+}
+
+void controller() {
+  WebServer *server = wfb.getServer();
+
+  String data =
+          "<!DOCTYPE html><html>\n"
+          "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+          "<link rel=\"icon\" href=\"data:,\">\n"
+          "<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\">\n"
+          "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js\"></script>\n"
+          "</head>\n"
+          "<body><div class=\"container\"><div class=\"row\"><h2>Mediocre UI...</h2></div>\n"
+          "<input class=\"jscolor {onFineChange:'update(this)'}\" id=\"rgb\"></div>\n"
+
+          "<p><a href=\"/clear\"><button class=\"button\">Clear</button></a></p>"
+          "<p><button onclick=\"clear()\">Clear 2</button><p>"
+          "<p><a href=\"/sparkle?period=100&threshold=1&bg=1&hue_min=0&hue_max=255&sat_min=0&sat_max=10&val_min=16&val_max=100\"><button class=\"button\">White sparkle</button></a></p>"
+          "<p><a href=\"/circular\"><button class=\"button\">Circular</button></a></p>"
+
+          "<script>\n"
+
+          "function update(picker) {\n"
+          "document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' +  Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);\n"
+          "var xhttp = new XMLHttpRequest();\n"
+          "xhttp.open(\"POST\", \"/rgb?r=\" + Math.round(picker.rgb[0]) + \"&g=\" + Math.round(picker.rgb[1]) + \"&b=\" + Math.round(picker.rgb[2]), true);\n"
+          "xhttp.setRequestHeader(\"Content-type\", \"application/json\");\n"
+          "xhttp.send(\"\");\n"
+          "}\n"
+
+          "function clear() {\n"
+          "var xhttp = new XMLHttpRequest();\n"
+          "xhttp.open(\"POST\", \"/clear\", true);\n"
+          "xhttp.setRequestHeader(\"Content-type\", \"application/json\");\n"
+          "xhttp.send(\"\");\n"
+          "}\n"
+
+          "</script>\n"
+
+          "</body></html>\n"
+          "\n";
+
+  server->send(200, "text/html", data);
+
+  DEBUG3_PRINTLN("/RGB done");
+
 }
 
 #endif

@@ -71,3 +71,5 @@ NA	*32/0x20	2            	Taller stand (Board v4)
 id	address		HTML_v	Hdw_v	description
 1   1/0x01      	3	13	First Lightbringer 1284 board
 2   2/0x02      	3
+
+== ESP32 Modules ==
