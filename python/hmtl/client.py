@@ -7,16 +7,14 @@
 #
 ################################################################################
 
-from __future__ import print_function
-#from __future__ import unicode_literals
-
 from multiprocessing.connection import Client
 import random
 from binascii import hexlify
 
-import HMTLprotocol
-import server
-from TimedLogger import TimedLogger
+import hmtl.HMTLprotocol as HMTLprotocol
+import hmtl.server as server
+from hmtl.TimedLogger import TimedLogger
+
 
 class HMTLClient():
     address = HMTLprotocol.BROADCAST

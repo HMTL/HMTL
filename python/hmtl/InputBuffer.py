@@ -9,8 +9,6 @@
 #
 ################################################################################
 
-from __future__ import print_function
-
 from binascii import hexlify
 import threading
 import time
@@ -22,8 +20,7 @@ import hmtl.HMTLprotocol as HMTLprotocol
 from abc import ABCMeta, abstractmethod
 
 
-class InputBuffer(threading.Thread):
-    __metaclass__ = ABCMeta
+class InputBuffer(threading.Thread, metaclass=ABCMeta):
 
     # Default logging color
     LOGGING_COLOR = TimedLogger.CYAN
@@ -69,7 +66,7 @@ class InputBuffer(threading.Thread):
 
     def run(self):
         while True:
-            data = ""
+            data = b""
             is_html = False
             hdr = None
             while True:
@@ -97,9 +94,9 @@ class InputBuffer(threading.Thread):
                             break
                 else:
                     # Arduino print output lines are terminated with \r\n
-                    if char == '\r':
+                    if char == b'\r':
                         continue
-                    if char == '\n':
+                    if char == b'\n':
                         break
                     data += char
 
@@ -131,7 +128,7 @@ class InputItem:
         if len(data) == 0:
             return None
 
-        if ord(data[0]) == HMTLprotocol.MsgHdr.STARTCODE:
+        if data[0] == HMTLprotocol.MsgHdr.STARTCODE:
             is_hmtl = True
             # TODO: Perform validation here
         else:
@@ -141,10 +138,13 @@ class InputItem:
 
     def __str__(self):
         if self.is_hmtl:
-            return "(%s) '%s'" % (self.hdr.msg_type(), hexlify(self.data))
+            return "(%s) '%s'" % (self.hdr.msg_type(), hexlify(self.data).decode())
         else:
             try:
+                # TODO - This should really check the type of self.data, sometimes its str and sometimes binary
                 return self.data.decode()
+            except AttributeError:
+                return self.data
             except UnicodeDecodeError:
                 return "(raw) '%s'" % (hexlify(self.data))
 

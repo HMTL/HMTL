@@ -55,7 +55,7 @@ def choose_port():
 
     while (useport < 0):
         try:
-            val = raw_input("Select port [1..%d][%d]:" % (len(ports), default))
+            val = input("Select port [1..%d][%d]:" % (len(ports), default))
             if (len(val)):
                 try:
                     num = int(val)

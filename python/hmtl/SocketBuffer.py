@@ -7,8 +7,6 @@
 # data read can either be line terminated ('\n') or as HMTL messages
 ################################################################################
 
-from __future__ import print_function
-
 import socket
 
 from hmtl.TimedLogger import TimedLogger

@@ -10,9 +10,9 @@
 from binascii import hexlify
 import time
 
-import HMTLprotocol
-from SerialBuffer import SerialBuffer
-from TimedLogger import TimedLogger
+import hmtl.HMTLprotocol as HMTLprotocol
+from hmtl.TimedLogger import TimedLogger
+
 
 class HMTLConfigException(Exception):
     pass

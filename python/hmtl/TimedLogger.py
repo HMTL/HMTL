@@ -7,8 +7,6 @@
 #
 ################################################################################
 
-from __future__ import print_function
-
 import time
 import colorama
 from colorama import Fore, Back, Style

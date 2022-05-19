@@ -4,7 +4,8 @@
 
 import json
 from pprint import pprint
-import HMTLprotocol
+import hmtl.HMTLprotocol as HMTLprotocol
+
 
 def load_json(filename):
     # Parse the JSON configuration file

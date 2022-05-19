@@ -11,10 +11,9 @@
 from multiprocessing.connection import Listener
 import threading
 
-from HMTLSerial import *
-from InputBuffer import InputItem
-from TimedLogger import TimedLogger
-from SocketBuffer import SocketBuffer
+from hmtl.HMTLSerial import *
+from hmtl.InputBuffer import InputItem
+from hmtl.TimedLogger import TimedLogger
 
 SERVER_ACK = "ack"
 SERVER_EXIT = "exit"
@@ -53,7 +52,7 @@ class HMTLServer():
     def get_connection(self):
         try:
             self.logger.log("Waiting for connection")
-            self.listener = Listener(self.address, authkey='secret password')
+            self.listener = Listener(self.address, authkey=b'secret password')
             self.conn = self.listener.accept()
             self.logger.log("Connection accepted from %s:%d" %
                             self.listener.last_accepted)
@@ -83,10 +82,9 @@ class HMTLServer():
             self.conn.send(SERVER_ACK)
 
     def send_data(self, data):
-            self.serial_cv.acquire()
-            self.ser.send_and_confirm(data, False)
-            self.serial_cv.release()
-
+        self.serial_cv.acquire()
+        self.ser.send_and_confirm(data, False)
+        self.serial_cv.release()
 
     # Wait for and handle incoming connections
     def listen(self):

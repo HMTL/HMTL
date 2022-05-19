@@ -14,11 +14,11 @@ import struct
 from hmtl.constants import *
 
 # Configuration commands
-CONFIG_START  = "start"
-CONFIG_END    = "end"
-CONFIG_READ   = "read"
-CONFIG_PRINT  = "print"
-CONFIG_WRITE  = "write"
+CONFIG_START  = b"start"
+CONFIG_END    = b"end"
+CONFIG_READ   = b"read"
+CONFIG_PRINT  = b"print"
+CONFIG_WRITE  = b"write"
 
 
 ################################################################################

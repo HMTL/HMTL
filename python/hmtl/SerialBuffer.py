@@ -7,8 +7,6 @@
 # data read can either be line terminated ('\n') or as HMTL messages
 ################################################################################
 
-from __future__ import print_function
-
 import serial
 
 from hmtl.TimedLogger import TimedLogger
@@ -38,7 +36,7 @@ class SerialBuffer(InputBuffer):
 
     def read(self, max_read):
         try:
-            return self.connection.read(max_read).decode()
+            return self.connection.read(max_read)
         except serial.SerialException:
             return None
 

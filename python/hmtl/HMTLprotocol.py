@@ -15,9 +15,9 @@ from hmtl.constants import *
 from hmtl.config import *
 
 # Protocol commands
-HMTL_CONFIG_READY  = "ready"
-HMTL_CONFIG_ACK    = "ok"
-HMTL_CONFIG_FAIL   = "fail"
+HMTL_CONFIG_READY  = b"ready"
+HMTL_CONFIG_ACK    = b"ok"
+HMTL_CONFIG_FAIL   = b"fail"
 
 HMTL_TERMINATOR    = b'\xfe\xfe\xfe\xfe' # Indicates end of command
 

@@ -1,11 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python3 -u
 #
 # This reads a HMTL configuration in JSON format and sends it over the serial
 # connection to a HMTL module
 
 import sys
-import time
-import thread
+import _thread as thread
 
 from optparse import OptionParser
 
@@ -18,6 +17,7 @@ import hmtl.config as config
 
 from hmtl.SerialBuffer import SerialBuffer
 from hmtl.SocketBuffer import SocketBuffer
+
 
 def handle_args():
     global options
