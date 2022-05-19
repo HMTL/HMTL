@@ -15,9 +15,9 @@ from binascii import hexlify
 import threading
 import time
 
-from CircularBuffer import CircularBuffer
-from TimedLogger import TimedLogger
-import HMTLprotocol
+from hmtl.CircularBuffer import CircularBuffer
+from hmtl.TimedLogger import TimedLogger
+import hmtl.HMTLprotocol as HMTLprotocol
 
 from abc import ABCMeta, abstractmethod
 

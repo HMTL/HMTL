@@ -12,7 +12,7 @@ from __future__ import print_function
 
 import sys
 
-from InputBuffer import InputBuffer
+from hmtl.InputBuffer import InputBuffer
 
 
 class StdinBuffer(InputBuffer):

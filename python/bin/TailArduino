@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python3 -u
 #
 # This script reads from serial and prints the output
 #
@@ -84,7 +84,7 @@ def main():
         data = item.data.strip()
         try:
             # Attempt to print the item as ascii
-            text = data.decode()
+            text = str(data)
         except UnicodeDecodeError:
             # Failing that, print the raw data as hex
             text = ":".join("{:02x}".format(ord(c)) for c in data)
@@ -93,6 +93,7 @@ def main():
             logger.log(text)
         else:
             print(text)
+
 
 if __name__ == '__main__':
     main()

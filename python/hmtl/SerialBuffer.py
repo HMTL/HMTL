@@ -11,8 +11,8 @@ from __future__ import print_function
 
 import serial
 
-from TimedLogger import TimedLogger
-from InputBuffer import InputBuffer
+from hmtl.TimedLogger import TimedLogger
+from hmtl.InputBuffer import InputBuffer
 
 
 class SerialBuffer(InputBuffer):
@@ -30,7 +30,7 @@ class SerialBuffer(InputBuffer):
 
         # Open the serial connection
         self.connection = serial.Serial(device, baud, timeout=timeout)
-        self.logger.log("SerialBuffer: connected to %s" % device,
+        self.logger.log("SerialBuffer: connected to %s at %s baud" % (device, baud),
                         color=TimedLogger.CYAN)
 
     def get_reader(self):
@@ -38,7 +38,7 @@ class SerialBuffer(InputBuffer):
 
     def read(self, max_read):
         try:
-            return self.connection.read(max_read)
+            return self.connection.read(max_read).decode()
         except serial.SerialException:
             return None
 

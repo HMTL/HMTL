@@ -8,3 +8,5 @@ cscope.*
 .sconsign*
 .idea
 buildall.out
+.pio
+cmake-build-debug

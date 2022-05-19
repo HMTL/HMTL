@@ -11,8 +11,8 @@
 
 import struct
 from binascii import hexlify
-from constants import *
-from config import *
+from hmtl.constants import *
+from hmtl.config import *
 
 # Protocol commands
 HMTL_CONFIG_READY  = "ready"

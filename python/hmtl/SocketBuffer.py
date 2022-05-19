@@ -11,8 +11,8 @@ from __future__ import print_function
 
 import socket
 
-from TimedLogger import TimedLogger
-from InputBuffer import InputBuffer
+from hmtl.TimedLogger import TimedLogger
+from hmtl.InputBuffer import InputBuffer
 
 
 class SocketBuffer(InputBuffer):

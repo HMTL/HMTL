@@ -1,9 +1,12 @@
-#!/usr/bin/python -u
+#!/usr/bin/env python3 -u
 
 import os
 import stat
+from setuptools import setup
 
-VERSION="0.1.2"
+
+VERSION = "0.2"
+
 
 # Get an array of all scripts in a directory
 def list_scripts(directory):
@@ -18,7 +21,7 @@ def list_scripts(directory):
                 scripts.append(filename)
     return scripts
 
-from setuptools import setup
+
 setup(
     name='hmtl',
     version=VERSION,
@@ -40,7 +43,6 @@ setup(
 
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
-
 
     zip_safe=False
 )

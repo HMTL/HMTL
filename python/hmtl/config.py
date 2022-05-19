@@ -11,7 +11,7 @@
 """HMTL Configuration definitions"""
 
 import struct
-from constants import *
+from hmtl.constants import *
 
 # Configuration commands
 CONFIG_START  = "start"

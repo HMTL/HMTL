@@ -7,7 +7,7 @@
 #
 ################################################################################
 
-import Queue
+import queue as Queue
 
 
 class CircularBuffer:
