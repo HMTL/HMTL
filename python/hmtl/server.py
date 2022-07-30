@@ -26,7 +26,7 @@ class HMTLServer():
     # Default logging color
     LOGGING_COLOR = TimedLogger.RED
 
-    def __init__(self, serial_device, address, device_scan=False, logger=True):
+    def __init__(self, serial_device, address, device_scan=False, logger=True, verbose=True):
         self.ser = serial_device
         self.address = address
 
@@ -43,11 +43,14 @@ class HMTLServer():
         self.conn = None
         self.listener = None
 
+        self.verbose = verbose
+
         if device_scan:
-            self.scanner = DeviceScanner(self, True)
+            self.scanner = DeviceScanner(self, verbose)
             self.scanner.start()
         else:
             self.scanner = None
+
 
     def get_connection(self):
         try:
